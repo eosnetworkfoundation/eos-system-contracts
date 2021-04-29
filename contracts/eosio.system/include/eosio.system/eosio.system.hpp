@@ -1036,6 +1036,12 @@ namespace eosiosystem {
          [[eosio::action]]
          void closerex( const name& owner );
 
+          /**
+          * 
+          **/
+         [[eosio::action]]
+         void donatetorex(const name& from, const asset& amount);
+
          /**
           * Undelegate bandwitdh action, decreases the total tokens delegated by `from` to `receiver` and/or
           * frees the memory associated with the delegation if there is nothing
@@ -1353,6 +1359,7 @@ namespace eosiosystem {
          using mvfrsavings_action = eosio::action_wrapper<"mvfrsavings"_n, &system_contract::mvfrsavings>;
          using consolidate_action = eosio::action_wrapper<"consolidate"_n, &system_contract::consolidate>;
          using closerex_action = eosio::action_wrapper<"closerex"_n, &system_contract::closerex>;
+         using donatetorex_action = eosio::action_wrapper<"donatetorex"_n, &system_contract::donatetorex>;
          using undelegatebw_action = eosio::action_wrapper<"undelegatebw"_n, &system_contract::undelegatebw>;
          using buyram_action = eosio::action_wrapper<"buyram"_n, &system_contract::buyram>;
          using buyrambytes_action = eosio::action_wrapper<"buyrambytes"_n, &system_contract::buyrambytes>;

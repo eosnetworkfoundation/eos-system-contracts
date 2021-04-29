@@ -353,6 +353,16 @@ namespace eosiosystem {
       }
    }
 
+   void system_contract::donatetorex(const name& from, const asset& amount) {
+      require_auth(from);
+
+      check( amount.symbol == core_symbol(), "must deposit core token" );
+      check( rex_available(), "REX must be enabled" );
+      if(amount.amount > 0) {
+         channel_to_rex(from, amount);
+      }
+   }
+
    /**
     * @brief Updates account NET and CPU resource limits
     *
