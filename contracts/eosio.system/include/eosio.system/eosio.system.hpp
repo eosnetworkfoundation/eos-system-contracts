@@ -687,8 +687,6 @@ namespace eosiosystem {
          static constexpr eosio::name bpay_account{"eosio.bpay"_n};
          static constexpr eosio::name vpay_account{"eosio.vpay"_n};
          static constexpr eosio::name names_account{"eosio.names"_n};
-         // static constexpr eosio::name saving_account{"eosio.saving"_n};
-         // static constexpr eosio::name distrib_account{"eosio.distrb"_n};
          static constexpr eosio::name rex_account{"eosio.rex"_n};
          static constexpr eosio::name reserv_account{"eosio.reserv"_n};
          static constexpr eosio::name null_account{"eosio.null"_n};
