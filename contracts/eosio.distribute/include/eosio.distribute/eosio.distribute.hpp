@@ -42,12 +42,12 @@ namespace eosiodistrb {
     /**
      * 
      **/
-    class [[eosio::contract("eosio.distrb")]] distrib_contract : public contract {
+    class [[eosio::contract("eosio.distribute")]] distrbute_contract : public contract {
         using contract::contract;
 
         public:
-            distrib_contract( name s, name code, datastream<const char*> ds );
-            ~distrib_contract(); 
+            distrbute_contract( name s, name code, datastream<const char*> ds );
+            ~distrbute_contract() {} 
 
             /**
              * 

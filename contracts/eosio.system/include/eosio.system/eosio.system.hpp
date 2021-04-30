@@ -24,12 +24,6 @@
 // be set to 0.
 #define CHANNEL_RAM_AND_NAMEBID_FEES_TO_REX 1
 
-#ifdef USE_INFLATION_DISTRIB
-   const inline static bool use_inflation_distrib = true;
-#else
-   const inline static bool use_inflation_distrib = false;
-#endif
-
 namespace eosiosystem {
 
    using eosio::asset;
@@ -693,14 +687,20 @@ namespace eosiosystem {
          static constexpr eosio::name bpay_account{"eosio.bpay"_n};
          static constexpr eosio::name vpay_account{"eosio.vpay"_n};
          static constexpr eosio::name names_account{"eosio.names"_n};
-         static constexpr eosio::name saving_account{"eosio.saving"_n};
-         static constexpr eosio::name distrib_account{"eosio.distrb"_n};
+         // static constexpr eosio::name saving_account{"eosio.saving"_n};
+         // static constexpr eosio::name distrib_account{"eosio.distrb"_n};
          static constexpr eosio::name rex_account{"eosio.rex"_n};
          static constexpr eosio::name reserv_account{"eosio.reserv"_n};
          static constexpr eosio::name null_account{"eosio.null"_n};
          static constexpr symbol ramcore_symbol = symbol(symbol_code("RAMCORE"), 4);
          static constexpr symbol ram_symbol     = symbol(symbol_code("RAM"), 0);
          static constexpr symbol rex_symbol     = symbol(symbol_code("REX"), 4);
+
+         #ifdef USE_INFLATION_DISTRIB
+            const inline static name inflation_account = "eosio.ditrib"_n;
+         #else
+            const inline static name inflation_account = "eosio.saving"_n;
+         #endif
 
          system_contract( name s, name code, datastream<const char*> ds );
          ~system_contract();
@@ -1300,7 +1300,7 @@ namespace eosiosystem {
           *     (eg. For 5% Annual inflation => annual_rate=500
           *          For 1.5% Annual inflation => annual_rate=150
           * @param inflation_pay_factor - Inverse of the fraction of the inflation used to reward block producers.
-          *     The remaining inflation will be sent to the `eosio.saving` account.
+          *     The remaining inflation will be sent to either `eosio.saving` or `eosio.distrb` (if compiled with USE_INFLATION_DISTRIB). 
           *     (eg. For 20% of inflation going to block producer rewards   => inflation_pay_factor = 50000
           *          For 100% of inflation going to block producer rewards  => inflation_pay_factor = 10000).
           * @param votepay_factor - Inverse of the fraction of the block producer rewards to be distributed proportional to blocks produced.
@@ -1415,7 +1415,7 @@ namespace eosiosystem {
                                         const char* error_msg = "must vote for at least 21 producers or for a proxy before buying REX" )const;
          rex_order_outcome fill_rex_order( const rex_balance_table::const_iterator& bitr, const asset& rex );
          asset update_rex_account( const name& owner, const asset& proceeds, const asset& unstake_quant, bool force_vote_update = false );
-         void channel_to_rex( const name& from, const asset& amount, const std::string& memo, bool required = false );
+         void channel_to_rex( const name& from, const asset& amount, bool required, const std::string& memo);
          void channel_to_rex( const name& from, const asset& amount, bool required = false );
          void channel_namebid_to_rex( const int64_t highest_bid );
          template <typename T>

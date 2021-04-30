@@ -99,11 +99,9 @@ namespace eosiosystem {
             }
             {
                token::transfer_action transfer_act{ token_account, { {get_self(), active_permission} } };
-               if( to_savings > 0 ) {
-                  if(use_inflation_distrib)
-                     transfer_act.send( get_self(), distrib_account, asset(to_savings, core_symbol()), "unallocated inflation" );
-                  else 
-                     transfer_act.send( get_self(), saving_account, asset(to_savings, core_symbol()), "unallocated inflation" );
+               if( to_savings > 0 ) {                     
+                  transfer_act.send( get_self(), inflation_account, asset(to_savings, core_symbol()), "remaining inflation after block producer rewards" );
+                  
                }
                if( to_per_block_pay > 0 ) {
                   transfer_act.send( get_self(), bpay_account, asset(to_per_block_pay, core_symbol()), "fund per-block bucket" );

@@ -359,7 +359,7 @@ namespace eosiosystem {
       check( amount.symbol == core_symbol(), "must deposit core token" );
       check( rex_available(), "REX must be enabled" );
       if(amount.amount > 0) {
-         channel_to_rex(from, amount, memo, true);
+         channel_to_rex(from, amount, true, memo);
       }
    }
 
@@ -929,7 +929,7 @@ namespace eosiosystem {
     * @param required - if true, asserts when the system is not configured to channel fees into REX
     */
 
-   void system_contract::channel_to_rex( const name& from, const asset& amount, const std::string& memo, bool required )
+   void system_contract::channel_to_rex( const name& from, const asset& amount, bool required, const std::string& memo )
    {
 #if CHANNEL_RAM_AND_NAMEBID_FEES_TO_REX
       if ( rex_available() ) {
@@ -945,7 +945,7 @@ namespace eosiosystem {
 
    void system_contract::channel_to_rex ( const name& from, const asset& amount, bool required ) 
    {
-      channel_to_rex(from, amount, std::string("transfer from ") + from.to_string() + " to eosio.rex", required);
+      channel_to_rex(from, amount, required, std::string("transfer from ") + from.to_string() + " to eosio.rex");
    }
 
    /**
