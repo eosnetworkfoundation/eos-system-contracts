@@ -65,13 +65,13 @@ namespace eosiodistrb {
              * 
              **/
             [[eosio::on_notify("eosio.token::transfer")]]
-            void distribute(name from, name to, asset quantity, std::string memo);
+            void distribute(name from, name to, asset quantity, eosio::ignore<std::string> memo);
             
         private:
             distrib_state_singleton _distrib_singleton;
             distrib_state           _distrib_state;
             claimer_table           _claimers;
-            void donate_to_rex(const asset& amount);
+            void donate_to_rex(const asset& amount, const std::string& memo);
 
     }; // distrb_contract
 

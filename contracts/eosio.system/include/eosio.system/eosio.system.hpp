@@ -1047,7 +1047,7 @@ namespace eosiosystem {
           * 
           **/
          [[eosio::action]]
-         void donatetorex(const name& from, const asset& amount);
+         void donatetorex(const name& from, const asset& amount, const std::string& memo);
 
          /**
           * Undelegate bandwitdh action, decreases the total tokens delegated by `from` to `receiver` and/or
@@ -1415,6 +1415,7 @@ namespace eosiosystem {
                                         const char* error_msg = "must vote for at least 21 producers or for a proxy before buying REX" )const;
          rex_order_outcome fill_rex_order( const rex_balance_table::const_iterator& bitr, const asset& rex );
          asset update_rex_account( const name& owner, const asset& proceeds, const asset& unstake_quant, bool force_vote_update = false );
+         void channel_to_rex( const name& from, const asset& amount, const std::string& memo, bool required = false );
          void channel_to_rex( const name& from, const asset& amount, bool required = false );
          void channel_namebid_to_rex( const int64_t highest_bid );
          template <typename T>

@@ -14,9 +14,9 @@ namespace eosiodistrb {
 
     distrib_contract::~distrib_contract() { }
     
-    void distrib_contract::donate_to_rex(const asset& amount) {
+    void distrib_contract::donate_to_rex(const asset& amount, const std::string& memo) {
         system_contract::donatetorex_action donate_action{ system_account, { get_self(), system_contract::active_permission } };
-        donate_action.send( get_self(), amount );
+        donate_action.send( get_self(), amount, memo );
     }
 
     void distrib_contract::setdistrib(const std::vector<distribute_account>& accounts) {
@@ -31,7 +31,7 @@ namespace eosiodistrb {
             check(acct.percent <= remaining_pct, "Total percentage exceeds 100%");
             remaining_pct -= acct.percent;
             if(acct.account == rex_account)
-                donate_to_rex(asset(0, system_contract::get_core_symbol()) );
+                donate_to_rex(asset(0, system_contract::get_core_symbol()), "rex enabled check" );
         }
         check(remaining_pct == 0, "Total percentage does not equal 100%");
         // set accounts
@@ -53,7 +53,7 @@ namespace eosiodistrb {
         _claimers.erase(citr);
     }
 
-   void distrib_contract::distribute(name from, name to, asset quantity, std::string memo) {
+   void distrib_contract::distribute(name from, name to, asset quantity, eosio::ignore<std::string> memo) {
        if (to != get_self())
            return;
         check(quantity.symbol == eosiosystem::system_contract::get_core_symbol(), "Invalid symbol");
@@ -71,7 +71,7 @@ namespace eosiodistrb {
                     dist_amount = remaining;
                 
                 if( acct.account == rex_account ) {
-                    donate_to_rex(dist_amount);
+                    donate_to_rex(dist_amount, std::string("donation from ") + from.to_string() + " to eosio.rex");
                 } else {
                     // bal += dist_amount;
                     // add to table index
