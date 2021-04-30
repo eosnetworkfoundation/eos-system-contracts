@@ -7,7 +7,7 @@
 #include <eosio/singleton.hpp>
 #include <eosio.system/eosio.system.hpp>
 
-namespace eosiosaving {
+namespace eosiodistrb {
     using eosiosystem::system_contract;
     using eosio::asset;
     using eosio::check;
@@ -20,29 +20,34 @@ namespace eosiosaving {
     static constexpr name rex_account = system_contract::rex_account;
 
     struct distribute_account {
-        name                        account;
-        uint16_t                    percent;
-        std::optional<asset>        balance{{0, system_contract::get_core_symbol()}};
+        name        account;
+        uint16_t    percent;
     };
 
-    struct [[eosio::table("distribpay") , eosio::contract("eosio.saving")]] distrib_pay {
-        distrib_pay() { }
+    struct [[eosio::table("distribstate") , eosio::contract("eosio.distrb")]] distrib_state {
         std::vector<distribute_account>  accounts;
 
-        EOSLIB_SERIALIZE (distrib_pay, (accounts))
+        EOSLIB_SERIALIZE (distrib_state, (accounts))
     };
 
-    using distrib_pay_singleton = eosio::singleton< "distribpay"_n, distrib_pay >;
+    using distrib_state_singleton = eosio::singleton< "distribstate"_n, distrib_state >;
     
+    struct [[eosio::table("distribclaim") , eosio::contract("eosio.distrb")]] distrbute_claimer {
+        name        account;
+        asset       balance;
+
+        uint64_t    primary_key() const { return account.value; }
+    };
+    using claimer_table = eosio::multi_index<"claimers"_n, distrbute_claimer>;
     /**
      * 
      **/
-    class [[eosio::contract("eosio.saving")]] saving_contract : public contract {
+    class [[eosio::contract("eosio.distrb")]] distrib_contract : public contract {
         using contract::contract;
 
         public:
-            saving_contract( name s, name code, datastream<const char*> ds );
-            ~saving_contract(); 
+            distrib_contract( name s, name code, datastream<const char*> ds );
+            ~distrib_contract(); 
 
             /**
              * 
@@ -63,11 +68,11 @@ namespace eosiosaving {
             void distribute(name from, name to, asset quantity, std::string memo);
             
         private:
-            distrib_pay_singleton _distrib_pay;
-            distrib_pay           _distrib_state;
-
+            distrib_state_singleton _distrib_singleton;
+            distrib_state           _distrib_state;
+            claimer_table           _claimers;
             void donate_to_rex(const asset& amount);
 
-    }; // saving_contract
+    }; // distrb_contract
 
-} // ns eosiosaving
+} // ns eosiodistrb
