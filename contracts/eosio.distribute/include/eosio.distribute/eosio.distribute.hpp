@@ -7,7 +7,7 @@
 #include <eosio/singleton.hpp>
 #include <eosio.system/eosio.system.hpp>
 
-namespace eosiodistrb {
+namespace eosiodistribute {
     using eosiosystem::system_contract;
     using eosio::asset;
     using eosio::check;
@@ -42,12 +42,12 @@ namespace eosiodistrb {
     /**
      * 
      **/
-    class [[eosio::contract("eosio.distribute")]] distrbute_contract : public contract {
+    class [[eosio::contract("eosio.distribute")]] distribute_contract : public contract {
         using contract::contract;
 
         public:
-            distrbute_contract( name s, name code, datastream<const char*> ds );
-            ~distrbute_contract() {} 
+            distribute_contract( name s, name code, datastream<const char*> ds );
+            ~distribute_contract() {} 
 
             /**
              * 
@@ -75,4 +75,4 @@ namespace eosiodistrb {
 
     }; // distrb_contract
 
-} // ns eosiodistrb
+} // ns eosiodistribute

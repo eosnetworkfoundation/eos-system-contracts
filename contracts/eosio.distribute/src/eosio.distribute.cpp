@@ -1,10 +1,10 @@
 #include <eosio.distribute/eosio.distribute.hpp>
 #include <eosio.token/eosio.token.hpp>
 
-namespace eosiodistrb {
+namespace eosiodistribute {
     using eosio::token;
 
-    distrbute_contract::distrbute_contract( name s, name code, datastream<const char*> ds )
+    distribute_contract::distribute_contract( name s, name code, datastream<const char*> ds )
     :contract(s,code,ds),
     _distrib_singleton(get_self(), get_self().value),
     _claimers(get_self(), get_self().value)
@@ -12,12 +12,12 @@ namespace eosiodistrb {
         _distrib_state = _distrib_singleton.exists() ? _distrib_singleton.get() : distrib_state{};
     }
     
-    void distrbute_contract::donate_to_rex(const asset& amount, const std::string& memo) {
+    void distribute_contract::donate_to_rex(const asset& amount, const std::string& memo) {
         system_contract::donatetorex_action donate_action{ system_account, { get_self(), system_contract::active_permission } };
         donate_action.send( get_self(), amount, memo );
     }
 
-    void distrbute_contract::setdistrib(const std::vector<distribute_account>& accounts) {
+    void distribute_contract::setdistrib(const std::vector<distribute_account>& accounts) {
         require_auth(get_self());
         
         if( accounts.size() > 0 ){
@@ -35,11 +35,11 @@ namespace eosiodistrb {
         // set accounts
         auto& accts = _distrib_state.accounts;
         accts = accounts;
-            
+
         _distrib_singleton.set( _distrib_state, get_self() );
    }
 
-    void distrbute_contract::claimdistrib(const name& claimer) {
+    void distribute_contract::claimdistrib(const name& claimer) {
         require_auth(claimer);
 
         auto citr = _claimers.find(claimer.value);
@@ -51,7 +51,7 @@ namespace eosiodistrb {
         _claimers.erase(citr);
     }
 
-   void distrbute_contract::distribute(name from, name to, asset quantity, eosio::ignore<std::string> memo) {
+   void distribute_contract::distribute(name from, name to, asset quantity, eosio::ignore<std::string> memo) {
        if (to != get_self())
            return;
         check(quantity.symbol == eosiosystem::system_contract::get_core_symbol(), "Invalid symbol");
@@ -91,4 +91,4 @@ namespace eosiodistrb {
         }
    }
 
-} // ns eosiodistrb
+} // ns eosiodistribute
