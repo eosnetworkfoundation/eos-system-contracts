@@ -20,20 +20,22 @@ namespace eosiodistrb {
     void distrbute_contract::setdistrib(const std::vector<distribute_account>& accounts) {
         require_auth(get_self());
         
-        int64_t remaining_pct = max_distrib_pct;
-        for( distribute_account acct : accounts ) {
-            check(acct.account != get_self(), "Cannot set account to " + get_self().to_string() );
-            check(0 < acct.percent, "Only positive percentages are allowed");
-            check(acct.percent <= remaining_pct, "Total percentage exceeds 100%");
-            remaining_pct -= acct.percent;
-            if(acct.account == rex_account)
-                donate_to_rex(asset(0, system_contract::get_core_symbol()), "rex enabled check" );
+        if( accounts.size() > 0 ){
+            int64_t remaining_pct = max_distrib_pct;
+            for( distribute_account acct : accounts ) {
+                check(acct.account != get_self(), "Cannot set account to " + get_self().to_string() );
+                check(0 < acct.percent, "Only positive percentages are allowed");
+                check(acct.percent <= remaining_pct, "Total percentage exceeds 100%");
+                remaining_pct -= acct.percent;
+                if(acct.account == rex_account)
+                    donate_to_rex(asset(0, system_contract::get_core_symbol()), "rex enabled check" );
+            }
+            check(remaining_pct == 0, "Total percentage does not equal 100%");
         }
-        check(remaining_pct == 0, "Total percentage does not equal 100%");
         // set accounts
         auto& accts = _distrib_state.accounts;
         accts = accounts;
-
+            
         _distrib_singleton.set( _distrib_state, get_self() );
    }
 
