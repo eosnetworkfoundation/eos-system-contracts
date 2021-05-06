@@ -21,7 +21,7 @@ namespace eosiodistribute {
         require_auth(get_self());
         
         if( accounts.size() > 0 ){
-            int64_t remaining_pct = max_distrib_pct;
+            int64_t remaining_pct = max_distribute_pct;
             for( distribute_account acct : accounts ) {
                 check(acct.account != get_self(), "Cannot set account to " + get_self().to_string() );
                 check(is_account(acct.account), "Acount does not exist: " + acct.account.to_string() );
@@ -64,7 +64,7 @@ namespace eosiodistribute {
                 if( remaining.amount == 0 ) {
                     break;
                 }
-                asset dist_amount = quantity * acct.percent / max_distrib_pct;
+                asset dist_amount = quantity * acct.percent / max_distribute_pct;
 
                 if( remaining < dist_amount )
                     dist_amount = remaining;

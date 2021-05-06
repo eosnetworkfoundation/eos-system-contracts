@@ -15,7 +15,7 @@ namespace eosiodistribute {
     using eosio::name;
     using eosio::datastream;
     
-    static constexpr int64_t max_distrib_pct = 100 * eosiosystem::inflation_precision; // 100%
+    static constexpr int64_t max_distribute_pct = 100 * eosiosystem::inflation_precision; // 100%
     static constexpr name system_account = "eosio"_n;
     static constexpr name rex_account = system_contract::rex_account;
 
@@ -24,21 +24,21 @@ namespace eosiodistribute {
         uint16_t    percent;
     };
 
-    struct [[eosio::table("distribstate") , eosio::contract("eosio.distrb")]] distrib_state {
+    struct [[eosio::table("state") , eosio::contract("eosio.distribute")]] distrib_state {
         std::vector<distribute_account>  accounts; // list of claimant accounts and their percentage of the distribution
 
         EOSLIB_SERIALIZE (distrib_state, (accounts))
     };
 
-    using distrib_state_singleton = eosio::singleton< "distribstate"_n, distrib_state >;
+    using distribute_state_singleton = eosio::singleton< "state"_n, distrib_state >;
     
-    struct [[eosio::table("distribclaim") , eosio::contract("eosio.distrb")]] distrbute_claimer {
+    struct [[eosio::table("claimers") , eosio::contract("eosio.distribute")]] distribute_claimer {
         name        account;    // account that can claim the distribution
         asset       balance;    // current balance of the claimant account
 
         uint64_t    primary_key() const { return account.value; }
     };
-    using claimer_table = eosio::multi_index<"claimers"_n, distrbute_claimer>;
+    using claimer_table = eosio::multi_index<"claimers"_n, distribute_claimer>;
     
     /**
      * A reference contract for distributing received `core tokens` to accounts. Special consideration
@@ -80,7 +80,7 @@ namespace eosiodistribute {
             void distribute(name from, name to, asset quantity, eosio::ignore<std::string> memo);
             
         private:
-            distrib_state_singleton _distrib_singleton;
+            distribute_state_singleton _distrib_singleton;
             distrib_state           _distrib_state;
             claimer_table           _claimers;
             void donate_to_rex(const asset& amount, const std::string& memo);
