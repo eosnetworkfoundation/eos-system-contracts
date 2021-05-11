@@ -694,8 +694,8 @@ namespace eosiosystem {
          static constexpr symbol ram_symbol     = symbol(symbol_code("RAM"), 0);
          static constexpr symbol rex_symbol     = symbol(symbol_code("REX"), 4);
 
-         #ifdef USE_INFLATION_DISTRIB
-            const inline static name inflation_account = "eosio.ditrib"_n;
+         #ifdef USE_INFLATION_DISTRIBUTE
+            const inline static name inflation_account = "eosio.dist"_n;
          #else
             const inline static name inflation_account = "eosio.saving"_n;
          #endif
@@ -1298,7 +1298,7 @@ namespace eosiosystem {
           *     (eg. For 5% Annual inflation => annual_rate=500
           *          For 1.5% Annual inflation => annual_rate=150
           * @param inflation_pay_factor - Inverse of the fraction of the inflation used to reward block producers.
-          *     The remaining inflation will be sent to either `eosio.saving` or `eosio.distrb` (if compiled with USE_INFLATION_DISTRIB). 
+          *     The remaining inflation will be sent to either `eosio.saving` or `eosio.dist` (if compiled with USE_INFLATION_DISTRIBUTE). 
           *     (eg. For 20% of inflation going to block producer rewards   => inflation_pay_factor = 50000
           *          For 100% of inflation going to block producer rewards  => inflation_pay_factor = 10000).
           * @param votepay_factor - Inverse of the fraction of the block producer rewards to be distributed proportional to blocks produced.
