@@ -41,3 +41,7 @@ set_target_properties(powup.results
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/ricardian/eosio.system.contracts.md.in ${CMAKE_CURRENT_BINARY_DIR}/ricardian/eosio.system.contracts.md @ONLY )
 
 target_compile_options( eosio.system PUBLIC -R${CMAKE_CURRENT_SOURCE_DIR}/ricardian -R${CMAKE_CURRENT_BINARY_DIR}/ricardian )
+
+if(USE_INFLATION_DISTRIBUTE)
+   target_compile_definitions(eosio.system PUBLIC -DUSE_INFLATION_DISTRIBUTE)
+endif()
