@@ -30,6 +30,11 @@ enable_testing()
 # build unit test executable
 file(GLOB UNIT_TESTS "*.cpp" "*.hpp") # find all unit test suites
 add_eosio_test_executable(unit_test ${UNIT_TESTS}) # build unit tests as one executable
+
+if(USE_INFLATION_DISTRIBUTE)
+   target_compile_definitions(unit_test PUBLIC -DUSE_INFLATION_DISTRIBUTE)
+endif()
+
 # mark test suites for execution
 foreach(TEST_SUITE ${UNIT_TESTS}) # create an independent target for each test suite
   execute_process(COMMAND bash -c "grep -E 'BOOST_AUTO_TEST_SUITE\\s*[(]' ${TEST_SUITE} | grep -vE '//.*BOOST_AUTO_TEST_SUITE\\s*[(]' | cut -d ')' -f 1 | cut -d '(' -f 2" OUTPUT_VARIABLE SUITE_NAME OUTPUT_STRIP_TRAILING_WHITESPACE) # get the test suite name from the *.cpp file

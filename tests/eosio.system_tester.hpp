@@ -23,6 +23,12 @@ using mvo = fc::mutable_variant_object;
 #endif
 #endif
 
+#ifdef USE_INFLATION_DISTRIBUTE
+   const inline static name inflation_account = N(eosio.dist);
+#else
+   const inline static name inflation_account = N(eosio.saving);
+#endif
+
 namespace eosio_system {
 
 
@@ -33,7 +39,7 @@ public:
       produce_blocks( 2 );
 
       create_accounts({ N(eosio.token), N(eosio.ram), N(eosio.ramfee), N(eosio.stake),
-               N(eosio.bpay), N(eosio.vpay), N(eosio.saving), N(eosio.names), N(eosio.rex) });
+               N(eosio.bpay), N(eosio.vpay), N(eosio.saving), N(eosio.dist), N(eosio.names), N(eosio.rex) });
 
 
       produce_blocks( 100 );
