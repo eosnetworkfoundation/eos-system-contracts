@@ -14,6 +14,8 @@ struct contracts {
    static std::vector<char>    wrap_abi() { return read_abi("${CMAKE_BINARY_DIR}/../contracts/eosio.wrap/eosio.wrap.abi"); }
    static std::vector<uint8_t> bios_wasm() { return read_wasm("${CMAKE_BINARY_DIR}/../contracts/eosio.bios/eosio.bios.wasm"); }
    static std::vector<char>    bios_abi() { return read_abi("${CMAKE_BINARY_DIR}/../contracts/eosio.bios/eosio.bios.abi"); }
+   static std::vector<uint8_t> distribute_wasm() { return read_wasm("${CMAKE_BINARY_DIR}/../contracts/eosio.distribute/eosio.distribute.wasm"); }
+   static std::vector<char>    distribute_abi() { return read_abi("${CMAKE_BINARY_DIR}/../contracts/eosio.distribute/eosio.distribute.abi"); }
 
    struct util {
       static std::vector<uint8_t> reject_all_wasm() { return read_wasm("${CMAKE_SOURCE_DIR}/test_contracts/reject_all.wasm"); }
