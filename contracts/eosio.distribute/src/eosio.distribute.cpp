@@ -24,7 +24,7 @@ namespace eosiodistribute {
             int64_t remaining_pct = max_distribute_pct;
             for( distribute_account acct : accounts ) {
                 check(acct.account != get_self(), "Cannot set account to " + get_self().to_string() );
-                check(is_account(acct.account), "Acount does not exist: " + acct.account.to_string() );
+                check(is_account(acct.account), "Account does not exist: " + acct.account.to_string() );
                 check(0 < acct.percent, "Only positive percentages are allowed");
                 check(acct.percent <= remaining_pct, "Total percentage exceeds 100%");
                 remaining_pct -= acct.percent;
