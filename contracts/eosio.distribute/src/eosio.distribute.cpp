@@ -9,7 +9,7 @@ namespace eosiodistribute {
     _distrib_singleton(get_self(), get_self().value),
     _claimers(get_self(), get_self().value)
     {
-        _distrib_state = _distrib_singleton.exists() ? _distrib_singleton.get() : distrib_state{};
+        _distrib_state = _distrib_singleton.exists() ? _distrib_singleton.get() : distribute_state{};
     }
     
     void distribute_contract::donate_to_rex(const asset& amount, const std::string& memo) {

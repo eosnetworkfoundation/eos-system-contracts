@@ -24,13 +24,13 @@ namespace eosiodistribute {
         uint16_t    percent;
     };
 
-    struct [[eosio::table("state") , eosio::contract("eosio.distribute")]] distrib_state {
+    struct [[eosio::table("state") , eosio::contract("eosio.distribute")]] distribute_state {
         std::vector<distribute_account>  accounts; // list of claimant accounts and their percentage of the distribution
 
-        EOSLIB_SERIALIZE (distrib_state, (accounts))
+        EOSLIB_SERIALIZE (distribute_state, (accounts))
     };
 
-    using distribute_state_singleton = eosio::singleton< "state"_n, distrib_state >;
+    using distribute_state_singleton = eosio::singleton< "state"_n, distribute_state >;
     
     struct [[eosio::table("claimers") , eosio::contract("eosio.distribute")]] distribute_claimer {
         name        account;    // account that can claim the distribution
@@ -81,8 +81,8 @@ namespace eosiodistribute {
             
         private:
             distribute_state_singleton _distrib_singleton;
-            distrib_state           _distrib_state;
-            claimer_table           _claimers;
+            distribute_state           _distrib_state;
+            claimer_table              _claimers;
             void donate_to_rex(const asset& amount, const std::string& memo);
 
     }; // distrb_contract
