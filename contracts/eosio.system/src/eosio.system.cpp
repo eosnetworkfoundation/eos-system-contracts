@@ -358,7 +358,8 @@ namespace eosiosystem {
       set_resource_limits( newact, 0, 0, 0 );
    }
 
-   void native::setabi( const name& acnt, const std::vector<char>& abi ) {
+   void native::setabi( const name& acnt, const std::vector<char>& abi,
+                        const binary_extension<std::string>& memo ) {
       eosio::multi_index< "abihash"_n, abi_hash >  table(get_self(), get_self().value);
       auto itr = table.find( acnt.value );
       if( itr == table.end() ) {
