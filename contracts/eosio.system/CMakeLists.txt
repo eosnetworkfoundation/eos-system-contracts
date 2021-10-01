@@ -8,6 +8,7 @@ add_contract(eosio.system eosio.system
    ${CMAKE_CURRENT_SOURCE_DIR}/src/powerup.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/src/rex.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/src/voting.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/src/limit_auth_changes.cpp
 )
 
 target_include_directories(eosio.system

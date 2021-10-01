@@ -1328,6 +1328,24 @@ namespace eosiosystem {
          [[eosio::action]]
          void powerup( const name& payer, const name& receiver, uint32_t days, int64_t net_frac, int64_t cpu_frac, const asset& max_payment );
 
+         /**
+          * limitauthchg opts into or out of restrictions on updateauth, deleteauth, linkauth, and unlinkauth.
+          *
+          * If either allow_perms or disallow_perms is non-empty, then opts into restrictions. If
+          * allow_perms is non-empty, then the authorized_by argument of the restricted actions must be in
+          * the vector, or the actions will abort. If disallow_perms is non-empty, then the authorized_by
+          * argument of the restricted actions must not be in the vector, or the actions will abort.
+          *
+          * If both allow_perms and disallow_perms are empty, then opts out of the restrictions. limitauthchg
+          * aborts if both allow_perms and disallow_perms are non-empty.
+          *
+          * @param account - account to change
+          * @param allow_perms - permissions which may use the restricted actions
+          * @param disallow_perms - permissions which may not use the restricted actions
+          */
+         [[eosio::action]]
+         void limitauthchg( const name& account, const std::vector<name>& allow_perms, const std::vector<name>& disallow_perms );
+
          using init_action = eosio::action_wrapper<"init"_n, &system_contract::init>;
          using setacctram_action = eosio::action_wrapper<"setacctram"_n, &system_contract::setacctram>;
          using setacctnet_action = eosio::action_wrapper<"setacctnet"_n, &system_contract::setacctnet>;
