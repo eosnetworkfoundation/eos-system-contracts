@@ -239,6 +239,9 @@ BOOST_FIXTURE_TEST_CASE(allow_perms_tests, limitauth_tester) try {
       "missing authority of alice1111111",
       limitauthchg({bob, active}, alice, {owner, active, admin}, {}));
    BOOST_REQUIRE_EQUAL(
+      "allow_perms does not contain owner",
+      limitauthchg({alice, active}, alice, {active, admin}, {}));
+   BOOST_REQUIRE_EQUAL(
       "",
       limitauthchg({alice, active}, alice, {owner, active, admin}, {}));
 
@@ -370,6 +373,9 @@ BOOST_FIXTURE_TEST_CASE(disallow_perms_tests, limitauth_tester) try {
    BOOST_REQUIRE_EQUAL(
       "missing authority of alice1111111",
       limitauthchg({bob, active}, alice, {}, {freebie, freebie2}));
+   BOOST_REQUIRE_EQUAL(
+      "disallow_perms contains owner",
+      limitauthchg({alice, active}, alice, {}, {freebie, owner, freebie2}));
    BOOST_REQUIRE_EQUAL(
       "",
       limitauthchg({alice, active}, alice, {}, {freebie, freebie2}));
