@@ -1,41 +1,83 @@
-# eosio.contracts
+# Mandel Contracts
 
-## Version : 1.9.2
+## Repo organization
 
-The design of the EOSIO blockchain calls for a number of smart contracts that are run at a privileged permission level in order to support functions such as block producer registration and voting, token staking for CPU and network bandwidth, RAM purchasing, multi-sig, etc.  These smart contracts are referred to as the bios, system, msig, wrap (formerly known as sudo) and token contracts.
+Current development is on the `main` branch. There aren't any releases yet; they'll eventually be on release branches.
 
-This repository contains examples of these privileged contracts that are useful when deploying, managing, and/or using an EOSIO blockchain.  They are provided for reference purposes:
+## Supported Operating Systems
 
-   * [eosio.bios](./contracts/eosio.bios)
-   * [eosio.system](./contracts/eosio.system)
-   * [eosio.msig](./contracts/eosio.msig)
-   * [eosio.wrap](./contracts/eosio.wrap)
+To speed up development, we're starting with **Ubuntu 20.04**. We'll support additional operating systems as time and personnel allow. In the mean time, they may break.
 
-The following unprivileged contract(s) are also part of the system.
-   * [eosio.token](./contracts/eosio.token)
+## Building
 
-Dependencies:
-* [eosio.cdt v1.7.x](https://github.com/EOSIO/eosio.cdt/releases/tag/v1.7.0)
-* [eosio v2.0.x](https://github.com/EOSIO/eos/releases/tag/v2.0.8) (optional dependency only needed to build unit tests)
+To speed up development and reduce support overhead, we're initially only supporting the following build approach. CMake options not listed here may break. Build scripts may break. Dockerfiles may break.
 
-## Build
+### Ubuntu 20.04 dependencies
 
-To build the contracts follow the instructions in [Build and deploy](https://developers.eos.io/manuals/eosio.contracts/latest/build-and-deploy) section.
+```
+apt-get update && apt-get install   \
+        binaryen                    \
+        build-essential             \
+        ccache                      \
+        cmake                       \
+        curl                        \
+        git                         \
+        libboost-all-dev            \
+        libcurl4-openssl-dev        \
+        libgmp-dev                  \
+        libssl-dev                  \
+        libtinfo5                   \
+        libusb-1.0-0-dev            \
+        libzstd-dev                 \
+        llvm-11-dev                 \
+        npm                         \
+        ninja-build                 \
+        pkg-config                  \
+        time
 
-## Contributing
+#
+# Install CDT v1.7.0
+#
+curl -LO https://github.com/EOSIO/eosio.cdt/releases/download/v1.7.0/eosio.cdt_1.7.0-1-ubuntu-18.04_amd64.deb
+dpkg -i eosio.cdt_1.7.0-1-ubuntu-18.04_amd64.deb
 
-[Contributing Guide](./CONTRIBUTING.md)
+#
+# Build Mandel from sources. Not needed if you use
+# -DBUILD_TESTS=no
+#
+mkdir -p ~/work
+cd ~/work
+git clone https://github.com/eosnetworkfoundation/mandel.git
+cd mandel
+git submodule update --init --recursive
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DDISABLE_WASM_SPEC_TESTS=yes ..
+make -j $(nproc)
+```
 
-[Code of Conduct](./CONTRIBUTING.md#conduct)
+### Building
 
-## License
+```
+# Where you built Mandel
+export PATH=~/work/mandel/build/bin:$PATH
 
-[MIT](./LICENSE)
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=yes ..
+make -j $(nproc)
+```
 
-The included icons are provided under the same terms as the software and accompanying documentation, the MIT License.  We welcome contributions from the artistically-inclined members of the community, and if you do send us alternative icons, then you are providing them under those same terms.
+We support the following CMake options:
+```
+-DCMAKE_BUILD_TYPE=DEBUG      Debug builds
+-DBUILD_TESTS=no              Don't build the tests; it
+                              builds much faster without them
+```
 
-## Important
+### Running tests
 
-See [LICENSE](./LICENSE) for copyright and license terms.
-
-All repositories and other materials are provided subject to the terms of this [IMPORTANT](./IMPORTANT.md) notice and you must familiarize yourself with its terms.  The notice contains important information, limitations and restrictions relating to our software, publications, trademarks, third-party resources, and forward-looking statements.  By accessing any of our repositories and other materials, you accept and agree to the terms of the notice.
+```
+cd build/tests
+ctest -j $(nproc)
+```
