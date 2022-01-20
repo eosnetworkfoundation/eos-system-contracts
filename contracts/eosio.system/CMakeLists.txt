@@ -1,3 +1,5 @@
+set(EOSIO_SYSTEM_CONFIGURABLE_WASM_LIMITS Yes CACHE STRING "Enables use of the host functions activated by the CONFIGURABLE_WASM_LIMITS protocol feature")
+
 add_contract(eosio.system eosio.system
    ${CMAKE_CURRENT_SOURCE_DIR}/src/eosio.system.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/src/delegate_bandwidth.cpp
@@ -9,6 +11,10 @@ add_contract(eosio.system eosio.system
    ${CMAKE_CURRENT_SOURCE_DIR}/src/rex.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/src/voting.cpp
 )
+
+if(EOSIO_SYSTEM_CONFIGURABLE_WASM_LIMITS)
+  target_compile_definitions(eosio.system PUBLIC EOSIO_SYSTEM_CONFIGURABLE_WASM_LIMITS)
+endif()
 
 target_include_directories(eosio.system
    PUBLIC
