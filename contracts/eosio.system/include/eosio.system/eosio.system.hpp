@@ -1225,6 +1225,7 @@ namespace eosiosystem {
           * "default" (equivalent to low), and "high".  A value of "high"
           * allows larger contracts to be deployed.
           */
+         [[eosio::action]]
          void wasmcfg( const name& settings );
 #endif
 
