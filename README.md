@@ -70,9 +70,13 @@ make -j $(nproc)
 
 We support the following CMake options:
 ```
--DCMAKE_BUILD_TYPE=DEBUG      Debug builds
--DBUILD_TESTS=no              Don't build the tests; it
-                              builds much faster without them
+-DCMAKE_BUILD_TYPE=DEBUG                    Debug builds
+-DBUILD_TESTS=no                            Don't build the tests; it
+                                            builds much faster without them
+-DEOSIO_SYSTEM_CONFIGURABLE_WASM_LIMITS=no  Disables use of the CONFIGURABLE_WASM_LIMITS
+                                            protocol feature
+-DEOSIO_SYSTEM_BLOCKCHAIN_PARAMETERS=no     Disables use of the BLOCKCHAIN_PARAMETERS
+                                            protocol feature
 ```
 
 ### Running tests
