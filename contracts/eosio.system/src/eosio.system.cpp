@@ -109,11 +109,50 @@ namespace eosiosystem {
       _gstate2.new_ram_per_block = bytes_per_block;
    }
 
-   void system_contract::setparams( const eosio::blockchain_parameters& params ) {
+#ifdef EOSIO_SYSTEM_BLOCKCHAIN_PARAMETERS
+   extern "C" [[eosio::wasm_import]] void set_parameters_packed(const void*, size_t);
+#endif
+
+   void system_contract::setparams( const blockchain_parameters_t& params ) {
       require_auth( get_self() );
       (eosio::blockchain_parameters&)(_gstate) = params;
       check( 3 <= _gstate.max_authority_depth, "max_authority_depth should be at least 3" );
+#ifndef EOSIO_SYSTEM_BLOCKCHAIN_PARAMETERS
       set_blockchain_parameters( params );
+#else
+      constexpr size_t param_count = 18;
+      // an upper bound on the serialized size
+      char buf[sizeof(params) + param_count];
+      datastream<char*> stream(buf, sizeof(buf));
+
+      stream << uint8_t(17);
+      stream << uint8_t(0) << params.max_block_net_usage
+             << uint8_t(1) << params.target_block_net_usage_pct
+             << uint8_t(2) << params.max_transaction_net_usage
+             << uint8_t(3) << params.base_per_transaction_net_usage
+             << uint8_t(4) << params.net_usage_leeway
+             << uint8_t(5) << params.context_free_discount_net_usage_num
+             << uint8_t(6) << params.context_free_discount_net_usage_den
+
+             << uint8_t(7) << params.max_block_cpu_usage
+             << uint8_t(8) << params.target_block_cpu_usage_pct
+             << uint8_t(9) << params.max_transaction_cpu_usage
+             << uint8_t(10) << params.min_transaction_cpu_usage
+
+             << uint8_t(11) << params.max_transaction_lifetime
+             << uint8_t(12) << params.deferred_trx_expiration_window
+             << uint8_t(13) << params.max_transaction_delay
+             << uint8_t(14) << params.max_inline_action_size
+             << uint8_t(15) << params.max_inline_action_depth
+             << uint8_t(16) << params.max_authority_depth;
+      if(params.max_action_return_value_size)
+      {
+         stream << uint8_t(17) << params.max_action_return_value_size.value();
+         ++buf[0];
+      }
+
+      set_parameters_packed(buf, stream.tellp());
+#endif
    }
 
 #ifdef EOSIO_SYSTEM_CONFIGURABLE_WASM_LIMITS

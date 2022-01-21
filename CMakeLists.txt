@@ -47,6 +47,8 @@ endif()
 
 set(EOSIO_SYSTEM_CONFIGURABLE_WASM_LIMITS Yes CACHE STRING "Enables use of the host functions activated by the CONFIGURABLE_WASM_LIMITS protocol feature")
 
+set(EOSIO_SYSTEM_BLOCKCHAIN_PARAMETERS Yes CACHE STRING "Enables use of the host functions activated by the BLOCKCHAIN_PARAMETERS protocol feature")
+
 ExternalProject_Add(
    contracts_project
    SOURCE_DIR ${CMAKE_SOURCE_DIR}/contracts
@@ -54,6 +56,7 @@ ExternalProject_Add(
    CMAKE_ARGS
       -DCMAKE_TOOLCHAIN_FILE=${EOSIO_CDT_ROOT}/lib/cmake/eosio.cdt/EosioWasmToolchain.cmake
       -DEOSIO_SYSTEM_CONFIGURABLE_WASM_LIMITS=${EOSIO_SYSTEM_CONFIGURABLE_WASM_LIMITS}
+      -DEOSIO_SYSTEM_BLOCKCHAIN_PARAMETERS=${EOSIO_SYSTEM_BLOCKCHAIN_PARAMETERS}
    UPDATE_COMMAND ""
    PATCH_COMMAND ""
    TEST_COMMAND ""
