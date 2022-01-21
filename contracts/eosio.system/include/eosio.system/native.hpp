@@ -297,9 +297,10 @@ namespace eosiosystem {
           *
           * @param account - the account for which to set the contract abi.
           * @param abi - the abi content to be set, in the form of a blob binary.
+          * @param memo - may be omitted
           */
          [[eosio::action]]
-         void setabi( const name& account, const std::vector<char>& abi );
+         void setabi( const name& account, const std::vector<char>& abi, const binary_extension<std::string>& memo );
 
          /**
           * Set code action sets the contract code for an account.
@@ -308,9 +309,11 @@ namespace eosiosystem {
           * @param vmtype - reserved, set it to zero.
           * @param vmversion - reserved, set it to zero.
           * @param code - the code content to be set, in the form of a blob binary..
+          * @param memo - may be omitted
           */
          [[eosio::action]]
-         void setcode( const name& account, uint8_t vmtype, uint8_t vmversion, const std::vector<char>& code ) {}
+         void setcode( const name& account, uint8_t vmtype, uint8_t vmversion, const std::vector<char>& code,
+                       const binary_extension<std::string>& memo ) {}
 
          using newaccount_action = eosio::action_wrapper<"newaccount"_n, &native::newaccount>;
          using updateauth_action = eosio::action_wrapper<"updateauth"_n, &native::updateauth>;
