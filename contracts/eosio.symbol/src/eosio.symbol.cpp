@@ -93,29 +93,48 @@ void symb::withdraw( const name& owner, const extended_asset& amount )
     check(amount.quantity.amount > 0, "withdrawal must be above 0");
     check(itr->balance >= amount.quantity, "insufficient balance");
 
-    action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, std::make_tuple(_self, owner, amount, string("refund")))
+    action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, std::make_tuple(_self, owner, amount.quantity, string("refund")))
         .send();
 
     sub_balance(owner, amount.quantity);
 }
 
-void symb::addsym( const uint32_t& symlen, const asset& price )
+void symb::setsym( const uint32_t& symlen, 
+                   const asset&    price, 
+                   const asset&    floor,
+                   const uint32_t& increase_threshold, 
+                   const uint32_t& decrease_threshold, 
+                   const uint32_t& window )
 {
     require_auth(get_self());
+
+    check(price.symbol == EOS_SYMBOL && floor.symbol == EOS_SYMBOL, "invalid token symbol");
 
     symconfig_table symconfigs( get_self(), get_self().value );
     const auto& itr = symconfigs.find( symlen ); 
 
-    // decrease threshold
-    // increase threshold
-    // window amount time in seconds
-
-    symconfigs.emplace( get_self(), [&](auto& s) {
-        s.symbol_length = symlen;
-        s.price = price;
-        s.last_updated = current_time_point();
-        s.minted_since_update = 0;
-    });
+    if (itr == symconfigs.end()) {
+      symconfigs.emplace( get_self(), [&](auto& s) {
+          s.symbol_length = symlen;
+          s.price = price;
+          s.floor = floor;
+          s.window_start = current_time_point();
+          s.minted_in_window = 0;
+          s.increase_threshold = increase_threshold;
+          s.decrease_threshold = decrease_threshold;
+          s.window_duration = window;
+      });
+    } else {
+      symconfigs.modify( itr, same_payer, [&](auto& s) {
+          s.price = price;
+          s.floor = floor;
+          s.window_start = current_time_point();
+          s.minted_in_window = 0;
+          s.increase_threshold = increase_threshold;
+          s.decrease_threshold = decrease_threshold;
+          s.window_duration = window;
+      });
+    }
 }
 
 void symb::setowner( const name&          to,
@@ -161,56 +180,70 @@ void symb::purchase( const name&         buyer,
     auto itr = symconfigs.find( newsymbol.length() );
     check(itr != symconfigs.end(), "sym len not for sale");
 
-    asset adjusted_price = itr->price;
-
-    const uint64_t time_elasped = current_time_point().sec_since_epoch() - itr->last_updated.sec_since_epoch();
-
-    const bool in_time_threshold = time_elasped < DAY;
-
-    if (in_time_threshold) {
-        if (itr->minted_since_update > INCREASE_THRESHOLD) {
-          symconfigs.modify(itr, same_payer, [&](auto& a) {
-            a.minted_since_update = 0;
-            a.last_updated = current_time_point();
-            a.price = asset(adjusted_price.amount * 1.1, EOS_SYMBOL);
-          });
-        } else {
-          symconfigs.modify(itr, same_payer, [&](auto& a) {
-            a.minted_since_update += 1;
-          });
-        }
-    } else {
-        if (itr->minted_since_update < DECREASE_THRESHOLD) {
-            const uint64_t days_elasped = time_elasped / DAY;
-            const asset lowered_price = asset(itr->price.amount * pow(0.9, days_elasped), EOS_SYMBOL);
-            adjusted_price = lowered_price;
-            symconfigs.modify(itr, same_payer, [&](auto& a) {
-              a.minted_since_update = 1;
-              a.last_updated = current_time_point();
-              a.price = lowered_price;
-            }); 
-        } else {
-            symconfigs.modify(itr, same_payer, [&](auto& a) {
-              a.minted_since_update = 1;
-              a.last_updated = current_time_point();
-            }); 
-        }
-    }
-
-    check(amount >= adjusted_price, "insufficient purchase amount");
-    
     symbols.emplace( get_self(), [&](auto& s) {
         s.symbol_name = newsymbol;
         s.owner = buyer;
         s.sale_price = asset(0, EOS_SYMBOL);
     });
 
+    if (buyer == get_self()) return;
+
+    asset adjusted_price = itr->price;
+
+    const uint64_t time_elasped = current_time_point().sec_since_epoch() - itr->window_start.sec_since_epoch();
+
+    uint32_t decrease_threshold = itr->decrease_threshold;
+    uint32_t increase_threshold = itr->increase_threshold;
+    uint32_t window = itr->window_duration;
+    asset floor = itr->floor;
+
+    const bool within_window = time_elasped < window;
+
+    if (within_window) {
+      if (itr->minted_in_window > increase_threshold) {
+        const asset raised_price = asset(adjusted_price.amount * 1.1, EOS_SYMBOL);
+
+        symconfigs.modify(itr, same_payer, [&](auto& a) {
+          a.minted_in_window = 0;
+          a.window_start = current_time_point();
+          a.price = raised_price == asset(0, EOS_SYMBOL) ? asset(1000, EOS_SYMBOL) : raised_price;
+        });
+      } else {
+        symconfigs.modify(itr, same_payer, [&](auto& a) {
+          a.minted_in_window += 1;
+        });
+      }
+    } else {
+      if (itr->minted_in_window < decrease_threshold) {
+        const uint64_t windows_elasped = time_elasped / window;
+        const int64_t lowered_amount = itr->price.amount * pow(0.9, windows_elasped);
+        const asset lowered_price = asset(std::max(lowered_amount, floor.amount), EOS_SYMBOL);
+        adjusted_price = lowered_price;
+        symconfigs.modify(itr, same_payer, [&](auto& a) {
+          a.minted_in_window = 1;
+          a.window_start = current_time_point();
+          a.price = lowered_price;
+        }); 
+      } else {
+        symconfigs.modify(itr, same_payer, [&](auto& a) {
+          a.minted_in_window = 1;
+          a.window_start = current_time_point();
+        }); 
+      }
+    }
+
+    check(amount >= adjusted_price, "insufficient purchase amount");
+    
     sub_balance(buyer, adjusted_price);
 }
 
 
 void symb::add_balance( const name& owner, const asset& value, const name& ram_payer )
 {
+   if (value == asset(0, EOS_SYMBOL)) {
+     return;
+   }
+
    accounts_table accounts( get_self(), get_self().value );
    auto itr = accounts.find( owner.value );
 
@@ -227,6 +260,10 @@ void symb::add_balance( const name& owner, const asset& value, const name& ram_p
 }
 
 void symb::sub_balance( const name& owner, const asset& value ) {
+
+    if (value == asset(0, EOS_SYMBOL)) {
+      return;
+    }
 
     accounts_table accounts( get_self(), get_self().value );
     const auto& itr = accounts.find( owner.value ); 

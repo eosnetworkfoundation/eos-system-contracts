@@ -9,10 +9,6 @@
 #include <string>
 
 #define EOS_SYMBOL symbol("EOS", 4)
-static constexpr uint32_t DAY = 30; // 1 day in seconds
-static constexpr uint32_t DECREASE_THRESHOLD = 22; // symbol amount must be lower before warranting a price decrease
-static constexpr uint32_t INCREASE_THRESHOLD = 24; // symbol amount must be higher before warranting a price increase
-
 
 namespace eosiosystem {
    class system_contract;
@@ -111,16 +107,25 @@ namespace eosio {
          void setsalefee( const uint32_t fee );
 
         /**
-          * Begin selling symbols of a certain length for an initial price 
+          * Begin / adjust selling symbols of a certain length for an initial price
+          * Upsert behavior 
           * 
           * @param symlen - length of symbol
           * @param price - initial price of symbol
+          * @param floor - floor price of a symbol
+          * @param increase_threshold - amount of sales within window to raise price
+          * @param decreased_threshold - minimum amount of sales required before a price drop
+          * @param window - window of sale time
           * 
           * @pre must be contract account
           */
          [[eosio::action]]
-         void addsym( const uint32_t&  symlen, 
-                      const asset&     price );
+         void setsym( const uint32_t&  symlen,
+                      const asset&     price,
+                      const asset&     floor,
+                      const uint32_t&  increase_threshold,
+                      const uint32_t&  decrease_threshold,
+                      const uint32_t&  window );
 
 
         /**
@@ -143,7 +148,7 @@ namespace eosio {
          using purchase_action = eosio::action_wrapper<"purchase"_n, &symb::purchase>;
          using buysymbol_action = eosio::action_wrapper<"buysymbol"_n, &symb::buysymbol>;
          using sellsymbol_action = eosio::action_wrapper<"sellsymbol"_n, &symb::sellsymbol>;
-         using addsym_action = eosio::action_wrapper<"addsym"_n, &symb::addsym>;
+         using setsym_action = eosio::action_wrapper<"setsym"_n, &symb::setsym>;
          using setowner_action = eosio::action_wrapper<"setowner"_n, &symb::setowner>;
       
 
@@ -193,8 +198,12 @@ namespace eosio {
          struct [[eosio::table]] symconfig {
            uint32_t   symbol_length;
            asset      price;
-           time_point last_updated;
-           uint32_t   minted_since_update;
+           asset      floor;
+           time_point window_start;
+           uint32_t   window_duration;
+           uint32_t   minted_in_window;
+           uint32_t   increase_threshold;
+           uint32_t   decrease_threshold;
 
            uint32_t primary_key()const { return symbol_length; }
          };
