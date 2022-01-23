@@ -62,6 +62,7 @@ make -j $(nproc)
 # Where you built Mandel
 export PATH=~/work/mandel/build/bin:$PATH
 
+# cd to this contracts repo  
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=yes ..
