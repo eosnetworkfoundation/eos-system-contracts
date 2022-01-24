@@ -86,9 +86,9 @@ namespace eosiosystem {
          transfer_act.send( stake_account, rex_account, payment, "buy REX with staked tokens" );
       }
       const asset rex_received = add_to_rex_pool( payment );
-      add_to_rex_balance( owner, payment, rex_received );
+      auto rex_stake_delta = add_to_rex_balance( owner, payment, rex_received );
       runrex(2);
-      update_rex_account( owner, asset( 0, core_symbol() ), asset( 0, core_symbol() ), true );
+      update_rex_account( owner, asset( 0, core_symbol() ), rex_stake_delta - payment, true );
       // dummy action added so that amount of REX tokens purchased shows up in action trace
       rex_results::buyresult_action buyrex_act( rex_account, std::vector<eosio::permission_level>{ } );
       buyrex_act.send( rex_received );
