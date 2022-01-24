@@ -27,6 +27,7 @@
 namespace eosiosystem {
 
    using eosio::asset;
+   using eosio::binary_extension;
    using eosio::block_timestamp;
    using eosio::check;
    using eosio::const_mem_fun;
@@ -79,6 +80,18 @@ namespace eosiosystem {
    static constexpr int64_t  pay_factor_precision          = 10000;
    static constexpr int64_t  default_inflation_pay_factor  = 50000;   // producers pay share = 10000 / 50000 = 20% of the inflation
    static constexpr int64_t  default_votepay_factor        = 40000;   // per-block pay share = 10000 / 40000 = 25% of the producer pay
+
+#ifdef EOSIO_SYSTEM_BLOCKCHAIN_PARAMETERS
+   struct blockchain_parameters_v1 : eosio::blockchain_parameters
+   {
+      eosio::binary_extension<uint32_t> max_action_return_value_size;
+      EOSLIB_SERIALIZE_DERIVED( blockchain_parameters_v1, eosio::blockchain_parameters,
+                                (max_action_return_value_size) )
+   };
+   using blockchain_parameters_t = blockchain_parameters_v1;
+#else
+   using blockchain_parameters_t = eosio::blockchain_parameters;
+#endif
 
   /**
    * The `eosio.system` smart contract is provided by `block.one` as a sample system contract, and it defines the structures and actions needed for blockchain's core functionality.
@@ -1217,7 +1230,17 @@ namespace eosiosystem {
           * @param params - New blockchain parameters to set.
           */
          [[eosio::action]]
-         void setparams( const eosio::blockchain_parameters& params );
+         void setparams( const blockchain_parameters_t& params );
+
+#ifdef EOSIO_SYSTEM_CONFIGURABLE_WASM_LIMITS
+         /**
+          * Sets the webassembly limits.  Valid parameters are "low",
+          * "default" (equivalent to low), and "high".  A value of "high"
+          * allows larger contracts to be deployed.
+          */
+         [[eosio::action]]
+         void wasmcfg( const name& settings );
+#endif
 
          /**
           * Claim rewards action, claims block producing and vote rewards.
