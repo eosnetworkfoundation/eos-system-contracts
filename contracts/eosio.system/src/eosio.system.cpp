@@ -122,7 +122,7 @@ namespace eosiosystem {
 #else
       constexpr size_t param_count = 18;
       // an upper bound on the serialized size
-      char buf[sizeof(params) + param_count];
+      char buf[1 + sizeof(params) + param_count];
       datastream<char*> stream(buf, sizeof(buf));
 
       stream << uint8_t(17);
@@ -220,6 +220,10 @@ namespace eosiosystem {
       else if( settings == "high"_n )
       {
          set_wasm_parameters( high_limits );
+      }
+      else
+      {
+         check(false, "Unkown configuration");
       }
    }
 
