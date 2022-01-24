@@ -3859,10 +3859,10 @@ BOOST_FIXTURE_TEST_CASE( rex_rounding_issue, eosio_system_tester ) try {
             check_tables(acct);
          }
    }
-   // day 160 there is a divergence of voter.staked and (rex_bal + delband.cpu + delband.net)
+   // day 160 there was a divergence of voter.staked and (rex_bal + delband.cpu + delband.net)
    rent_and_go(160);
    for(auto& acct : accounts) {
-      check_tables(acct, true);
+      check_tables(acct, false);
    }
    // update vote
    std::vector<name> delegates = {};
