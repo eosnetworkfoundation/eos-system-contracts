@@ -24,10 +24,10 @@ void symb::create( const name&   issuer,
     check(st != symbols.end(), "symbol not found");
 
     require_auth(st->owner);
-    symbols.erase(st);
-    
     action(permission_level{_self, "active"_n}, "eosio.token"_n, "create"_n, std::make_tuple(issuer, maximum_supply))
       .send();
+    
+    symbols.erase(st);
 }
 
 void symb::buysymbol( const name buyer, const symbol_code& symbol )
@@ -53,7 +53,7 @@ void symb::buysymbol( const name buyer, const symbol_code& symbol )
     auto entry_stored = global_config.get_or_create(get_self(), configrow);
     const uint32_t fee_percent = entry_stored.fee_ppm;
 
-    const asset fee = asset((sale_price.amount * fee_percent) / 1000000, zero_eos.symbol);
+    const asset fee = asset((sale_price.amount * fee_percent) / 1000000, zero_eos.symbol); 
    
     symbols.modify(st, same_payer, [&](auto &col) {
         col.owner = buyer;
@@ -109,6 +109,9 @@ void symb::setsym( const uint32_t& symlen,
     require_auth(get_self());
 
     check(price.symbol == EOS_SYMBOL && floor.symbol == EOS_SYMBOL, "invalid token symbol");
+    check(window != 0, "window must be above 0 seconds");
+    check(increase_threshold > decrease_threshold, "increase threshold must be greater");
+    check(floor.amount >= 0 && price.amount >= 0, "floor and price must be equal or above 0");
 
     symconfig_table symconfigs( get_self(), get_self().value );
     const auto& itr = symconfigs.find( symlen ); 
@@ -186,6 +189,9 @@ void symb::purchase( const name&         buyer,
         s.sale_price = asset(0, EOS_SYMBOL);
     });
 
+    // Skip further billing / accounting logic
+    // in case contract owner
+    // wishes to reserve certain symbols for the network
     if (buyer == get_self()) return;
 
     asset adjusted_price = itr->price;
@@ -198,15 +204,17 @@ void symb::purchase( const name&         buyer,
     asset floor = itr->floor;
 
     const bool within_window = time_elasped < window;
+    const double price_adjust_pct = 0.1;
 
     if (within_window) {
       if (itr->minted_in_window > increase_threshold) {
-        const asset raised_price = asset(adjusted_price.amount * 1.1, EOS_SYMBOL);
+        const asset raised_price = asset(adjusted_price.amount * (1.0 + price_adjust_pct), EOS_SYMBOL);
+        const asset starting_price = asset(1000, EOS_SYMBOL);
 
         symconfigs.modify(itr, same_payer, [&](auto& a) {
           a.minted_in_window = 0;
           a.window_start = current_time_point();
-          a.price = raised_price == asset(0, EOS_SYMBOL) ? asset(1000, EOS_SYMBOL) : raised_price;
+          a.price = raised_price == asset(0, EOS_SYMBOL) ? starting_price : raised_price;
         });
       } else {
         symconfigs.modify(itr, same_payer, [&](auto& a) {
@@ -216,7 +224,7 @@ void symb::purchase( const name&         buyer,
     } else {
       if (itr->minted_in_window < decrease_threshold) {
         const uint64_t windows_elasped = time_elasped / window;
-        const int64_t lowered_amount = itr->price.amount * pow(0.9, windows_elasped);
+        const int64_t lowered_amount = itr->price.amount * pow(1.0 - price_adjust_pct, windows_elasped);
         const asset lowered_price = asset(std::max(lowered_amount, floor.amount), EOS_SYMBOL);
         adjusted_price = lowered_price;
         symconfigs.modify(itr, same_payer, [&](auto& a) {
