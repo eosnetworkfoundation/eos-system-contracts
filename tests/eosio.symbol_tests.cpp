@@ -36,6 +36,12 @@ public:
       abi_ser.set_abi(abi, abi_serializer::create_yield_function(abi_serializer_max_time));
    }
 
+   fc::variant get_sym_config( const uint32_t& symbol_length )
+   {
+      vector<char> data = get_row_by_account( "eosio.symbol"_n, "eosio.symbol"_n, "symconfigs"_n, name{symbol_length} );
+      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "symconfig", data, abi_serializer::create_yield_function(abi_serializer_max_time) );
+   }
+
    action_result push_action( const account_name& signer, const action_name &name, const variant_object &data ) {
       string action_type_name = abi_ser.get_action_type(name);
 
@@ -71,10 +77,20 @@ public:
       );
    }
 
-   action_result addsym( account_name actor, uint32_t symlen, asset price ) {
-      return push_action( actor, N(addsym), mvo()
-           ( "symlen", symlen)
-           ( "price", price)
+   action_result setsym( account_name actor, 
+                         uint32_t symlen, 
+                         asset price, 
+                         asset floor, 
+                         uint32_t increase_threshold, 
+                         uint32_t decrease_threshold, 
+                         uint32_t window ) {
+      return push_action( actor, N(setsym), mvo()
+           ( "symlen", symlen )
+           ( "price", price )
+           ( "floor", floor )
+           ( "increase_threshold", increase_threshold)
+           ( "decrease_threshold", decrease_threshold)
+           ( "window", window )
       );
    }
 
@@ -90,7 +106,7 @@ public:
    }
 
    action_result purchase( account_name buyer,
-                           const symbol_code& newsymbol,
+                           const symbol_code newsymbol,
                            asset amount    ) {
       return push_action( buyer, N(purchase), mvo()
            ( "buyer", buyer )
@@ -125,22 +141,61 @@ public:
 BOOST_AUTO_TEST_SUITE(eosio_symbol_tests)
 
 
-// fc::variant get_sym( const string& symbolname ) {
-//    auto symb = eosio::chain::symbol::from_string(symbolname);
-//    auto symbol_code = symb.to_symbol_code().value;
-//    vector<char> data = get_row_by_account( N(eosio.symbol), name(symbol_code), N(stat), account_name(symbol_code) );
-//    return data.empty() ? fc::variant() : token_abi_ser.binary_to_variant( "currency_stats", data, abi_serializer::create_yield_function(abi_serializer_max_time) );
-// }
+symbol_code sc(std::string symbol_code) {
+   return asset::from_string("100.0000 " + symbol_code).get_symbol().to_symbol_code();
+}
 
 BOOST_FIXTURE_TEST_CASE( can_add_symbol_as_admin, eosio_symbol_test ) try {
 
+   BOOST_REQUIRE_EQUAL( error("missing authority of eosio.symbol"),
+                        setsym( N(bob), 3, asset::from_string("100.0000 EOS"), asset::from_string("90.0000 EOS"), 24, 22, 300 ) );
    
-   // BOOST_REQUIRE_EQUAL( wasm_assert_msg( "must issue positive quantity" ),
-   //                      addsym( N(eosio.symbola), 3, asset::from_string("100.0000 MATE") )
-   // );
-
    BOOST_REQUIRE_EQUAL( success(),
-                        addsym( N(bob), 3, asset::from_string("100.0000 MATE") ) );
+                        setsym( N(eosio.symbol), 3, asset::from_string("100.0000 EOS"), asset::from_string("90.0000 EOS"), 24, 22, 300 ) );
+
+
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg("invalid token symbol"),
+                        setsym( N(eosio.symbol), 3, asset::from_string("100.0000 MATE"), asset::from_string("90.0000 EOS"), 24, 22, 300 ) );
+   
+   auto initial_config = get_sym_config(3);
+   cout << "Current table" << "\n";
+   cout << initial_config << "\n";
+
+// produce_block( fc::days(1) );
+// produce_blocks(1);
+
+   REQUIRE_MATCHING_OBJECT( initial_config, mvo()
+      ("symbol_length", 3)
+      ("price", "100.0000 EOS")
+      ("floor", "90.0000 EOS")
+      ("window_start", "2020-01-01T00:00:04.000")
+      ("window_duration", 300)
+      ("minted_in_window", 0)
+      ("increase_threshold", 24)
+      ("decrease_threshold", 22)
+   );
+
+   // random account cannot attempt a purchase without an pre-existing balance
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg("account not found"),
+                        purchase( N(bob), sc("CAT"), asset::from_string("100.0000 EOS") ) );
+
+   // eosio.symbol can make a purchase for free and without counting towards mint
+   BOOST_REQUIRE_EQUAL( success(),
+                        purchase( N(eosio.symbol), sc("DOG"), asset::from_string("100.0000 EOS") ) );
+
+   auto after_config = get_sym_config(3);
+
+   REQUIRE_MATCHING_OBJECT( after_config, mvo()
+      ("symbol_length", 3)
+      ("price", "100.0000 EOS")
+      ("floor", "90.0000 EOS")
+      ("window_start", "2020-01-01T00:00:04.000")
+      ("window_duration", 300)
+      ("minted_in_window", 0)
+      ("increase_threshold", 24)
+      ("decrease_threshold", 22)
+   );
+
 
 } FC_LOG_AND_RETHROW()
 
