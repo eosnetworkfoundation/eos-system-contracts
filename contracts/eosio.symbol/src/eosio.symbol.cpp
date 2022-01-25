@@ -243,6 +243,7 @@ void symb::purchase( const name&         buyer,
     check(amount >= adjusted_price, "insufficient purchase amount");
     
     sub_balance(buyer, adjusted_price);
+    add_balance(get_self(), adjusted_price, get_self());
 }
 
 
