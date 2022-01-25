@@ -22,18 +22,33 @@ public:
    eosio_symbol_test() {
       produce_blocks( 2 );
 
-      create_accounts( { N(alice), N(bob), N(carol), N(eosio.symbol) } );
+      create_accounts( { N(alice), N(bob), N(carol), N(eosio.symbol), N(eosio.token) } );
       produce_blocks( 2 );
 
       set_code( N(eosio.symbol), contracts::symbol_wasm() );
       set_abi( N(eosio.symbol), contracts::symbol_abi().data() );
+      produce_blocks( 2 );
+      set_code( N(eosio.token), contracts::token_wasm() );
+      set_abi( N(eosio.token), contracts::token_abi().data() );
 
       produce_blocks();
 
       const auto& accnt = control->db().get<account_object,by_name>( N(eosio.symbol) );
+      const auto& accnt2 = control->db().get<account_object,by_name>( N(eosio.token) );
       abi_def abi;
+      abi_def abi2;
       BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt.abi, abi), true);
+      BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt2.abi, abi2), true);
       abi_ser.set_abi(abi, abi_serializer::create_yield_function(abi_serializer_max_time));
+      abi_ser2.set_abi(abi2, abi_serializer::create_yield_function(abi_serializer_max_time));
+   }
+
+   fc::variant get_account_wallet( account_name acc, const string& symbolname)
+   {
+      auto symb = eosio::chain::symbol::from_string(symbolname);
+      auto symbol_code = symb.to_symbol_code().value;
+      vector<char> data = get_row_by_account( N(eosio.token), acc, N(accounts), account_name(symbol_code) );
+      return data.empty() ? fc::variant() : abi_ser2.binary_to_variant( "account", data, abi_serializer::create_yield_function(abi_serializer_max_time) );
    }
 
    fc::variant get_sym_config( const uint32_t& symbol_length )
@@ -52,6 +67,48 @@ public:
 
       return base_tester::push_action( std::move(act), signer.to_uint64_t() );
    }
+
+   action_result push_token_action( const account_name& signer, const action_name &name, const variant_object &data ) {
+      string action_type_name = abi_ser2.get_action_type(name);
+
+      action act;
+      act.account = N(eosio.token);
+      act.name    = name;
+      act.data    = abi_ser2.variant_to_binary( action_type_name, data, abi_serializer::create_yield_function(abi_serializer_max_time) );
+
+      return base_tester::push_action( std::move(act), signer.to_uint64_t() );
+   }
+
+   action_result transfer( account_name from,
+                  account_name to,
+                  asset        quantity,
+                  string       memo ) {
+      return push_token_action( from, N(transfer), mvo()
+           ( "from", from)
+           ( "to", to)
+           ( "quantity", quantity)
+           ( "memo", memo)
+      );
+   }
+
+   action_result issue( account_name issuer, asset quantity, string memo ) {
+      return push_token_action( issuer, N(issue), mvo()
+           ( "to", issuer)
+           ( "quantity", quantity)
+           ( "memo", memo)
+      );
+   }
+
+   action_result create_token_contract( account_name issuer,
+                         asset        maximum_supply ) {
+
+      return push_token_action( N(eosio.token), N(create), mvo()
+           ( "issuer", issuer)
+           ( "maximum_supply", maximum_supply)
+      );
+   }
+
+
 
    action_result create( account_name owner,
                          account_name issuer,
@@ -136,6 +193,8 @@ public:
 
 
    abi_serializer abi_ser;
+   abi_serializer abi_ser2;
+
 };
 
 BOOST_AUTO_TEST_SUITE(eosio_symbol_tests)
@@ -146,6 +205,20 @@ symbol_code sc(std::string symbol_code) {
 }
 
 BOOST_FIXTURE_TEST_CASE( can_add_symbol_as_admin, eosio_symbol_test ) try {
+
+
+   create_token_contract("eosio.token"_n, asset::from_string("10000000.0000 EOS"));
+   issue("eosio.token"_n, asset::from_string("10000.0000 EOS"), "");
+   transfer("eosio.token"_n, "bob"_n, asset::from_string("1000.0000 EOS"), "");
+
+   auto bob_balance = get_account_wallet(N(bob), "4,EOS");
+
+   REQUIRE_MATCHING_OBJECT( bob_balance, mvo()
+      ("balance", "1000.0000 EOS")
+   );
+
+   cout << bob_balance << "\n";
+
 
    BOOST_REQUIRE_EQUAL( error("missing authority of eosio.symbol"),
                         setsym( N(bob), 3, asset::from_string("100.0000 EOS"), asset::from_string("90.0000 EOS"), 24, 22, 300 ) );
@@ -168,7 +241,7 @@ BOOST_FIXTURE_TEST_CASE( can_add_symbol_as_admin, eosio_symbol_test ) try {
       ("symbol_length", 3)
       ("price", "100.0000 EOS")
       ("floor", "90.0000 EOS")
-      ("window_start", "2020-01-01T00:00:04.000")
+      ("window_start", "2020-01-01T00:00:06.500")
       ("window_duration", 300)
       ("minted_in_window", 0)
       ("increase_threshold", 24)
@@ -189,7 +262,7 @@ BOOST_FIXTURE_TEST_CASE( can_add_symbol_as_admin, eosio_symbol_test ) try {
       ("symbol_length", 3)
       ("price", "100.0000 EOS")
       ("floor", "90.0000 EOS")
-      ("window_start", "2020-01-01T00:00:04.000")
+      ("window_start", "2020-01-01T00:00:06.500")
       ("window_duration", 300)
       ("minted_in_window", 0)
       ("increase_threshold", 24)
