@@ -222,21 +222,24 @@ void symb::purchase( const name&         buyer,
         });
       }
     } else {
-      if (itr->minted_in_window < decrease_threshold) {
-        const uint64_t windows_elasped = time_elasped / window;
-        const int64_t lowered_amount = itr->price.amount * pow(1.0 - price_adjust_pct, windows_elasped);
+      const uint64_t windows_elasped = time_elasped / window;
+      const bool within_next_window = windows_elasped == 1;
+      const bool last_window_satisfied = itr->minted_in_window >= decrease_threshold;
+
+      if (within_next_window && last_window_satisfied) {
+        symconfigs.modify(itr, same_payer, [&](auto& a) {
+          a.minted_in_window = 1;
+          a.window_start = current_time_point();
+        });
+      } else {
+        const int64_t lowered_amount = itr->price.amount * pow(1.0 - price_adjust_pct, last_window_satisfied ? windows_elasped - 1 : windows_elasped);
         const asset lowered_price = asset(std::max(lowered_amount, floor.amount), EOS_SYMBOL);
         adjusted_price = lowered_price;
         symconfigs.modify(itr, same_payer, [&](auto& a) {
           a.minted_in_window = 1;
           a.window_start = current_time_point();
           a.price = lowered_price;
-        }); 
-      } else {
-        symconfigs.modify(itr, same_payer, [&](auto& a) {
-          a.minted_in_window = 1;
-          a.window_start = current_time_point();
-        }); 
+        });
       }
     }
 
