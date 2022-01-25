@@ -223,10 +223,10 @@ void symb::purchase( const name&         buyer,
       }
     } else {
       const uint64_t windows_elasped = time_elasped / window;
-      const bool within_next_window = windows_elasped == 1;
+      const bool is_next_window = windows_elasped == 1;
       const bool last_window_satisfied = itr->minted_in_window >= decrease_threshold;
 
-      if (within_next_window && last_window_satisfied) {
+      if (is_next_window && last_window_satisfied) {
         symconfigs.modify(itr, same_payer, [&](auto& a) {
           a.minted_in_window = 1;
           a.window_start = current_time_point();
