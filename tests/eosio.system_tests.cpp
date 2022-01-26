@@ -5483,7 +5483,7 @@ BOOST_FIXTURE_TEST_CASE( b1_vesting, eosio_system_tester ) try {
    create_accounts_with_resources( { b1 }, alice );
 
    const asset stake_amount = core_sym::from_string("50000000.0000");
-   const asset half_stake   = core_sym::from_string("25000000.0000");
+   const asset final_amount = core_sym::from_string("17664825.5000");
    const asset small_amount = core_sym::from_string("1000.0000");
    issue_and_transfer( b1, stake_amount + stake_amount + stake_amount, config::system_account_name );
 
@@ -5499,44 +5499,25 @@ BOOST_FIXTURE_TEST_CASE( b1_vesting, eosio_system_tester ) try {
 
    BOOST_REQUIRE_EQUAL( 2 * ( stake_amount.get_amount() - small_amount.get_amount() ),
                         get_voter_info( b1 )["staked"].as<int64_t>() );
-
-   produce_block( fc::days( 3 * 364 ) );
-
+   
    BOOST_REQUIRE_EQUAL( wasm_assert_msg("b1 can only claim their tokens over 10 years"),
-                        unstake( b1, b1, half_stake, half_stake ) );
+                        unstake( b1, b1, final_amount, final_amount ) );
 
-   BOOST_REQUIRE_EQUAL( success(), vote( b1, { }, N(proxyaccount) ) );
-   BOOST_REQUIRE_EQUAL( success(), unstaketorex( b1, b1, half_stake, half_stake ) );
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg("must vote for at least 21 producers or for a proxy before buying REX"), 
+                        unstaketorex( b1, b1, final_amount - small_amount, final_amount - small_amount ) );
 
-   produce_block( fc::days(5) );
-   produce_blocks(1);
+   BOOST_REQUIRE_EQUAL( error("missing authority of eosio"), vote( b1, { }, N(proxyaccount) ) );
 
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg("b1 can only claim their tokens over 10 years"),
-                        sellrex( b1, get_rex_balance( b1 ) ) );
-
-   produce_block( fc::days( 2 * 364 ) );
-
-   BOOST_REQUIRE_EQUAL( success(), rentcpu( bob, bob, core_sym::from_string("10000.0000") ) );
-
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg("b1 sellrex orders should not be queued"),
-                        sellrex( b1, get_rex_balance( b1 ) ) );
-
-   produce_block( fc::days( 30 ) );
-
-   BOOST_REQUIRE_EQUAL( success(), sellrex( b1, get_rex_balance( b1 ) ) );
-
-   produce_block( fc::days( 3 * 364 ) );
-
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg("b1 can only claim their tokens over 10 years"),
-                        unstake( b1, b1, half_stake - small_amount, half_stake - small_amount ) );
-
-   produce_block( fc::days( 1 * 364 ) );
-
-   BOOST_REQUIRE_EQUAL( success(),
-                        unstake( b1, b1, half_stake - small_amount, half_stake - small_amount ) );
-
+   BOOST_REQUIRE_EQUAL( success(), unstake( b1, b1, final_amount - small_amount, final_amount - small_amount ) );
+   
    produce_block( fc::days(4) );
+
    BOOST_REQUIRE_EQUAL( success(), push_action( b1, N(refund), mvo()("owner", b1) ) );
+
+   produce_block( fc::days( 5 * 364 ) );
+
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg("b1 can only claim their tokens over 10 years"),
+                        unstake( b1, b1, small_amount, small_amount ) );
 
 } FC_LOG_AND_RETHROW()
 
