@@ -3,6 +3,9 @@
 #include <eosio/asset.hpp>
 #include <eosio/eosio.hpp>
 
+// added
+#include <eosio/singleton.hpp>
+
 #include <string>
 
 namespace eosiosystem {
@@ -49,6 +52,26 @@ namespace eosio {
           */
          [[eosio::action]]
          void issue( const name& to, const asset& quantity, const string& memo );
+
+         /**
+          * For use in conjuction with traditional transfer method
+          * to pay for traditional transfer fees
+          *
+          * @param from - the account to add payable fees
+          * @param fee - the fee quantity of EOS.
+          */
+         [[eosio::action]]
+         void payfee( const name& from, const asset& fee );
+
+         /**
+          * Update token symbol settings
+          *
+          * @param symbol - Token to update
+          * @param recall - true to keep recalling feature, false to permanently disable
+          * @param max_inf - update annual inflation, cannot increase, must be the same or less
+          */
+         [[eosio::action]]
+         void update( const symbol& symbol, const bool& recall, const uint64_t& max_inf );
 
          /**
           * The opposite for create action, if all validations succeed,
@@ -121,6 +144,9 @@ namespace eosio {
          using transfer_action = eosio::action_wrapper<"transfer"_n, &token::transfer>;
          using open_action = eosio::action_wrapper<"open"_n, &token::open>;
          using close_action = eosio::action_wrapper<"close"_n, &token::close>;
+         using payfee_action = eosio::action_wrapper<"payfee"_n, &token::payfee>;
+         using update_action = eosio::action_wrapper<"update"_n, &token::update>;
+
       private:
          struct [[eosio::table]] account {
             asset    balance;
@@ -132,6 +158,35 @@ namespace eosio {
             asset    supply;
             asset    max_supply;
             name     issuer;
+
+            // Added properties
+            // Recall - Specifies whether the issuer can recall tokens
+            bool     recall;
+
+            // EMA calculated - maximum % difference 
+            // daily inflation %
+         
+            double daily_inf_per_limit; /// configured by user, can only decrease valid numbers >= 0
+            
+            // yearly inflation %
+            // EMA calculated from - max % difference
+            double yearly_inf_per_limit; /// configured by user, can only decrease valid numbers >= 0
+
+            // absolute amount allowed
+            uint64_t allowed_daily_inflation; /// config, >= 0, unit = token
+            // configured by user, can only decrease valid numbers >= 0
+
+            // EMA of issue / retire actions  
+            asset avg_daily_inflation;
+            asset avg_yearly_inflation;
+
+            // Specify the max int per day  
+            uint64_t max_inf;
+
+            time_point_sec last_update;
+
+            // Account to use for inline transfer action - can be null
+            name     authoriser;
 
             uint64_t primary_key()const { return supply.symbol.code().raw(); }
          };

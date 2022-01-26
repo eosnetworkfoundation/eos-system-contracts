@@ -4,7 +4,7 @@ namespace eosio {
 
 void token::create( const name&   issuer,
                     const asset&  maximum_supply )
-{
+{   
     require_auth( get_self() );
 
     auto sym = maximum_supply.symbol;
@@ -17,9 +17,12 @@ void token::create( const name&   issuer,
     check( existing == statstable.end(), "token with symbol already exists" );
 
     statstable.emplace( get_self(), [&]( auto& s ) {
+
        s.supply.symbol = maximum_supply.symbol;
        s.max_supply    = maximum_supply;
        s.issuer        = issuer;
+       s.recall        = true;
+       s.last_update   = current_time_point();
     });
 }
 
@@ -43,12 +46,41 @@ void token::issue( const name& to, const asset& quantity, const string& memo )
     check( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
     check( quantity.amount <= st.max_supply.amount - st.supply.amount, "quantity exceeds available supply");
 
-    statstable.modify( st, same_payer, [&]( auto& s ) {
-       s.supply += quantity;
-    });
+   //  const uint64_t milli = 1000000;
+   //  const uint64_t now = current_time_point().sec_since_epoch();
+   //  const uint64_t delta = now - st.last_update.sec_since_epoch();
+   //  const uint64_t day = 60 * 60 * 24;
+   //  const uint64_t year = day * 365;
+       
+   //  const uint64_t day_travelled_ppm = (double)delta / day;
+   //  const uint64_t reverse_travelled_ppm = milli - day_travelled_ppm;  
 
+   //  const asset current_avg = itr->avg_daily_inflation;
+
+   //  const asset new_avg = (current_avg * reverse_travelled_ppm) / milli + quantity;
+
+    const asset old_supply = st.supply;
+    const asset new_supply = old_supply + quantity; 
+
+    statstable.modify( st, same_payer, [&]( auto& s ) {
+       s.supply = new_supply;
+      //  s.avg_daily_inflation = new_avg; 
+       s.last_update = current_time_point();
+    });
+ 
     add_balance( st.issuer, quantity, st.issuer );
 }
+
+void token::payfee( const name& from, const asset& fee )
+{
+
+}
+
+void token::update( const symbol& symbol, const bool& recall, const uint64_t& max_inf )
+{
+
+}
+
 
 void token::retire( const asset& quantity, const string& memo )
 {
