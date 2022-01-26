@@ -14,6 +14,8 @@ using namespace eosio::testing;
 using namespace fc;
 using namespace std;
 
+// make -j $(nproc) && ./tests/unit_test "--run_test=eosio_symbol_tests" "--report_level=detailed" "--color_output"
+
 using mvo = fc::mutable_variant_object;
 
 class eosio_symbol_test : public tester {
