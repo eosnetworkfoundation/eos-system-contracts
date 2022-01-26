@@ -17,12 +17,18 @@ void token::create( const name&   issuer,
     check( existing == statstable.end(), "token with symbol already exists" );
 
     statstable.emplace( get_self(), [&]( auto& s ) {
-
+       s.avg_daily_inflation = asset(0, maximum_supply.symbol);
+       s.avg_yearly_inflation = asset(0, maximum_supply.symbol);
        s.supply.symbol = maximum_supply.symbol;
        s.max_supply    = maximum_supply;
        s.issuer        = issuer;
        s.recall        = true;
        s.last_update   = current_time_point();
+       s.daily_inf_per_limit = 1.0;
+       s.yearly_inf_per_limit = 1.0;
+       s.allowed_daily_inflation = 0;
+       s.max_inf = 0;
+       s.authoriser = "bob"_n;
     });
 }
 
@@ -46,25 +52,28 @@ void token::issue( const name& to, const asset& quantity, const string& memo )
     check( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
     check( quantity.amount <= st.max_supply.amount - st.supply.amount, "quantity exceeds available supply");
 
-   //  const uint64_t milli = 1000000;
-   //  const uint64_t now = current_time_point().sec_since_epoch();
-   //  const uint64_t delta = now - st.last_update.sec_since_epoch();
-   //  const uint64_t day = 60 * 60 * 24;
-   //  const uint64_t year = day * 365;
-       
-   //  const uint64_t day_travelled_ppm = (double)delta / day;
-   //  const uint64_t reverse_travelled_ppm = milli - day_travelled_ppm;  
+    const uint64_t milli = 1000000;
+    const uint64_t now = current_time_point().sec_since_epoch();
+    const uint64_t delta = now - st.last_update.sec_since_epoch();
+    const uint64_t day = 60 * 60 * 24;
+    const uint64_t year = day * 365;
 
-   //  const asset current_avg = itr->avg_daily_inflation;
 
-   //  const asset new_avg = (current_avg * reverse_travelled_ppm) / milli + quantity;
+    const double day_travelled_per = (double)delta / day;
+    const double reverse_travelled_per = 1.0 - day_travelled_per > 1.0 ? 1.0 : day_travelled_per;  
+
+    const asset current_avg = st.avg_daily_inflation;
+    const asset new_avg = asset(current_avg.amount * reverse_travelled_per, quantity.symbol) + quantity;
+
 
     const asset old_supply = st.supply;
     const asset new_supply = old_supply + quantity; 
 
     statstable.modify( st, same_payer, [&]( auto& s ) {
        s.supply = new_supply;
-      //  s.avg_daily_inflation = new_avg; 
+       s.avg_daily_inflation = new_avg;
+       s.avg_yearly_inflation = new_avg;
+       s.daily_inf_per_limit = day_travelled_per;
        s.last_update = current_time_point();
     });
  
