@@ -485,6 +485,10 @@ BOOST_FIXTURE_TEST_CASE( will_lower_price_after_satisfied_stale_window, eosio_sy
 
    // expect the first window to have been satisified but receive a discount on the next window
 
+
+   check_credit_balance("bob"_n, "902.5000 EOS");
+   check_credit_balance("eosio.symbol"_n, "97.5000 EOS");
+
    BOOST_REQUIRE_EQUAL( success(),
                         purchase( "bob"_n, sc("XYZ"), asset::from_string("32.5000 EOS") ) );
 
@@ -499,9 +503,8 @@ BOOST_FIXTURE_TEST_CASE( will_lower_price_after_satisfied_stale_window, eosio_sy
       ("decrease_threshold", 2)
    );
 
-   // check_credit_balance("bob"_n, "902.5000 EOS");
-   // check_credit_balance("eosio.symbol"_n, "97.5000 EOS");
-
+   check_credit_balance("eosio.symbol"_n, "126.7500 EOS");
+   check_credit_balance("bob"_n, "873.2500 EOS");
 
 
 } FC_LOG_AND_RETHROW()
