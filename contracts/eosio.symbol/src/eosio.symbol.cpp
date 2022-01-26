@@ -207,7 +207,7 @@ void symb::purchase( const name&         buyer,
     const double price_adjust_pct = 0.1;
 
     if (within_window) {
-      if (itr->minted_in_window > increase_threshold) {
+      if (itr->minted_in_window >= increase_threshold) {
         const asset raised_price = asset(adjusted_price.amount * (1.0 + price_adjust_pct), EOS_SYMBOL);
         const asset starting_price = asset(1000, EOS_SYMBOL);
 

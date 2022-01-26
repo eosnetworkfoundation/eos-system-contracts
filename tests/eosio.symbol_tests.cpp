@@ -22,7 +22,7 @@ public:
    eosio_symbol_test() {
       produce_blocks( 2 );
 
-      create_accounts( { N(alice), N(bob), N(carol), N(eosio.symbol), N(eosio.token) } );
+      create_accounts( { N(alice), N(bob), N(charlie), N(daniel), N(eosio.symbol), N(eosio.token) } );
       produce_blocks( 2 );
 
       set_code( N(eosio.symbol), contracts::symbol_wasm() );
@@ -64,6 +64,12 @@ public:
    {
       vector<char> data = get_row_by_account( "eosio.symbol"_n, "eosio.symbol"_n, "symconfigs"_n, name{symbol_length} );
       return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "symconfig", data, abi_serializer::create_yield_function(abi_serializer_max_time) );
+   }
+
+   fc::variant get_sym( const symbol_code& symb )
+   {
+      vector<char> data = get_row_by_account( "eosio.symbol"_n, "eosio.symbol"_n, "symbols"_n, name{symb} );
+      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "sym", data, abi_serializer::create_yield_function(abi_serializer_max_time) );
    }
 
    action_result push_action( const account_name& signer, const action_name &name, const variant_object &data ) {
@@ -215,6 +221,17 @@ public:
          ("balance", balance)
       );
    }
+
+   void check_sym(symbol_code symb, name owner, std::string balance) {
+      auto symb_res = get_sym(symb);
+
+      REQUIRE_MATCHING_OBJECT( symb_res, mvo()
+         ("symbol_name", symb)
+         ("owner", owner)
+         ("sale_price", balance)
+      );
+   }
+
 
    abi_serializer abi_ser;
    abi_serializer abi_ser2;
@@ -375,7 +392,7 @@ BOOST_FIXTURE_TEST_CASE( cannot_buy_with_insufficient_price, eosio_symbol_test )
                         purchase( "bob"_n, sc("CAT"), asset::from_string("830.0000 EOS") ) );
    check_credit_balance("bob"_n, "900.0000 EOS");
    check_credit_balance("eosio.symbol"_n, "100.0000 EOS");
-
+   check_sym(sc("CAT"), "bob"_n, "0.0000 EOS");
 
 
    REQUIRE_MATCHING_OBJECT( get_sym_config(3), mvo()
@@ -492,6 +509,8 @@ BOOST_FIXTURE_TEST_CASE( will_lower_price_after_satisfied_stale_window, eosio_sy
    BOOST_REQUIRE_EQUAL( success(),
                         purchase( "bob"_n, sc("XYZ"), asset::from_string("32.5000 EOS") ) );
 
+   check_sym(sc("XYZ"), "bob"_n, "0.0000 EOS");
+
    REQUIRE_MATCHING_OBJECT( get_sym_config(3), mvo()
       ("symbol_length", 3)
       ("price", "29.2500 EOS")
@@ -508,5 +527,288 @@ BOOST_FIXTURE_TEST_CASE( will_lower_price_after_satisfied_stale_window, eosio_sy
 
 
 } FC_LOG_AND_RETHROW()
+
+
+BOOST_FIXTURE_TEST_CASE( will_increase_price, eosio_symbol_test ) try {
+
+   transfer("eosio.token"_n, "bob"_n, asset::from_string("1000.0000 EOS"), "");
+   transfer("bob"_n, "eosio.symbol"_n, asset::from_string("1000.0000 EOS"), "");
+   check_credit_balance(N(bob), "1000.0000 EOS");
+
+   uint32_t a_week = 60 * 60 * 24 * 7;
+   BOOST_REQUIRE_EQUAL( success(),
+                        setsym( N(eosio.symbol), 4, asset::from_string("18.3050 EOS"), asset::from_string("1.0000 EOS"), 4, 2, a_week ) );
+
+   REQUIRE_MATCHING_OBJECT( get_sym_config(4), mvo()
+      ("symbol_length", 4)
+      ("price", "18.3050 EOS")
+      ("floor", "1.0000 EOS")
+      ("window_start", "2020-01-01T00:00:07.000")
+      ("window_duration", 604800)
+      ("minted_in_window", 0)
+      ("increase_threshold", 4)
+      ("decrease_threshold", 2)
+   );
+
+   BOOST_REQUIRE_EQUAL( success(),
+                        purchase( "bob"_n, sc("DOGS"), asset::from_string("18.3050 EOS") ) );
+
+   check_sym(sc("DOGS"), "bob"_n, "0.0000 EOS");
+
+
+   REQUIRE_MATCHING_OBJECT( get_sym_config(4), mvo()
+      ("symbol_length", 4)
+      ("price", "18.3050 EOS")
+      ("floor", "1.0000 EOS")
+      ("window_start", "2020-01-01T00:00:07.000")
+      ("window_duration", 604800)
+      ("minted_in_window", 1)
+      ("increase_threshold", 4)
+      ("decrease_threshold", 2)
+   );
+
+   check_credit_balance("bob"_n, "981.6950 EOS");
+   check_credit_balance("eosio.symbol"_n, "18.3050 EOS");
+
+
+   BOOST_REQUIRE_EQUAL( success(),
+                        purchase( "bob"_n, sc("CATS"), asset::from_string("981.6950 EOS") ) );
+
+   BOOST_REQUIRE_EQUAL( success(),
+                        purchase( "bob"_n, sc("BTCS"), asset::from_string("981.6950 EOS") ) );
+
+
+   REQUIRE_MATCHING_OBJECT( get_sym_config(4), mvo()
+      ("symbol_length", 4)
+      ("price", "18.3050 EOS")
+      ("floor", "1.0000 EOS")
+      ("window_start", "2020-01-01T00:00:07.000")
+      ("window_duration", 604800)
+      ("minted_in_window", 3)
+      ("increase_threshold", 4)
+      ("decrease_threshold", 2)
+   );
+
+
+   BOOST_REQUIRE_EQUAL( success(),
+                        purchase( "bob"_n, sc("BNTS"), asset::from_string("981.6950 EOS") ) );
+
+   REQUIRE_MATCHING_OBJECT( get_sym_config(4), mvo()
+      ("symbol_length", 4)
+      ("price", "18.3050 EOS")
+      ("floor", "1.0000 EOS")
+      ("window_start", "2020-01-01T00:00:07.000")
+      ("window_duration", 604800)
+      ("minted_in_window", 4)
+      ("increase_threshold", 4)
+      ("decrease_threshold", 2)
+   );
+
+   BOOST_REQUIRE_EQUAL( success(),
+                        purchase( "bob"_n, sc("MATE"), asset::from_string("981.6950 EOS") ) );
+
+   REQUIRE_MATCHING_OBJECT( get_sym_config(4), mvo()
+      ("symbol_length", 4)
+      ("price", "20.1355 EOS")
+      ("floor", "1.0000 EOS")
+      ("window_start", "2020-01-01T00:00:09.500")
+      ("window_duration", 604800)
+      ("minted_in_window", 0)
+      ("increase_threshold", 4)
+      ("decrease_threshold", 2)
+   );
+
+
+   BOOST_REQUIRE_EQUAL( success(),
+                        purchase( "bob"_n, sc("CHAR"), asset::from_string("981.6950 EOS") ) );
+
+   REQUIRE_MATCHING_OBJECT( get_sym_config(4), mvo()
+      ("symbol_length", 4)
+      ("price", "20.1355 EOS")
+      ("floor", "1.0000 EOS")
+      ("window_start", "2020-01-01T00:00:09.500")
+      ("window_duration", 604800)
+      ("minted_in_window", 1)
+      ("increase_threshold", 4)
+      ("decrease_threshold", 2)
+   );
+
+
+   produce_block( fc::days(6) );
+
+   BOOST_REQUIRE_EQUAL( success(),
+                     purchase( "bob"_n, sc("BULB"), asset::from_string("981.6950 EOS") ) );
+
+   REQUIRE_MATCHING_OBJECT( get_sym_config(4), mvo()
+      ("symbol_length", 4)
+      ("price", "20.1355 EOS")
+      ("floor", "1.0000 EOS")
+      ("window_start", "2020-01-01T00:00:09.500")
+      ("window_duration", 604800)
+      ("minted_in_window", 2)
+      ("increase_threshold", 4)
+      ("decrease_threshold", 2)
+   );
+
+   produce_block( fc::days(1) );
+
+   BOOST_REQUIRE_EQUAL( success(),
+                     purchase( "bob"_n, sc("PIKA"), asset::from_string("981.6950 EOS") ) );
+
+   REQUIRE_MATCHING_OBJECT( get_sym_config(4), mvo()
+      ("symbol_length", 4)
+      ("price", "20.1355 EOS")
+      ("floor", "1.0000 EOS")
+      ("window_start", "2020-01-08T00:00:11.000")
+      ("window_duration", 604800)
+      ("minted_in_window", 1)
+      ("increase_threshold", 4)
+      ("decrease_threshold", 2)
+   );
+
+   check_sym(sc("PIKA"), "bob"_n, "0.0000 EOS");
+
+} FC_LOG_AND_RETHROW()
+
+
+BOOST_FIXTURE_TEST_CASE( can_trade_symbols, eosio_symbol_test ) try {
+
+   // alice buys
+   // gives to bob
+   // bob sells it
+   // to charlie
+   transfer("eosio.token"_n, "alice"_n, asset::from_string("1000.0000 EOS"), "");
+   transfer("eosio.token"_n, "charlie"_n, asset::from_string("1000.0000 EOS"), "");
+
+   transfer("alice"_n, "eosio.symbol"_n, asset::from_string("1000.0000 EOS"), "");
+   check_credit_balance("alice"_n, "1000.0000 EOS");
+   check_wallet_balance("charlie"_n, "1000.0000 EOS");
+
+   BOOST_REQUIRE_EQUAL( success(),
+                        setsym( N(eosio.symbol), 3, asset::from_string("50.0000 EOS"), asset::from_string("40.0000 EOS"), 6, 4, 60*60*24 ) );
+
+   produce_block( fc::hours(4) );
+
+   REQUIRE_MATCHING_OBJECT( get_sym_config(3), mvo()
+      ("symbol_length", 3)
+      ("price", "50.0000 EOS")
+      ("floor", "40.0000 EOS")
+      ("window_start", "2020-01-01T00:00:07.500")
+      ("window_duration", 86400)
+      ("minted_in_window", 0)
+      ("increase_threshold", 6)
+      ("decrease_threshold", 4)
+   );
+
+   BOOST_REQUIRE_EQUAL( success(),
+                        setsym( N(eosio.symbol), 3, asset::from_string("50.0000 EOS"), asset::from_string("40.0000 EOS"), 6, 4, 60*60*24 ) );
+
+
+   BOOST_REQUIRE_EQUAL( success(),
+                        purchase( "alice"_n, sc("CAT"), asset::from_string("981.6950 EOS") ) );
+
+   check_sym(sc("CAT"), "alice"_n, "0.0000 EOS");
+
+
+   BOOST_REQUIRE_EQUAL( error("missing authority of alice"),
+                        setowner("charlie"_n, "bob"_n, sc("CAT"), "") );
+   
+   BOOST_REQUIRE_EQUAL( success(),
+                        setowner("alice"_n, "bob"_n, sc("CAT"), "") );
+  
+   check_sym(sc("CAT"), "bob"_n, "0.0000 EOS");
+
+   BOOST_REQUIRE_EQUAL( error("missing authority of bob"),
+                        sellsymbol("charlie"_n, sc("CAT"), asset::from_string("15.0000 EOS")) );
+   
+   BOOST_REQUIRE_EQUAL( success(),
+                        sellsymbol("bob"_n, sc("CAT"), asset::from_string("15.0000 EOS")) );
+
+   check_sym(sc("CAT"), "bob"_n, "15.0000 EOS");
+   
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg("user not found"),
+                        buysymbol("charlie"_n, sc("CAT")) );
+
+   transfer("charlie"_n, "eosio.symbol"_n, asset::from_string("14.9999 EOS"), "");
+   check_credit_balance("charlie"_n, "14.9999 EOS");
+
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg("cannot afford"),
+                        buysymbol("charlie"_n, sc("CAT")) );
+
+   check_credit_balance("charlie"_n, "14.9999 EOS");
+   transfer("charlie"_n, "eosio.symbol"_n, asset::from_string("0.0003 EOS"), "");
+   check_credit_balance("charlie"_n, "15.0002 EOS");
+
+   BOOST_REQUIRE_EQUAL( success(),
+                        buysymbol("charlie"_n, sc("CAT")) );
+   
+   check_sym(sc("CAT"), "charlie"_n, "0.0000 EOS");
+
+   check_credit_balance("charlie"_n, "0.0002 EOS");
+   check_credit_balance("bob"_n, "15.0000 EOS");
+
+} FC_LOG_AND_RETHROW()
+
+
+BOOST_FIXTURE_TEST_CASE( can_take_trade_fees, eosio_symbol_test ) try {
+
+
+   transfer("eosio.token"_n, "alice"_n, asset::from_string("1000.0000 EOS"), "");
+   transfer("eosio.token"_n, "charlie"_n, asset::from_string("1000.0000 EOS"), "");
+
+   transfer("alice"_n, "eosio.symbol"_n, asset::from_string("943.0000 EOS"), "");
+   check_credit_balance("alice"_n, "943.0000 EOS");
+   check_wallet_balance("charlie"_n, "1000.0000 EOS");
+
+   BOOST_REQUIRE_EQUAL( success(),
+                        setsym( N(eosio.symbol), 3, asset::from_string("50.0000 EOS"), asset::from_string("40.0000 EOS"), 6, 4, 60*60*24 ) );
+
+   produce_block( fc::hours(4) );
+
+   REQUIRE_MATCHING_OBJECT( get_sym_config(3), mvo()
+      ("symbol_length", 3)
+      ("price", "50.0000 EOS")
+      ("floor", "40.0000 EOS")
+      ("window_start", "2020-01-01T00:00:07.500")
+      ("window_duration", 86400)
+      ("minted_in_window", 0)
+      ("increase_threshold", 6)
+      ("decrease_threshold", 4)
+   );
+
+   BOOST_REQUIRE_EQUAL( success(),
+                        setsym( N(eosio.symbol), 3, asset::from_string("50.0000 EOS"), asset::from_string("40.0000 EOS"), 6, 4, 60*60*24 ) );
+
+
+   BOOST_REQUIRE_EQUAL( success(),
+                        purchase( "alice"_n, sc("CAT"), asset::from_string("981.6950 EOS") ) );
+
+   check_sym(sc("CAT"), "alice"_n, "0.0000 EOS");
+   check_credit_balance("alice"_n, "893.0000 EOS");
+
+   BOOST_REQUIRE_EQUAL( error("missing authority of eosio.symbol"),
+                        setsalefee("charlie"_n, 50000) );
+
+   BOOST_REQUIRE_EQUAL( success(),
+                        setsalefee("eosio.symbol"_n, 90000) );
+
+   BOOST_REQUIRE_EQUAL( success(),
+                        sellsymbol("alice"_n, sc("CAT"), asset::from_string("16.0000 EOS")) );
+
+   check_sym(sc("CAT"), "alice"_n, "16.0000 EOS");
+
+   transfer("charlie"_n, "eosio.symbol"_n, asset::from_string("20.0000 EOS"), "");
+
+   check_credit_balance("charlie"_n, "20.0000 EOS");
+
+   BOOST_REQUIRE_EQUAL( success(),
+                        buysymbol("charlie"_n, sc("CAT")) );
+
+   check_credit_balance("alice"_n, "907.5600 EOS");
+   check_credit_balance("charlie"_n, "4.0000 EOS");
+   check_credit_balance("eosio.symbol"_n, "51.4400 EOS");
+
+} FC_LOG_AND_RETHROW()
+
 
 BOOST_AUTO_TEST_SUITE_END()
