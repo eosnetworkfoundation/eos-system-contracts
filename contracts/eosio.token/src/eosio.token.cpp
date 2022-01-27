@@ -31,13 +31,13 @@ void token::create( const name&   issuer,
     });
 }
 
-uint64_t token::window_weight(uint64_t delta, uint64_t window_span_secs)
+asset token::calculate_avg(uint64_t delta, uint64_t window_span_secs, asset current_avg, asset new_issuance)
 {
     const uint64_t milli = 1000000;
     const uint64_t window_travelled_raw = delta * milli / window_span_secs;
     const uint64_t window_travelled_ppm = window_travelled_raw > milli ? milli : window_travelled_raw;
     const uint64_t reverse_travelled_ppm = milli - window_travelled_ppm;
-    return reverse_travelled_ppm;
+    return asset(int64_t(current_avg.amount * int128_t(reverse_travelled_ppm) / milli), new_issuance.symbol) + new_issuance;
 }
 
 void token::issue( const name& to, const asset& quantity, const string& memo )
@@ -65,11 +65,8 @@ void token::issue( const name& to, const asset& quantity, const string& memo )
     
     const uint64_t delta = current_time_point().sec_since_epoch() - st.last_update.sec_since_epoch();
 
-    const uint64_t day_weight_ppm = window_weight(delta, day);
-    const uint64_t year_weight_ppm = window_weight(delta, year);
-    
-    const asset new_day_avg = asset(int64_t(st.avg_daily_inflation.amount * int128_t(day_weight_ppm) / milli), quantity.symbol) + quantity;
-    const asset new_year_avg = asset(int64_t(st.avg_yearly_inflation.amount * int128_t(year_weight_ppm) / milli), quantity.symbol) + quantity;
+    const asset new_day_avg = calculate_avg(delta, day, st.avg_daily_inflation, quantity);
+    const asset new_year_avg = calculate_avg(delta, year, st.avg_yearly_inflation, quantity);
 
     const asset old_supply = st.supply;
     const asset new_supply = old_supply + quantity; 
