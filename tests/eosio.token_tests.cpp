@@ -434,27 +434,7 @@ BOOST_FIXTURE_TEST_CASE( inflation_limiting, eosio_token_tester ) try {
       ("balance", "1000.0000 MATE")
    );
 
-   const uint64_t derp = 6;
-   const uint64_t derp2 = 24;
-   const double x = (double)derp / derp2;
-   const double y = 1.0 - x;
-
-   cout << x << "was x" << "\n";
-   cout << y << "was y" << "\n";
-   cout << "data" << "\n";
-   // BOOST_REQUIRE_EQUAL( success(), transfer( N(alice), N(bob), asset::from_string("1000 CERO"), "hola" ) );
-
-   // alice_balance = get_account(N(alice), "0,CERO");
-   // REQUIRE_MATCHING_OBJECT( alice_balance, mvo()
-   //    ("balance", "0 CERO")
-   // );
-
-   // BOOST_REQUIRE_EQUAL( success(), close( N(alice), "0,CERO" ) );
-   // alice_balance = get_account(N(alice), "0,CERO");
-   // BOOST_REQUIRE_EQUAL(true, alice_balance.is_null() );
-   auto doop = get_stats("4,MATE");
-   cout << doop << "\n";
-   cout << "data2" << "\n";
+  
 
    REQUIRE_MATCHING_OBJECT( get_stats("4,MATE"), mvo()
       ("supply", "1000.0000 MATE")
