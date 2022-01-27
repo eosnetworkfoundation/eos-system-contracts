@@ -460,41 +460,53 @@ BOOST_FIXTURE_TEST_CASE( inflation_limiting, eosio_token_tester ) try {
       ("max_supply", "1000000.0000 MATE")
       ("issuer", "alice")
       ("recall", 1)
-      ("daily_inf_per_limit", "0.00000000000000000")
-      ("yearly_inf_per_limit", "1.00000000000000000")
-      ("allowed_daily_inflation", 0)
+      ("daily_inf_per_limit", "0")
+      ("yearly_inf_per_limit", "0")
+      ("allowed_daily_inflation", 1000000)
       ("avg_daily_inflation", "1000.0000 MATE")
       ("avg_yearly_inflation", "1000.0000 MATE")
-      ("max_inf", 0)
+      ("max_inf", 86400)
       ("last_update", "2020-01-01T00:00:04")
       ("authoriser", "bob")
    );
 
-   produce_block( fc::hours(6) );
+   produce_block( fc::hours(5) );
+   produce_block( fc::minutes(59) );
+   produce_block( fc::seconds(59) );
    BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("1000.0000 MATE"), "hola" ) );
-
-   auto movie = get_stats("4,MATE");
-   cout << movie << "\n";
-   cout << "latest" << "\n";
-
-   // to do
-   // decide on double vs integers for calculations
-   // store in ints
 
    REQUIRE_MATCHING_OBJECT( get_stats("4,MATE"), mvo()
       ("supply", "2000.0000 MATE")
       ("max_supply", "1000000.0000 MATE")
       ("issuer", "alice")
       ("recall", 1)
-      ("daily_inf_per_limit", "1.00000000000000000")
-      ("yearly_inf_per_limit", "1.00000000000000000")
-      ("allowed_daily_inflation", 0)
+      ("daily_inf_per_limit", "0")
+      ("yearly_inf_per_limit", "0")
+      ("allowed_daily_inflation", 999316)
       ("avg_daily_inflation", "1750.0000 MATE")
-      ("avg_yearly_inflation", "1750.0000 MATE")
-      ("max_inf", 0)
-      ("last_update", "2020-01-01T06:00:05")
+      ("avg_yearly_inflation", "1999.3160 MATE")
+      ("max_inf", 86400)
+      ("last_update", "2020-01-01T06:00:04")
       ("authoriser", "bob")
    );
+
+   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("1000.0000 MATE"), "hola" ) );
+
+   REQUIRE_MATCHING_OBJECT( get_stats("4,MATE"), mvo()
+      ("supply", "3000.0000 MATE")
+      ("max_supply", "1000000.0000 MATE")
+      ("issuer", "alice")
+      ("recall", 1)
+      ("daily_inf_per_limit", "0")
+      ("yearly_inf_per_limit", "0")
+      ("allowed_daily_inflation", 1000000)
+      ("avg_daily_inflation", "2750.0000 MATE")
+      ("avg_yearly_inflation", "2999.3160 MATE")
+      ("max_inf", 86400)
+      ("last_update", "2020-01-01T06:00:04")
+      ("authoriser", "bob")
+   );
+
 
 
 } FC_LOG_AND_RETHROW()

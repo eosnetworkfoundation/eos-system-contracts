@@ -166,11 +166,11 @@ namespace eosio {
             // EMA calculated - maximum % difference 
             // daily inflation %
          
-            double daily_inf_per_limit; /// configured by user, can only decrease valid numbers >= 0
+            uint64_t daily_inf_per_limit; /// configured by user, can only decrease valid numbers >= 0
             
             // yearly inflation %
             // EMA calculated from - max % difference
-            double yearly_inf_per_limit; /// configured by user, can only decrease valid numbers >= 0
+            uint64_t yearly_inf_per_limit; /// configured by user, can only decrease valid numbers >= 0
 
             // absolute amount allowed
             uint64_t allowed_daily_inflation; /// config, >= 0, unit = token
@@ -196,6 +196,7 @@ namespace eosio {
 
          void sub_balance( const name& owner, const asset& value );
          void add_balance( const name& owner, const asset& value, const name& ram_payer );
+         uint64_t window_weight(uint64_t delta, uint64_t window_span_secs);
    };
 
 }

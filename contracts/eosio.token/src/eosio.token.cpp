@@ -24,14 +24,22 @@ void token::create( const name&   issuer,
        s.issuer        = issuer;
        s.recall        = true;
        s.last_update   = current_time_point();
-       s.daily_inf_per_limit = 1.0;
-       s.yearly_inf_per_limit = 1.0;
+       s.daily_inf_per_limit = 0.0;
+       s.yearly_inf_per_limit = 0.0;
        s.allowed_daily_inflation = 0;
        s.max_inf = 0;
        s.authoriser = "bob"_n;
     });
 }
 
+uint64_t token::window_weight(uint64_t delta, uint64_t window_span_secs)
+{
+    const uint64_t milli = 1000000;
+    const uint64_t window_travelled_raw = delta * milli / window_span_secs;
+    const uint64_t window_travelled_ppm = window_travelled_raw > milli ? milli : window_travelled_raw;
+    const uint64_t reverse_travelled_ppm = milli - window_travelled_ppm;
+    return reverse_travelled_ppm;
+}
 
 void token::issue( const name& to, const asset& quantity, const string& memo )
 {
@@ -53,27 +61,30 @@ void token::issue( const name& to, const asset& quantity, const string& memo )
     check( quantity.amount <= st.max_supply.amount - st.supply.amount, "quantity exceeds available supply");
 
     const uint64_t milli = 1000000;
-    const uint64_t now = current_time_point().sec_since_epoch();
-    const uint64_t delta = now - st.last_update.sec_since_epoch();
     const uint64_t day = 60 * 60 * 24;
     const uint64_t year = day * 365;
+    
+    const uint64_t now = current_time_point().sec_since_epoch();
+    const uint64_t delta = now - st.last_update.sec_since_epoch();
 
-
-    const double day_travelled_per = (double)delta / day;
-    const double reverse_travelled_per = 1.0 - day_travelled_per > 1.0 ? 1.0 : day_travelled_per;  
-
-    const asset current_avg = st.avg_daily_inflation;
-    const asset new_avg = asset(current_avg.amount * reverse_travelled_per, quantity.symbol) + quantity;
-
+    const uint64_t day_weight_ppm = window_weight(delta, day);
+    const uint64_t year_weight_ppm = window_weight(delta, year);
+    
+    const asset new_day_avg = asset(int64_t(st.avg_daily_inflation.amount * int128_t(day_weight_ppm) / milli), quantity.symbol) + quantity;
+    const asset new_year_avg = asset(int64_t(st.avg_yearly_inflation.amount * int128_t(year_weight_ppm) / milli), quantity.symbol) + quantity;
 
     const asset old_supply = st.supply;
     const asset new_supply = old_supply + quantity; 
 
+   
+
+
     statstable.modify( st, same_payer, [&]( auto& s ) {
        s.supply = new_supply;
-       s.avg_daily_inflation = new_avg;
-       s.avg_yearly_inflation = new_avg;
-       s.daily_inf_per_limit = day_travelled_per;
+       s.avg_daily_inflation = new_day_avg;
+       s.avg_yearly_inflation = new_year_avg;
+       s.allowed_daily_inflation = year_weight_ppm;
+       s.max_inf = day;
        s.last_update = current_time_point();
     });
  
