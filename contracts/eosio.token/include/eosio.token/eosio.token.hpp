@@ -66,12 +66,18 @@ namespace eosio {
          /**
           * Update token symbol settings
           *
-          * @param symbol - Token to update
+          * @param sym - Token to update
           * @param recall - true to keep recalling feature, false to permanently disable
-          * @param max_inf - update annual inflation, cannot increase, must be the same or less
+          * @param daily_inf_per_limit - update daily inflation percent ppm, cannot increase, must be the same or less
+          * @param yearly_inf_per_limit - update annual inflation percent ppm, cannot increase, must be the same or less
+          * @param allowed_daily_inflation - allowed daily inflation amount, cannot increase, must be the same or less
           */
          [[eosio::action]]
-         void update( const symbol& symbol, const bool& recall, const uint64_t& max_inf );
+         void update( const symbol& sym, 
+                      const bool& recall, 
+                      const uint64_t& daily_inf_per_limit,
+                      const uint64_t& yearly_inf_per_limit,
+                      const asset& allowed_daily_inflation );
 
          /**
           * The opposite for create action, if all validations succeed,
@@ -163,9 +169,6 @@ namespace eosio {
             // Recall - Specifies whether the issuer can recall tokens
             bool     recall;
 
-            // EMA calculated - maximum % difference 
-            // daily inflation %
-         
             uint64_t daily_inf_per_limit; /// ppm configured by user, can only decrease valid numbers >= 0
             uint64_t yearly_inf_per_limit; /// ppm configured by user, can only decrease valid numbers >= 0
 

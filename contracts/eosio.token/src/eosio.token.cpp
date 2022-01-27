@@ -74,47 +74,58 @@ void token::issue( const name& to, const asset& quantity, const string& memo )
     const asset old_supply = st.supply;
     const asset new_supply = old_supply + quantity; 
 
-    const bool is_first_issuance = old_supply.amount == 0;
-    if (is_first_issuance) {
-      statstable.modify( st, same_payer, [&]( auto& s ) {
+    if (new_day_avg.amount > st.allowed_daily_inflation.amount) {
+       const uint64_t avg_daily_ppm_inf  = (new_day_avg.amount  * int128_t(milli)) / old_supply.amount;
+       const uint64_t avg_yearly_ppm_inf = (new_year_avg.amount * int128_t(milli)) / old_supply.amount;
+       
+       check(avg_daily_ppm_inf < st.daily_inf_per_limit , "daily inflation reached");
+       check(avg_yearly_ppm_inf < st.yearly_inf_per_limit, "yearly inflation reached");
+    }
+ 
+    statstable.modify( st, same_payer, [&]( auto& s ) {
        s.supply = new_supply;
+       s.last_update = current_time_point();
        s.avg_daily_inflation = new_day_avg;
        s.avg_yearly_inflation = new_year_avg;
-       s.last_update = current_time_point();
     });
-    } else {
 
-      if (new_day_avg.amount > st.allowed_daily_inflation.amount) {
-         const uint64_t avg_daily_ppm_inf  = new_day_avg.amount  * int128_t(milli) / old_supply.amount;
-         const uint64_t avg_yearly_ppm_inf = new_year_avg.amount * int128_t(milli) / old_supply.amount;
-
-         check(avg_daily_ppm_inf < st.daily_inf_per_limit, "daily inflation reached");
-         check(avg_yearly_ppm_inf < st.yearly_inf_per_limit, "yearly inflation reached");
-      }
-
-
-      statstable.modify( st, same_payer, [&]( auto& s ) {
-         s.supply = new_supply;
-         s.avg_daily_inflation = new_day_avg;
-         s.avg_yearly_inflation = new_year_avg;
-         s.last_update = current_time_point();
-      });
-
-    }
-
-
-
- 
     add_balance( st.issuer, quantity, st.issuer );
 }
+
+
 
 void token::payfee( const name& from, const asset& fee )
 {
 
 }
 
-void token::update( const symbol& symbol, const bool& recall, const uint64_t& max_inf )
+void token::update( const symbol& sym, 
+                    const bool& recall, 
+                    const uint64_t& daily_inf_per_limit,
+                    const uint64_t& yearly_inf_per_limit,
+                    const asset& allowed_daily_inflation )
 {
+    stats statstable( get_self(), sym.code().raw() );
+    auto existing = statstable.find( sym.code().raw() );
+    check( existing != statstable.end(), "token with symbol does not exist, create token before issue" );
+    const auto& st = *existing;
+
+    require_auth( st.issuer );
+
+    if (recall) {
+       check(st.recall, "cannot enable recall once disabled");
+    }
+
+    check(daily_inf_per_limit <= st.daily_inf_per_limit, "cannot raise daily inflation percent limit");
+    check(yearly_inf_per_limit <= st.yearly_inf_per_limit, "cannot raise yearly inflation percent limit");
+    check(allowed_daily_inflation.amount <= st.allowed_daily_inflation.amount, "cannot raise absolute daily inflation limit");
+
+    statstable.modify( st, same_payer, [&]( auto& s ) {
+      s.recall = recall;
+      s.daily_inf_per_limit = daily_inf_per_limit;
+      s.yearly_inf_per_limit = yearly_inf_per_limit;
+      s.allowed_daily_inflation = allowed_daily_inflation;
+    });
 
 }
 

@@ -485,6 +485,11 @@ BOOST_FIXTURE_TEST_CASE( inflation_limiting, eosio_token_tester ) try {
       ("authoriser", "bob")
    );
 
+   cout << get_stats("4,MATE") << "\n";
+
+   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("10000.0000 MATE"), "hola" ) );
+
+   cout << get_stats("4,MATE") << "\n";
 
 
 } FC_LOG_AND_RETHROW()
