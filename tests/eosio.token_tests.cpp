@@ -421,7 +421,8 @@ BOOST_AUTO_TEST_SUITE(eosio_token_tests)
 
 BOOST_FIXTURE_TEST_CASE( inflation_limiting, eosio_token_tester ) try {
 
-   auto token = create( N(alice), asset::from_string("1000000.0000 MATE"));
+   BOOST_REQUIRE_EQUAL( success(), create( N(alice), asset::from_string("1000000.0000 MATE")) );
+
 
    auto alice_balance = get_account(N(alice), "4,MATE");
    BOOST_REQUIRE_EQUAL(true, alice_balance.is_null() );
@@ -460,12 +461,11 @@ BOOST_FIXTURE_TEST_CASE( inflation_limiting, eosio_token_tester ) try {
       ("max_supply", "1000000.0000 MATE")
       ("issuer", "alice")
       ("recall", 1)
-      ("daily_inf_per_limit", "0")
-      ("yearly_inf_per_limit", "0")
-      ("allowed_daily_inflation", 1000000)
+      ("daily_inf_per_limit", 200000)
+      ("yearly_inf_per_limit", 200000)
+      ("allowed_daily_inflation", "1000000.0000 MATE")
       ("avg_daily_inflation", "1000.0000 MATE")
       ("avg_yearly_inflation", "1000.0000 MATE")
-      ("max_inf", 86400)
       ("last_update", "2020-01-01T00:00:04")
       ("authoriser", "bob")
    );
@@ -480,12 +480,11 @@ BOOST_FIXTURE_TEST_CASE( inflation_limiting, eosio_token_tester ) try {
       ("max_supply", "1000000.0000 MATE")
       ("issuer", "alice")
       ("recall", 1)
-      ("daily_inf_per_limit", "0")
-      ("yearly_inf_per_limit", "0")
-      ("allowed_daily_inflation", 999316)
+      ("daily_inf_per_limit", 200000)
+      ("yearly_inf_per_limit", 200000)
+      ("allowed_daily_inflation", "1000000.0000 MATE")
       ("avg_daily_inflation", "1750.0000 MATE")
       ("avg_yearly_inflation", "1999.3160 MATE")
-      ("max_inf", 86400)
       ("last_update", "2020-01-01T06:00:04")
       ("authoriser", "bob")
    );
@@ -497,12 +496,11 @@ BOOST_FIXTURE_TEST_CASE( inflation_limiting, eosio_token_tester ) try {
       ("max_supply", "1000000.0000 MATE")
       ("issuer", "alice")
       ("recall", 1)
-      ("daily_inf_per_limit", "0")
-      ("yearly_inf_per_limit", "0")
-      ("allowed_daily_inflation", 1000000)
+      ("daily_inf_per_limit", 200000)
+      ("yearly_inf_per_limit", 200000)
+      ("allowed_daily_inflation", "1000000.0000 MATE")
       ("avg_daily_inflation", "2750.0000 MATE")
       ("avg_yearly_inflation", "2999.3160 MATE")
-      ("max_inf", 86400)
       ("last_update", "2020-01-01T06:00:04")
       ("authoriser", "bob")
    );

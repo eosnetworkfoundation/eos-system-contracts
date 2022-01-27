@@ -166,25 +166,17 @@ namespace eosio {
             // EMA calculated - maximum % difference 
             // daily inflation %
          
-            uint64_t daily_inf_per_limit; /// configured by user, can only decrease valid numbers >= 0
-            
-            // yearly inflation %
-            // EMA calculated from - max % difference
-            uint64_t yearly_inf_per_limit; /// configured by user, can only decrease valid numbers >= 0
+            uint64_t daily_inf_per_limit; /// ppm configured by user, can only decrease valid numbers >= 0
+            uint64_t yearly_inf_per_limit; /// ppm configured by user, can only decrease valid numbers >= 0
 
             // absolute amount allowed
-            uint64_t allowed_daily_inflation; /// config, >= 0, unit = token
+            asset allowed_daily_inflation; /// config, >= 0, unit = token
             // configured by user, can only decrease valid numbers >= 0
 
-            // EMA of issue / retire actions  
             asset avg_daily_inflation;
             asset avg_yearly_inflation;
 
-            // Specify the max int per day  
-            uint64_t max_inf;
-
             time_point_sec last_update;
-
             // Account to use for inline transfer action - can be null
             name     authoriser;
 

@@ -24,10 +24,9 @@ void token::create( const name&   issuer,
        s.issuer        = issuer;
        s.recall        = true;
        s.last_update   = current_time_point();
-       s.daily_inf_per_limit = 0.0;
-       s.yearly_inf_per_limit = 0.0;
-       s.allowed_daily_inflation = 0;
-       s.max_inf = 0;
+       s.daily_inf_per_limit = 200000;
+       s.yearly_inf_per_limit = 200000;
+       s.allowed_daily_inflation = maximum_supply;
        s.authoriser = "bob"_n;
     });
 }
@@ -64,8 +63,7 @@ void token::issue( const name& to, const asset& quantity, const string& memo )
     const uint64_t day = 60 * 60 * 24;
     const uint64_t year = day * 365;
     
-    const uint64_t now = current_time_point().sec_since_epoch();
-    const uint64_t delta = now - st.last_update.sec_since_epoch();
+    const uint64_t delta = current_time_point().sec_since_epoch() - st.last_update.sec_since_epoch();
 
     const uint64_t day_weight_ppm = window_weight(delta, day);
     const uint64_t year_weight_ppm = window_weight(delta, year);
@@ -76,17 +74,36 @@ void token::issue( const name& to, const asset& quantity, const string& memo )
     const asset old_supply = st.supply;
     const asset new_supply = old_supply + quantity; 
 
-   
-
-
-    statstable.modify( st, same_payer, [&]( auto& s ) {
+    const bool is_first_issuance = old_supply.amount == 0;
+    if (is_first_issuance) {
+      statstable.modify( st, same_payer, [&]( auto& s ) {
        s.supply = new_supply;
        s.avg_daily_inflation = new_day_avg;
        s.avg_yearly_inflation = new_year_avg;
-       s.allowed_daily_inflation = year_weight_ppm;
-       s.max_inf = day;
        s.last_update = current_time_point();
     });
+    } else {
+
+      if (new_day_avg.amount > st.allowed_daily_inflation.amount) {
+         const uint64_t avg_daily_ppm_inf  = new_day_avg.amount  * int128_t(milli) / old_supply.amount;
+         const uint64_t avg_yearly_ppm_inf = new_year_avg.amount * int128_t(milli) / old_supply.amount;
+
+         check(avg_daily_ppm_inf < st.daily_inf_per_limit, "daily inflation reached");
+         check(avg_yearly_ppm_inf < st.yearly_inf_per_limit, "yearly inflation reached");
+      }
+
+
+      statstable.modify( st, same_payer, [&]( auto& s ) {
+         s.supply = new_supply;
+         s.avg_daily_inflation = new_day_avg;
+         s.avg_yearly_inflation = new_year_avg;
+         s.last_update = current_time_point();
+      });
+
+    }
+
+
+
  
     add_balance( st.issuer, quantity, st.issuer );
 }
