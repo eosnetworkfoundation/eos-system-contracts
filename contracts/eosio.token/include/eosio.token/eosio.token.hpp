@@ -53,15 +53,6 @@ namespace eosio {
          [[eosio::action]]
          void issue( const name& to, const asset& quantity, const string& memo );
 
-         /**
-          * For use in conjuction with traditional transfer method
-          * to pay for traditional transfer fees
-          *
-          * @param from - the account to add payable fees
-          * @param fee - the fee quantity of EOS.
-          */
-         [[eosio::action]]
-         void payfee( const name& from, const asset& fee );
 
          /**
           * Update token symbol settings
@@ -152,7 +143,6 @@ namespace eosio {
          using transfer_action = eosio::action_wrapper<"transfer"_n, &token::transfer>;
          using open_action = eosio::action_wrapper<"open"_n, &token::open>;
          using close_action = eosio::action_wrapper<"close"_n, &token::close>;
-         using payfee_action = eosio::action_wrapper<"payfee"_n, &token::payfee>;
          using update_action = eosio::action_wrapper<"update"_n, &token::update>;
 
       private:

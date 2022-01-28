@@ -91,12 +91,6 @@ void token::issue( const name& to, const asset& quantity, const string& memo )
 }
 
 
-
-void token::payfee( const name& from, const asset& fee )
-{
-
-}
-
 void token::update( const symbol& sym, 
                     const bool& recall, 
                     const bool& authorise, 
