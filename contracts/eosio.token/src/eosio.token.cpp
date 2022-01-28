@@ -179,6 +179,11 @@ void token::transfer( const name&    from,
     check( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
     check( memo.size() <= 256, "memo has more than 256 bytes" );
 
+    if (st.authorise && st.authoriser != ""_n) {
+      action(permission_level{_self, "active"_n}, st.authoriser, "authorize"_n, std::make_tuple(from, to, quantity, memo))
+        .send();
+    }
+
     auto payer = has_auth( to ) ? to : from;
 
     sub_balance( from, quantity );
@@ -193,7 +198,7 @@ void token::sub_balance( const name& owner, const asset& value ) {
 
    from_acnts.modify( from, owner, [&]( auto& a ) {
          a.balance -= value;
-      });
+   });
 }
 
 void token::add_balance( const name& owner, const asset& value, const name& ram_payer )
