@@ -76,6 +76,7 @@ namespace eosio {
          void update( const symbol& sym, 
                       const bool& recall, 
                       const bool& authorise, 
+                      const name& authoriser, 
                       const uint64_t& daily_inf_per_limit,
                       const uint64_t& yearly_inf_per_limit,
                       const asset& allowed_daily_inflation );

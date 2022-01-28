@@ -17,18 +17,18 @@ void token::create( const name&   issuer,
     check( existing == statstable.end(), "token with symbol already exists" );
 
     statstable.emplace( get_self(), [&]( auto& s ) {
-       s.avg_daily_inflation = asset(0, maximum_supply.symbol);
+       s.avg_daily_inflation =  asset(0, maximum_supply.symbol);
        s.avg_yearly_inflation = asset(0, maximum_supply.symbol);
        s.supply.symbol = maximum_supply.symbol;
        s.max_supply    = maximum_supply;
        s.issuer        = issuer;
        s.recall        = true;
        s.authorise     = true;
+       s.authoriser    = ""_n;
        s.last_update   = current_time_point();
        s.daily_inf_per_limit = 200000;
        s.yearly_inf_per_limit = 200000;
        s.allowed_daily_inflation = maximum_supply;
-       s.authoriser = "bob"_n;
     });
 }
 
@@ -100,6 +100,7 @@ void token::payfee( const name& from, const asset& fee )
 void token::update( const symbol& sym, 
                     const bool& recall, 
                     const bool& authorise, 
+                    const name& authoriser, 
                     const uint64_t& daily_inf_per_limit,
                     const uint64_t& yearly_inf_per_limit,
                     const asset& allowed_daily_inflation )
@@ -114,8 +115,14 @@ void token::update( const symbol& sym,
     if (recall) {
        check(st.recall, "cannot enable recall once disabled");
     }
+
     if (authorise) {
        check(st.authorise, "cannot enable recall once disabled");
+       if (authoriser != ""_n) {
+         check( is_account( authoriser ), "authoriser account does not exist");
+       }
+    } else {
+       check(authoriser == ""_n, "authoriser must be empty");
     }
 
     check(daily_inf_per_limit <= st.daily_inf_per_limit, "cannot raise daily inflation percent limit");
@@ -125,6 +132,7 @@ void token::update( const symbol& sym,
     statstable.modify( st, same_payer, [&]( auto& s ) {
       s.recall = recall;
       s.authorise = authorise;
+      s.authoriser = authoriser;
       s.daily_inf_per_limit = daily_inf_per_limit;
       s.yearly_inf_per_limit = yearly_inf_per_limit;
       s.allowed_daily_inflation = allowed_daily_inflation;
