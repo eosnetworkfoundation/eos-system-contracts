@@ -52,6 +52,7 @@ mkdir -p ~/work
 cd ~/work
 git clone https://github.com/eosnetworkfoundation/mandel.git
 cd mandel
+git checkout v3.0.0-rc1
 git submodule update --init --recursive
 mkdir build
 cd build
