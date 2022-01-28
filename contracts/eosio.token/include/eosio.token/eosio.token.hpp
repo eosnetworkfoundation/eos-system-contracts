@@ -75,6 +75,7 @@ namespace eosio {
          [[eosio::action]]
          void update( const symbol& sym, 
                       const bool& recall, 
+                      const bool& authorise, 
                       const uint64_t& daily_inf_per_limit,
                       const uint64_t& yearly_inf_per_limit,
                       const asset& allowed_daily_inflation );
@@ -168,6 +169,8 @@ namespace eosio {
             // Added properties
             // Recall - Specifies whether the issuer can recall tokens
             bool     recall;
+            // Authorise - Specifies whether the issuer can elect an authorisation account, once false can never be changed
+            bool     authorise;
 
             uint64_t daily_inf_per_limit; /// ppm configured by user, can only decrease valid numbers >= 0
             uint64_t yearly_inf_per_limit; /// ppm configured by user, can only decrease valid numbers >= 0

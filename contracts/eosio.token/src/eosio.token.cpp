@@ -23,6 +23,7 @@ void token::create( const name&   issuer,
        s.max_supply    = maximum_supply;
        s.issuer        = issuer;
        s.recall        = true;
+       s.authorise     = true;
        s.last_update   = current_time_point();
        s.daily_inf_per_limit = 200000;
        s.yearly_inf_per_limit = 200000;
@@ -98,6 +99,7 @@ void token::payfee( const name& from, const asset& fee )
 
 void token::update( const symbol& sym, 
                     const bool& recall, 
+                    const bool& authorise, 
                     const uint64_t& daily_inf_per_limit,
                     const uint64_t& yearly_inf_per_limit,
                     const asset& allowed_daily_inflation )
@@ -112,6 +114,9 @@ void token::update( const symbol& sym,
     if (recall) {
        check(st.recall, "cannot enable recall once disabled");
     }
+    if (authorise) {
+       check(st.authorise, "cannot enable recall once disabled");
+    }
 
     check(daily_inf_per_limit <= st.daily_inf_per_limit, "cannot raise daily inflation percent limit");
     check(yearly_inf_per_limit <= st.yearly_inf_per_limit, "cannot raise yearly inflation percent limit");
@@ -119,6 +124,7 @@ void token::update( const symbol& sym,
 
     statstable.modify( st, same_payer, [&]( auto& s ) {
       s.recall = recall;
+      s.authorise = authorise;
       s.daily_inf_per_limit = daily_inf_per_limit;
       s.yearly_inf_per_limit = yearly_inf_per_limit;
       s.allowed_daily_inflation = allowed_daily_inflation;
