@@ -61,8 +61,8 @@ void token::issue( const name& to, const asset& quantity, const string& memo )
     check( quantity.amount <= st.max_supply.amount - st.supply.amount, "quantity exceeds available supply");
 
     const uint64_t milli = 1000000;
-    const uint64_t day = 60 * 60 * 24;
-    const uint64_t year = day * 365;
+    const uint64_t day   = 60 * 60 * 24;
+    const uint64_t year  = day * 365;
     
     const uint64_t delta = current_time_point().sec_since_epoch() - st.last_update.sec_since_epoch();
 
@@ -103,8 +103,9 @@ void token::update( const symbol&    sym,
     auto existing = statstable.find( sym.code().raw() );
     check( existing != statstable.end(), "token with symbol does not exist, create token before issue" );
     const auto& st = *existing;
-
+    
     require_auth( st.issuer );
+    check(st.sym == allowed_daily_inflation.symbol, "symbol precision mismatch");
 
     if (recall) {
        check(st.recall, "cannot enable recall once disabled");
