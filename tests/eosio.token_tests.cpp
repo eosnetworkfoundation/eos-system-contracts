@@ -16,6 +16,10 @@ using namespace std;
 
 using mvo = fc::mutable_variant_object;
 
+symbol_code sc(std::string symbol_code) {
+   return asset::from_string("100.0000 " + symbol_code).get_symbol().to_symbol_code();
+}
+
 class eosio_token_tester : public tester {
 public:
 
@@ -511,19 +515,32 @@ BOOST_FIXTURE_TEST_CASE( inflation_limiting, eosio_token_tester ) try {
 
    BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("10000.0000 MATE"), "hola" ) );
 
-   const asset mate = asset::from_string("100.0000 MATE");
-//        auto sym = mate.symbol;
-
-// sym.code().raw()
-
    BOOST_REQUIRE_EQUAL( success(), update( N(alice), 
-                                           mate.symbol.code(),
+                                           sc("MATE"),
                                            true,
                                            true,
                                            ""_n,
                                            150000,
                                            150000,
                                            asset::from_string("3000.0000 MATE") ));
+
+   REQUIRE_MATCHING_OBJECT( get_stats("4,MATE"), mvo()
+      ("supply", "13000.0000 MATE")
+      ("max_supply", "1000000.0000 MATE")
+      ("issuer", "alice")
+      ("recall", 1)
+      ("authorize", 1)
+      ("daily_inf_per_limit", 150000)
+      ("yearly_inf_per_limit", 150000)
+      ("allowed_daily_inflation", "3000.0000 MATE")
+      ("avg_daily_inflation", "12749.9697 MATE")
+      ("avg_yearly_inflation", "12999.3160 MATE")
+      ("last_update", "2020-01-01T06:00:05")
+      ("authorizer", "")
+   );
+
+   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("1950.0000 MATE"), "hola" ) );
+
 
    cout << get_stats("4,MATE") << "\n";
 

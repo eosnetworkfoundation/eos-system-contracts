@@ -99,8 +99,8 @@ void token::update( const symbol_code&    sym,
                     const uint64_t&  yearly_inf_per_limit,
                     const asset&     allowed_daily_inflation )
 {
-    stats statstable( get_self(), sym.code().raw() );
-    auto existing = statstable.find( sym.code().raw() );
+    stats statstable( get_self(), sym.raw() );
+    auto existing = statstable.find( sym.raw() );
     check( existing != statstable.end(), "token with symbol does not exist, create token before issue" );
     const auto& st = *existing;
     

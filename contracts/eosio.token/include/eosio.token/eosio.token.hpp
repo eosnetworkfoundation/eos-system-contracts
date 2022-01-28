@@ -64,13 +64,13 @@ namespace eosio {
           * @param allowed_daily_inflation - allowed daily inflation amount, cannot increase, must be the same or less
           */
          [[eosio::action]]
-         void update( const symbol& sym, 
-                      const bool& recall, 
-                      const bool& authorize, 
-                      const name& authorizer, 
-                      const uint64_t& daily_inf_per_limit,
-                      const uint64_t& yearly_inf_per_limit,
-                      const asset& allowed_daily_inflation );
+         void update( const symbol_code& sym, 
+                      const bool&        recall, 
+                      const bool&        authorize, 
+                      const name&        authorizer, 
+                      const uint64_t&    daily_inf_per_limit,
+                      const uint64_t&    yearly_inf_per_limit,
+                      const asset&       allowed_daily_inflation );
 
          /**
           * The opposite for create action, if all validations succeed,
