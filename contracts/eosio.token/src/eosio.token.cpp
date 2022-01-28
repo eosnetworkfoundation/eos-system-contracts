@@ -91,7 +91,7 @@ void token::issue( const name& to, const asset& quantity, const string& memo )
 }
 
 
-void token::update( const symbol&    sym, 
+void token::update( const symbol_code&    sym, 
                     const bool&      recall, 
                     const bool&      authorize, 
                     const name&      authorizer, 
@@ -105,7 +105,7 @@ void token::update( const symbol&    sym,
     const auto& st = *existing;
     
     require_auth( st.issuer );
-    check(st.sym == allowed_daily_inflation.symbol, "symbol precision mismatch");
+    check(sym == allowed_daily_inflation.symbol.code(), "symbol precision mismatch");
 
     if (recall) {
        check(st.recall, "cannot enable recall once disabled");

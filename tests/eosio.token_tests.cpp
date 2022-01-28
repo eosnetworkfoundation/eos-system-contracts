@@ -72,6 +72,25 @@ public:
       );
    }
 
+   action_result update( account_name actor,
+                         symbol_code sym,
+                         bool recall,
+                         bool authorize,
+                         name authorizer,
+                         uint64_t daily_inf_per_limit,
+                         uint64_t yearly_inf_per_limit,
+                         asset allowed_daily_inflation ) {
+      return push_action( actor, N(update), mvo()
+         ( "sym", sym)
+         ( "recall", recall)
+         ( "authorize", authorize)
+         ( "authorizer", authorizer)
+         ( "daily_inf_per_limit", daily_inf_per_limit)
+         ( "yearly_inf_per_limit", yearly_inf_per_limit)
+         ( "allowed_daily_inflation", allowed_daily_inflation)
+      );
+   }
+
    action_result issue( account_name issuer, asset quantity, string memo ) {
       return push_action( issuer, N(issue), mvo()
            ( "to", issuer)
@@ -491,6 +510,20 @@ BOOST_FIXTURE_TEST_CASE( inflation_limiting, eosio_token_tester ) try {
    cout << get_stats("4,MATE") << "\n";
 
    BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("10000.0000 MATE"), "hola" ) );
+
+   const asset mate = asset::from_string("100.0000 MATE");
+//        auto sym = mate.symbol;
+
+// sym.code().raw()
+
+   BOOST_REQUIRE_EQUAL( success(), update( N(alice), 
+                                           mate.symbol.code(),
+                                           true,
+                                           true,
+                                           ""_n,
+                                           150000,
+                                           150000,
+                                           asset::from_string("3000.0000 MATE") ));
 
    cout << get_stats("4,MATE") << "\n";
 
