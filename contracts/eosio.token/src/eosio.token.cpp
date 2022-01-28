@@ -17,17 +17,17 @@ void token::create( const name&   issuer,
     check( existing == statstable.end(), "token with symbol already exists" );
 
     statstable.emplace( get_self(), [&]( auto& s ) {
-       s.avg_daily_inflation =  asset(0, maximum_supply.symbol);
-       s.avg_yearly_inflation = asset(0, maximum_supply.symbol);
-       s.supply.symbol = maximum_supply.symbol;
-       s.max_supply    = maximum_supply;
-       s.issuer        = issuer;
-       s.recall        = true;
-       s.authorize     = true;
-       s.authorizer    = ""_n;
-       s.last_update   = current_time_point();
-       s.daily_inf_per_limit = 200000;
-       s.yearly_inf_per_limit = 200000;
+       s.avg_daily_inflation     = asset(0, maximum_supply.symbol);
+       s.avg_yearly_inflation    = asset(0, maximum_supply.symbol);
+       s.supply.symbol           = maximum_supply.symbol;
+       s.max_supply              = maximum_supply;
+       s.issuer                  = issuer;
+       s.recall                  = true;
+       s.authorize               = true;
+       s.authorizer              = ""_n;
+       s.last_update             = current_time_point();
+       s.daily_inf_per_limit     = 10000000000000000000;
+       s.yearly_inf_per_limit    = 10000000000000000000;
        s.allowed_daily_inflation = maximum_supply;
     });
 }
@@ -91,13 +91,13 @@ void token::issue( const name& to, const asset& quantity, const string& memo )
 }
 
 
-void token::update( const symbol& sym, 
-                    const bool& recall, 
-                    const bool& authorize, 
-                    const name& authorizer, 
-                    const uint64_t& daily_inf_per_limit,
-                    const uint64_t& yearly_inf_per_limit,
-                    const asset& allowed_daily_inflation )
+void token::update( const symbol&    sym, 
+                    const bool&      recall, 
+                    const bool&      authorize, 
+                    const name&      authorizer, 
+                    const uint64_t&  daily_inf_per_limit,
+                    const uint64_t&  yearly_inf_per_limit,
+                    const asset&     allowed_daily_inflation )
 {
     stats statstable( get_self(), sym.code().raw() );
     auto existing = statstable.find( sym.code().raw() );
