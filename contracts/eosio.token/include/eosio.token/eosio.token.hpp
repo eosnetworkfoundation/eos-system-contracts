@@ -183,7 +183,7 @@ namespace eosio {
          typedef eosio::multi_index< "accounts"_n, account > accounts;
          typedef eosio::multi_index< "stat"_n, currency_stats > stats;
 
-         void sub_balance( const name& owner, const asset& value );
+         void sub_balance( const name& owner, const asset& value, const name& issuer );
          void add_balance( const name& owner, const asset& value, const name& ram_payer );
          asset calculate_avg(uint64_t delta, uint64_t window_span_secs, asset current_avg, asset new_issuance);
    };

@@ -113,9 +113,9 @@ public:
 
    action_result transfer( account_name actor,
                            account_name from,
-                  account_name to,
-                  asset        quantity,
-                  string       memo ) {
+                           account_name to,
+                           asset        quantity,
+                           string       memo ) {
       return push_action( actor, N(transfer), mvo()
            ( "from", from)
            ( "to", to)
@@ -540,12 +540,45 @@ BOOST_FIXTURE_TEST_CASE( inflation_limiting, eosio_token_tester ) try {
       ("authorizer", "")
    );
 
-   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("1950.0000 MATE"), "hola" ) );
-
-
-   cout << get_stats("4,MATE") << "\n";
+   // BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("1950.0000 MATE"), "hola" ) );
 
 
 } FC_LOG_AND_RETHROW()
+
+BOOST_FIXTURE_TEST_CASE( cannot_reenable_recall, eosio_token_tester ) try {
+
+   BOOST_REQUIRE_EQUAL( success(), create( N(alice), asset::from_string("1000000.0000 MATE")) );
+   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("10000.0000 MATE"), "hola" ) );
+
+   BOOST_REQUIRE_EQUAL( success(), transfer( "alice"_n, "alice"_n, "bob"_n, asset::from_string("50.0000 MATE"), "hola" ) );
+
+   REQUIRE_MATCHING_OBJECT( get_account("bob"_n, "4,MATE"), mvo()
+      ("balance", "50.0000 MATE")
+   );
+
+   BOOST_REQUIRE_EQUAL( success(), transfer( "alice"_n, "bob"_n, "carol"_n, asset::from_string("10.0000 MATE"), "hola" ) );
+
+   BOOST_REQUIRE_EQUAL( success(), 
+                                           update( "alice"_n, 
+                                           sc("MATE"),
+                                           false,
+                                           true,
+                                           ""_n,
+                                           150000,
+                                           150000,
+                                           asset::from_string("3000.0000 MATE") ));
+
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "cannot enable recall once disabled" ), 
+                                          update( N(alice), 
+                                           sc("MATE"),
+                                           true,
+                                           true,
+                                           ""_n,
+                                           150000,
+                                           150000,
+                                           asset::from_string("3000.0000 MATE") ));
+
+} FC_LOG_AND_RETHROW()
+
 
 BOOST_AUTO_TEST_SUITE_END()

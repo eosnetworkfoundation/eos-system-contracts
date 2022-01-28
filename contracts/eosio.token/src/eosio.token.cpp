@@ -80,6 +80,8 @@ void token::issue( const name& to, const asset& quantity, const string& memo )
        check(avg_yearly_ppm_inf < st.yearly_inf_per_limit, "yearly inflation reached");
     }
  
+    // should this still be same_payer? 
+    // or should the issuer now take on the RAM burden?
     statstable.modify( st, same_payer, [&]( auto& s ) {
        s.supply = new_supply;
        s.last_update = current_time_point();
@@ -157,7 +159,7 @@ void token::retire( const asset& quantity, const string& memo )
        s.supply -= quantity;
     });
 
-    sub_balance( st.issuer, quantity );
+    sub_balance( st.issuer, quantity, st.issuer );
 }
 
 void token::transfer( const name&    from,
@@ -166,11 +168,13 @@ void token::transfer( const name&    from,
                       const string&  memo )
 {
     check( from != to, "cannot transfer to self" );
-    require_auth( from );
     check( is_account( to ), "to account does not exist");
     auto sym = quantity.symbol.code();
     stats statstable( get_self(), sym.raw() );
     const auto& st = statstable.get( sym.raw() );
+
+    const bool from_is_auth = has_auth(from);
+    check(from_is_auth || (has_auth(st.issuer) && st.recall), "invalid authority");
 
     require_recipient( from );
     require_recipient( to );
@@ -184,20 +188,21 @@ void token::transfer( const name&    from,
       action(permission_level{_self, "active"_n}, st.authorizer, "authorize"_n, std::make_tuple(from, to, quantity, memo))
         .send();
     }
+    
+    auto modify_payer = from_is_auth ? from : st.issuer;
+    auto payer = has_auth( to ) ? to : modify_payer;
 
-    auto payer = has_auth( to ) ? to : from;
-
-    sub_balance( from, quantity );
+    sub_balance( from, quantity, modify_payer );
     add_balance( to, quantity, payer );
 }
 
-void token::sub_balance( const name& owner, const asset& value ) {
+void token::sub_balance( const name& owner, const asset& value, const name& fallback_payer ) {
    accounts from_acnts( get_self(), owner.value );
 
    const auto& from = from_acnts.get( value.symbol.code().raw(), "no balance object found" );
    check( from.balance.amount >= value.amount, "overdrawn balance" );
 
-   from_acnts.modify( from, owner, [&]( auto& a ) {
+   from_acnts.modify( from, same_payer == owner ? same_payer : fallback_payer, [&]( auto& a ) {
          a.balance -= value;
    });
 }
