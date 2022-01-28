@@ -111,11 +111,12 @@ public:
 
    }
 
-   action_result transfer( account_name from,
+   action_result transfer( account_name actor,
+                           account_name from,
                   account_name to,
                   asset        quantity,
                   string       memo ) {
-      return push_action( from, N(transfer), mvo()
+      return push_action( actor, N(transfer), mvo()
            ( "from", from)
            ( "to", to)
            ( "quantity", quantity)
