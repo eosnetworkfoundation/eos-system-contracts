@@ -23,8 +23,8 @@ void token::create( const name&   issuer,
        s.max_supply    = maximum_supply;
        s.issuer        = issuer;
        s.recall        = true;
-       s.authorise     = true;
-       s.authoriser    = ""_n;
+       s.authorize     = true;
+       s.authorizer    = ""_n;
        s.last_update   = current_time_point();
        s.daily_inf_per_limit = 200000;
        s.yearly_inf_per_limit = 200000;
@@ -93,8 +93,8 @@ void token::issue( const name& to, const asset& quantity, const string& memo )
 
 void token::update( const symbol& sym, 
                     const bool& recall, 
-                    const bool& authorise, 
-                    const name& authoriser, 
+                    const bool& authorize, 
+                    const name& authorizer, 
                     const uint64_t& daily_inf_per_limit,
                     const uint64_t& yearly_inf_per_limit,
                     const asset& allowed_daily_inflation )
@@ -110,13 +110,13 @@ void token::update( const symbol& sym,
        check(st.recall, "cannot enable recall once disabled");
     }
 
-    if (authorise) {
-       check(st.authorise, "cannot enable recall once disabled");
-       if (authoriser != ""_n) {
-         check( is_account( authoriser ), "authoriser account does not exist");
+    if (authorize) {
+       check(st.authorize, "cannot enable recall once disabled");
+       if (authorizer != ""_n) {
+         check( is_account( authorizer ), "authorizer account does not exist");
        }
     } else {
-       check(authoriser == ""_n, "authoriser must be empty");
+       check(authorizer == ""_n, "authorizer must be empty");
     }
 
     check(daily_inf_per_limit <= st.daily_inf_per_limit, "cannot raise daily inflation percent limit");
@@ -125,8 +125,8 @@ void token::update( const symbol& sym,
 
     statstable.modify( st, same_payer, [&]( auto& s ) {
       s.recall = recall;
-      s.authorise = authorise;
-      s.authoriser = authoriser;
+      s.authorize = authorize;
+      s.authorizer = authorizer;
       s.daily_inf_per_limit = daily_inf_per_limit;
       s.yearly_inf_per_limit = yearly_inf_per_limit;
       s.allowed_daily_inflation = allowed_daily_inflation;
@@ -179,8 +179,8 @@ void token::transfer( const name&    from,
     check( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
     check( memo.size() <= 256, "memo has more than 256 bytes" );
 
-    if (st.authorise && st.authoriser != ""_n) {
-      action(permission_level{_self, "active"_n}, st.authoriser, "authorize"_n, std::make_tuple(from, to, quantity, memo))
+    if (st.authorize && st.authorizer != ""_n) {
+      action(permission_level{_self, "active"_n}, st.authorizer, "authorize"_n, std::make_tuple(from, to, quantity, memo))
         .send();
     }
 

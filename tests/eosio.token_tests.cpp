@@ -441,14 +441,14 @@ BOOST_FIXTURE_TEST_CASE( inflation_limiting, eosio_token_tester ) try {
       ("max_supply", "1000000.0000 MATE")
       ("issuer", "alice")
       ("recall", 1)
-      ("authorise", 1)
+      ("authorize", 1)
       ("daily_inf_per_limit", 200000)
       ("yearly_inf_per_limit", 200000)
       ("allowed_daily_inflation", "1000000.0000 MATE")
       ("avg_daily_inflation", "1000.0000 MATE")
       ("avg_yearly_inflation", "1000.0000 MATE")
       ("last_update", "2020-01-01T00:00:04")
-      ("authoriser", "")
+      ("authorizer", "")
    );
 
    produce_block( fc::hours(5) );
@@ -461,14 +461,14 @@ BOOST_FIXTURE_TEST_CASE( inflation_limiting, eosio_token_tester ) try {
       ("max_supply", "1000000.0000 MATE")
       ("issuer", "alice")
       ("recall", 1)
-      ("authorise", 1)
+      ("authorize", 1)
       ("daily_inf_per_limit", 200000)
       ("yearly_inf_per_limit", 200000)
       ("allowed_daily_inflation", "1000000.0000 MATE")
       ("avg_daily_inflation", "1750.0000 MATE")
       ("avg_yearly_inflation", "1999.3160 MATE")
       ("last_update", "2020-01-01T06:00:04")
-      ("authoriser", "")
+      ("authorizer", "")
    );
 
    BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("1000.0000 MATE"), "hola" ) );
@@ -478,14 +478,14 @@ BOOST_FIXTURE_TEST_CASE( inflation_limiting, eosio_token_tester ) try {
       ("max_supply", "1000000.0000 MATE")
       ("issuer", "alice")
       ("recall", 1)
-      ("authorise", 1)
+      ("authorize", 1)
       ("daily_inf_per_limit", 200000)
       ("yearly_inf_per_limit", 200000)
       ("allowed_daily_inflation", "1000000.0000 MATE")
       ("avg_daily_inflation", "2750.0000 MATE")
       ("avg_yearly_inflation", "2999.3160 MATE")
       ("last_update", "2020-01-01T06:00:04")
-      ("authoriser", "")
+      ("authorizer", "")
    );
 
    cout << get_stats("4,MATE") << "\n";
