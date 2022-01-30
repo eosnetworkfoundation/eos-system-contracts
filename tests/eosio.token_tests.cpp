@@ -545,7 +545,7 @@ BOOST_FIXTURE_TEST_CASE( inflation_limiting, eosio_token_tester ) try {
 
 } FC_LOG_AND_RETHROW()
 
-BOOST_FIXTURE_TEST_CASE( cannot_reenable_recall, eosio_token_tester ) try {
+BOOST_FIXTURE_TEST_CASE( no_ram_modify_issues, eosio_token_tester ) try {
 
    BOOST_REQUIRE_EQUAL( success(), create( N(alice), asset::from_string("1000000.0000 MATE")) );
    BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("10000.0000 MATE"), "hola" ) );
@@ -558,27 +558,79 @@ BOOST_FIXTURE_TEST_CASE( cannot_reenable_recall, eosio_token_tester ) try {
 
    BOOST_REQUIRE_EQUAL( success(), transfer( "alice"_n, "bob"_n, "carol"_n, asset::from_string("10.0000 MATE"), "hola" ) );
 
-   BOOST_REQUIRE_EQUAL( success(), 
-                                           update( "alice"_n, 
-                                           sc("MATE"),
-                                           false,
-                                           true,
-                                           ""_n,
-                                           150000,
-                                           150000,
-                                           asset::from_string("3000.0000 MATE") ));
+   REQUIRE_MATCHING_OBJECT( get_account("bob"_n, "4,MATE"), mvo()
+      ("balance", "40.0000 MATE")
+   );
 
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "cannot enable recall once disabled" ), 
-                                          update( N(alice), 
-                                           sc("MATE"),
-                                           true,
-                                           true,
-                                           ""_n,
-                                           150000,
-                                           150000,
-                                           asset::from_string("3000.0000 MATE") ));
+   REQUIRE_MATCHING_OBJECT( get_account("carol"_n, "4,MATE"), mvo()
+      ("balance", "10.0000 MATE")
+   );
 
 } FC_LOG_AND_RETHROW()
 
+BOOST_FIXTURE_TEST_CASE( no_transfer_of_owner_issue, eosio_token_tester ) try {
+
+   BOOST_REQUIRE_EQUAL( success(), create( N(alice), asset::from_string("1000000.0000 MATE")) );
+   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("10000.0000 MATE"), "hola" ) );
+
+   BOOST_REQUIRE_EQUAL( success(), transfer( "alice"_n, "alice"_n, "bob"_n, asset::from_string("50.0000 MATE"), "hola" ) );
+
+   REQUIRE_MATCHING_OBJECT( get_account("bob"_n, "4,MATE"), mvo()
+      ("balance", "50.0000 MATE")
+   );
+
+   BOOST_REQUIRE_EQUAL( success(), transfer( "bob"_n, "bob"_n, "carol"_n, asset::from_string("10.0000 MATE"), "hola" ) );
+   BOOST_REQUIRE_EQUAL( success(), transfer( "bob"_n, "bob"_n, "alice"_n, asset::from_string("5.0000 MATE"), "hola" ) );
+
+   REQUIRE_MATCHING_OBJECT( get_account("bob"_n, "4,MATE"), mvo()
+      ("balance", "35.0000 MATE")
+   );
+
+   REQUIRE_MATCHING_OBJECT( get_account("carol"_n, "4,MATE"), mvo()
+      ("balance", "10.0000 MATE")
+   );
+
+} FC_LOG_AND_RETHROW()
+
+BOOST_FIXTURE_TEST_CASE( cannot_recall_after_disable, eosio_token_tester ) try {
+
+   BOOST_REQUIRE_EQUAL( success(), create( N(alice), asset::from_string("1000000.0000 MATE")) );
+   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("10000.0000 MATE"), "hola" ) );
+
+   BOOST_REQUIRE_EQUAL( success(), transfer( "alice"_n, "alice"_n, "bob"_n, asset::from_string("50.0000 MATE"), "hola" ) );
+
+   REQUIRE_MATCHING_OBJECT( get_account("bob"_n, "4,MATE"), mvo()
+      ("balance", "50.0000 MATE")
+   );
+
+   BOOST_REQUIRE_EQUAL(success(),
+       update("alice"_n,
+           sc("MATE"),
+           false,
+           true,
+           ""_n,
+           150000,
+           150000,
+           asset::from_string("3000.0000 MATE")));
+
+   BOOST_REQUIRE_EQUAL(wasm_assert_msg("cannot enable recall once disabled"),
+       update(N(alice),
+           sc("MATE"),
+           true,
+           true,
+           ""_n,
+           150000,
+           150000,
+           asset::from_string("3000.0000 MATE")));
+
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "invalid authority" ), transfer( "alice"_n, "bob"_n, "carol"_n, asset::from_string("10.0000 MATE"), "hola" ) );
+   BOOST_REQUIRE_EQUAL( success(), transfer( "bob"_n, "bob"_n, "carol"_n, asset::from_string("10.0000 MATE"), "hola" ) );
+   BOOST_REQUIRE_EQUAL( success(), transfer( "bob"_n, "bob"_n, "alice"_n, asset::from_string("10.0000 MATE"), "hola" ) );
+
+
+} FC_LOG_AND_RETHROW()
 
 BOOST_AUTO_TEST_SUITE_END()
+
+
+
