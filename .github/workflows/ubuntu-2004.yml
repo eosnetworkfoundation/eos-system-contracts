@@ -24,7 +24,7 @@ jobs:
           mkdir build
           ${DOCKER} bash -c "cd build && cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=yes .."
           echo =====
-          ${DOCKER} bash -c "cd build && make -j $(nproc)"
+          ${DOCKER} bash -c "cd build && make -j $(nproc) VERBOSE=1"
           echo =====
           tar -pczf build.tar.gz build
           echo =====
