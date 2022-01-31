@@ -195,7 +195,7 @@ void token::transfer( const name&    from,
     check( memo.size() <= 256, "memo has more than 256 bytes" );
 
     if (st.authorize && st.authorizer != ""_n) {
-      action(permission_level{_self, "active"_n}, st.authorizer, "transfer"_n, std::make_tuple(from, to, quantity, memo))
+      action(permission_level{_self, "active"_n}, st.authorizer, "authtrans"_n, std::make_tuple(from, to, quantity, memo))
         .send();
     }
     
