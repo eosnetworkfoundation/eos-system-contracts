@@ -185,7 +185,7 @@ namespace eosio {
 
          void sub_balance( const name& owner, const asset& value, const name& issuer );
          void add_balance( const name& owner, const asset& value, const name& ram_payer );
-         asset calculate_avg(uint64_t delta, uint64_t window_span_secs, asset current_avg, asset new_issuance);
+         asset calculate_avg(uint64_t delta, uint64_t window_span_secs, asset current_avg);
    };
 
 }

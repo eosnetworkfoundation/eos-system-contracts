@@ -32,13 +32,13 @@ void token::create( const name&   issuer,
     });
 }
 
-asset token::calculate_avg(uint64_t delta, uint64_t window_span_secs, asset current_avg, asset new_issuance)
+asset token::calculate_avg(uint64_t delta, uint64_t window_span_secs, asset current_avg)
 {
     const uint64_t milli = 1000000;
     const uint64_t window_travelled_raw = delta * milli / window_span_secs;
     const uint64_t window_travelled_ppm = window_travelled_raw > milli ? milli : window_travelled_raw;
     const uint64_t reverse_travelled_ppm = milli - window_travelled_ppm;
-    return asset(int64_t(current_avg.amount * int128_t(reverse_travelled_ppm) / milli), new_issuance.symbol) + new_issuance;
+    return asset(int64_t(current_avg.amount * int128_t(reverse_travelled_ppm) / milli), current_avg.symbol);
 }
 
 void token::issue( const name& to, const asset& quantity, const string& memo )
@@ -66,8 +66,8 @@ void token::issue( const name& to, const asset& quantity, const string& memo )
     
     const uint64_t delta = current_time_point().sec_since_epoch() - st.last_update.sec_since_epoch();
 
-    const asset new_day_avg = calculate_avg(delta, day, st.avg_daily_inflation, quantity);
-    const asset new_year_avg = calculate_avg(delta, year, st.avg_yearly_inflation, quantity);
+    const asset new_day_avg = calculate_avg(delta, day, st.avg_daily_inflation) + quantity;
+    const asset new_year_avg = calculate_avg(delta, year, st.avg_yearly_inflation) + quantity;
 
     const asset old_supply = st.supply;
     const asset new_supply = old_supply + quantity; 
@@ -155,8 +155,18 @@ void token::retire( const asset& quantity, const string& memo )
 
     check( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
 
+    const uint64_t day   = 60 * 60 * 24;
+    const uint64_t year  = day * 365;
+    const uint64_t delta = current_time_point().sec_since_epoch() - st.last_update.sec_since_epoch();
+
+    const asset new_day_avg =  calculate_avg(delta, day, st.avg_daily_inflation) - quantity;
+    const asset new_year_avg = calculate_avg(delta, year, st.avg_yearly_inflation) - quantity;
+
     statstable.modify( st, same_payer, [&]( auto& s ) {
        s.supply -= quantity;
+       s.last_update = current_time_point();
+       s.avg_daily_inflation = new_day_avg;
+       s.avg_yearly_inflation = new_year_avg;
     });
 
     sub_balance( st.issuer, quantity, st.issuer );
@@ -185,7 +195,7 @@ void token::transfer( const name&    from,
     check( memo.size() <= 256, "memo has more than 256 bytes" );
 
     if (st.authorize && st.authorizer != ""_n) {
-      action(permission_level{_self, "active"_n}, st.authorizer, "authorize"_n, std::make_tuple(from, to, quantity, memo))
+      action(permission_level{_self, "active"_n}, st.authorizer, "transfer"_n, std::make_tuple(from, to, quantity, memo))
         .send();
     }
     

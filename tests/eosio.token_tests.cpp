@@ -630,6 +630,162 @@ BOOST_FIXTURE_TEST_CASE( cannot_recall_after_disable, eosio_token_tester ) try {
 
 } FC_LOG_AND_RETHROW()
 
+
+BOOST_FIXTURE_TEST_CASE( retire_calc, eosio_token_tester ) try {
+
+   BOOST_REQUIRE_EQUAL( success(), create( N(alice), asset::from_string("1000000.0000 MATE")) );
+
+
+   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("2000.0000 MATE"), "hola" ) );
+
+   REQUIRE_MATCHING_OBJECT( get_stats("4,MATE"), mvo()
+      ("supply", "2000.0000 MATE")
+      ("max_supply", "1000000.0000 MATE")
+      ("issuer", "alice")
+      ("recall", 1)
+      ("authorize", 1)
+      ("daily_inf_per_limit", 10000000000000000000)
+      ("yearly_inf_per_limit", 10000000000000000000)
+      ("allowed_daily_inflation", "1000000.0000 MATE")
+      ("avg_daily_inflation", "2000.0000 MATE")
+      ("avg_yearly_inflation", "2000.0000 MATE")
+      ("last_update", "2020-01-01T00:00:04")
+      ("authorizer", "")
+   );
+
+   produce_block( fc::hours(5) );
+   produce_block( fc::minutes(59) );
+   produce_block( fc::seconds(59) );
+
+
+   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("300.0000 MATE"), "hola" ) );
+
+   REQUIRE_MATCHING_OBJECT( get_stats("4,MATE"), mvo()
+      ("supply", "2300.0000 MATE")
+      ("max_supply", "1000000.0000 MATE")
+      ("issuer", "alice")
+      ("recall", 1)
+      ("authorize", 1)
+      ("daily_inf_per_limit", 10000000000000000000)
+      ("yearly_inf_per_limit", 10000000000000000000)
+      ("allowed_daily_inflation", "1000000.0000 MATE")
+      ("avg_daily_inflation", "1800.0000 MATE")
+      ("avg_yearly_inflation", "2298.6320 MATE")
+      ("last_update", "2020-01-01T06:00:04")
+      ("authorizer", "")
+   );
+
+   BOOST_REQUIRE_EQUAL( success(), retire( N(alice), asset::from_string("300.0000 MATE"), "hola" ) );
+
+   REQUIRE_MATCHING_OBJECT( get_stats("4,MATE"), mvo()
+      ("supply", "2000.0000 MATE")
+      ("max_supply", "1000000.0000 MATE")
+      ("issuer", "alice")
+      ("recall", 1)
+      ("authorize", 1)
+      ("daily_inf_per_limit", 10000000000000000000)
+      ("yearly_inf_per_limit", 10000000000000000000)
+      ("allowed_daily_inflation", "1000000.0000 MATE")
+      ("avg_daily_inflation", "1500.0000 MATE")
+      ("avg_yearly_inflation", "1998.6320 MATE")
+      ("last_update", "2020-01-01T06:00:04")
+      ("authorizer", "")
+   );
+
+
+} FC_LOG_AND_RETHROW()
+
+
+BOOST_FIXTURE_TEST_CASE( can_issue_in_negatives, eosio_token_tester ) try {
+
+   BOOST_REQUIRE_EQUAL( success(), create( N(alice), asset::from_string("1000000.0000 MATE")) );
+
+
+   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("2000.0000 MATE"), "hola" ) );
+
+   REQUIRE_MATCHING_OBJECT( get_stats("4,MATE"), mvo()
+      ("supply", "2000.0000 MATE")
+      ("max_supply", "1000000.0000 MATE")
+      ("issuer", "alice")
+      ("recall", 1)
+      ("authorize", 1)
+      ("daily_inf_per_limit", 10000000000000000000)
+      ("yearly_inf_per_limit", 10000000000000000000)
+      ("allowed_daily_inflation", "1000000.0000 MATE")
+      ("avg_daily_inflation", "2000.0000 MATE")
+      ("avg_yearly_inflation", "2000.0000 MATE")
+      ("last_update", "2020-01-01T00:00:04")
+      ("authorizer", "")
+   );
+
+   produce_block( fc::hours(23) );
+   produce_block( fc::minutes(59) );
+   produce_block( fc::seconds(59) );
+
+
+   BOOST_REQUIRE_EQUAL( success(), retire( N(alice), asset::from_string("300.0000 MATE"), "hola" ) );
+
+   REQUIRE_MATCHING_OBJECT( get_stats("4,MATE"), mvo()
+      ("supply", "1700.0000 MATE")
+      ("max_supply", "1000000.0000 MATE")
+      ("issuer", "alice")
+      ("recall", 1)
+      ("authorize", 1)
+      ("daily_inf_per_limit", 10000000000000000000)
+      ("yearly_inf_per_limit", 10000000000000000000)
+      ("allowed_daily_inflation", "1000000.0000 MATE")
+      ("avg_daily_inflation", "-300.0000 MATE")
+      ("avg_yearly_inflation", "1694.5220 MATE")
+      ("last_update", "2020-01-02T00:00:04")
+      ("authorizer", "")
+   );
+
+   produce_block( fc::hours(12) );
+   // produce_block( fc::minutes(59) );
+   // produce_block( fc::seconds(59) );
+
+   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("50.0000 MATE"), "hola" ) );
+
+   REQUIRE_MATCHING_OBJECT( get_stats("4,MATE"), mvo()
+      ("supply", "1750.0000 MATE")
+      ("max_supply", "1000000.0000 MATE")
+      ("issuer", "alice")
+      ("recall", 1)
+      ("authorize", 1)
+      ("daily_inf_per_limit", 10000000000000000000)
+      ("yearly_inf_per_limit", 10000000000000000000)
+      ("allowed_daily_inflation", "1000000.0000 MATE")
+      ("avg_daily_inflation", "-100.0000 MATE")
+      ("avg_yearly_inflation", "1742.2021 MATE")
+      ("last_update", "2020-01-02T12:00:04")
+      ("authorizer", "")
+   );
+
+   produce_block( fc::hours(2) );
+   produce_block( fc::minutes(59) );
+   produce_block( fc::seconds(59) );
+
+   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("470.0000 MATE"), "hola" ) );
+
+   REQUIRE_MATCHING_OBJECT( get_stats("4,MATE"), mvo()
+      ("supply", "2220.0000 MATE")
+      ("max_supply", "1000000.0000 MATE")
+      ("issuer", "alice")
+      ("recall", 1)
+      ("authorize", 1)
+      ("daily_inf_per_limit", 10000000000000000000)
+      ("yearly_inf_per_limit", 10000000000000000000)
+      ("allowed_daily_inflation", "1000000.0000 MATE")
+      ("avg_daily_inflation", "382.5000 MATE")
+      ("avg_yearly_inflation", "2211.6062 MATE")
+      ("last_update", "2020-01-02T15:00:04")
+      ("authorizer", "")
+   );
+
+
+} FC_LOG_AND_RETHROW()
+
+
 BOOST_AUTO_TEST_SUITE_END()
 
 
