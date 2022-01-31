@@ -91,6 +91,7 @@ void symb::withdraw( const name& owner, const extended_asset& amount )
 
     check(amount.contract == "eosio.token"_n, "invalid contract");
     check(amount.quantity.amount > 0, "withdrawal must be above 0");
+    check(amount.quantity.symbol == EOS_SYMBOL, "unsupported symbol");
     check(itr->balance >= amount.quantity, "insufficient balance");
 
     action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, std::make_tuple(_self, owner, amount.quantity, string("refund")))
