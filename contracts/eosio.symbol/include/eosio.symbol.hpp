@@ -196,7 +196,7 @@ namespace eosio {
          };
 
          struct [[eosio::table]] symconfig {
-           uint32_t   symbol_length;
+           uint8_t    symbol_length;
            asset      price;
            asset      floor;
            time_point window_start;
@@ -205,7 +205,7 @@ namespace eosio {
            uint32_t   increase_threshold;
            uint32_t   decrease_threshold;
 
-           uint32_t primary_key()const { return symbol_length; }
+           uint8_t primary_key()const { return symbol_length; }
          };
 
          struct [[eosio::table]] config {
