@@ -147,125 +147,170 @@ public:
 
 BOOST_AUTO_TEST_SUITE(eosio_token_tests)
 
-// BOOST_FIXTURE_TEST_CASE( create_tests, eosio_token_tester ) try {
+BOOST_FIXTURE_TEST_CASE( create_tests, eosio_token_tester ) try {
 
-//    auto token = create( N(alice), asset::from_string("1000.000 TKN"));
-//    auto stats = get_stats("3,TKN");
-//    REQUIRE_MATCHING_OBJECT( stats, mvo()
-//       ("supply", "0.000 TKN")
-//       ("max_supply", "1000.000 TKN")
-//       ("issuer", "alice")
-//    );
-//    produce_blocks(1);
+   auto token = create( N(alice), asset::from_string("1000.000 TKN"));
+   auto stats = get_stats("3,TKN");
+   REQUIRE_MATCHING_OBJECT( stats, mvo()
+      ("supply", "0.000 TKN")
+      ("max_supply", "1000.000 TKN")
+      ("issuer", "alice")
+      ("recall", 1)
+      ("authorize", 1)
+      ("daily_inf_per_limit", 10000000000000000000)
+      ("yearly_inf_per_limit", 10000000000000000000)
+      ("allowed_daily_inflation", "1000.000 TKN")
+      ("avg_daily_inflation", "0.000 TKN")
+      ("avg_yearly_inflation", "0.000 TKN")
+      ("last_update", "2020-01-01T00:00:04")
+      ("authorizer", "")
+   );
+   produce_blocks(1);
 
-// } FC_LOG_AND_RETHROW()
+} FC_LOG_AND_RETHROW()
 
-// BOOST_FIXTURE_TEST_CASE( create_negative_max_supply, eosio_token_tester ) try {
+BOOST_FIXTURE_TEST_CASE( create_negative_max_supply, eosio_token_tester ) try {
 
-//    BOOST_REQUIRE_EQUAL( wasm_assert_msg( "max-supply must be positive" ),
-//       create( N(alice), asset::from_string("-1000.000 TKN"))
-//    );
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "max-supply must be positive" ),
+      create( N(alice), asset::from_string("-1000.000 TKN"))
+   );
 
-// } FC_LOG_AND_RETHROW()
+} FC_LOG_AND_RETHROW()
 
-// BOOST_FIXTURE_TEST_CASE( symbol_already_exists, eosio_token_tester ) try {
+BOOST_FIXTURE_TEST_CASE( symbol_already_exists, eosio_token_tester ) try {
 
-//    auto token = create( N(alice), asset::from_string("100 TKN"));
-//    auto stats = get_stats("0,TKN");
-//    REQUIRE_MATCHING_OBJECT( stats, mvo()
-//       ("supply", "0 TKN")
-//       ("max_supply", "100 TKN")
-//       ("issuer", "alice")
-//    );
-//    produce_blocks(1);
+   auto token = create( N(alice), asset::from_string("100 TKN"));
+   auto stats = get_stats("0,TKN");
+   REQUIRE_MATCHING_OBJECT( stats, mvo()
+      ("supply", "0 TKN")
+      ("max_supply", "100 TKN")
+      ("issuer", "alice")
+      ("recall", 1)
+      ("authorize", 1)
+      ("daily_inf_per_limit", 10000000000000000000)
+      ("yearly_inf_per_limit", 10000000000000000000)
+      ("allowed_daily_inflation", "100 TKN")
+      ("avg_daily_inflation", "0 TKN")
+      ("avg_yearly_inflation", "0 TKN")
+      ("last_update", "2020-01-01T00:00:04")
+      ("authorizer", "")
+   );
+   produce_blocks(1);
 
-//    BOOST_REQUIRE_EQUAL( wasm_assert_msg( "token with symbol already exists" ),
-//                         create( N(alice), asset::from_string("100 TKN"))
-//    );
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "token with symbol already exists" ),
+                        create( N(alice), asset::from_string("100 TKN"))
+   );
 
-// } FC_LOG_AND_RETHROW()
+} FC_LOG_AND_RETHROW()
 
-// BOOST_FIXTURE_TEST_CASE( create_max_supply, eosio_token_tester ) try {
+BOOST_FIXTURE_TEST_CASE( create_max_supply, eosio_token_tester ) try {
 
-//    auto token = create( N(alice), asset::from_string("4611686018427387903 TKN"));
-//    auto stats = get_stats("0,TKN");
-//    REQUIRE_MATCHING_OBJECT( stats, mvo()
-//       ("supply", "0 TKN")
-//       ("max_supply", "4611686018427387903 TKN")
-//       ("issuer", "alice")
-//    );
-//    produce_blocks(1);
+   auto token = create( N(alice), asset::from_string("4611686018427387903 TKN"));
+   auto stats = get_stats("0,TKN");
+   REQUIRE_MATCHING_OBJECT( stats, mvo()
+      ("supply", "0 TKN")
+      ("max_supply", "4611686018427387903 TKN")
+      ("issuer", "alice")
+      ("recall", 1)
+      ("authorize", 1)
+      ("daily_inf_per_limit", 10000000000000000000)
+      ("yearly_inf_per_limit", 10000000000000000000)
+      ("allowed_daily_inflation", "4611686018427387903 TKN")
+      ("avg_daily_inflation", "0 TKN")
+      ("avg_yearly_inflation", "0 TKN")
+      ("last_update", "2020-01-01T00:00:04")
+      ("authorizer", "")
+   );
+   produce_blocks(1);
 
-//    asset max(10, symbol(SY(0, NKT)));
-//    share_type amount = 4611686018427387904;
-//    static_assert(sizeof(share_type) <= sizeof(asset), "asset changed so test is no longer valid");
-//    static_assert(std::is_trivially_copyable<asset>::value, "asset is not trivially copyable");
-//    memcpy(&max, &amount, sizeof(share_type)); // hack in an invalid amount
+   asset max(10, symbol(SY(0, NKT)));
+   share_type amount = 4611686018427387904;
+   static_assert(sizeof(share_type) <= sizeof(asset), "asset changed so test is no longer valid");
+   static_assert(std::is_trivially_copyable<asset>::value, "asset is not trivially copyable");
+   memcpy(&max, &amount, sizeof(share_type)); // hack in an invalid amount
 
-//    BOOST_CHECK_EXCEPTION( create( N(alice), max) , asset_type_exception, [](const asset_type_exception& e) {
-//       return expect_assert_message(e, "magnitude of asset amount must be less than 2^62");
-//    });
-
-
-// } FC_LOG_AND_RETHROW()
-
-// BOOST_FIXTURE_TEST_CASE( create_max_decimals, eosio_token_tester ) try {
-
-//    auto token = create( N(alice), asset::from_string("1.000000000000000000 TKN"));
-//    auto stats = get_stats("18,TKN");
-//    REQUIRE_MATCHING_OBJECT( stats, mvo()
-//       ("supply", "0.000000000000000000 TKN")
-//       ("max_supply", "1.000000000000000000 TKN")
-//       ("issuer", "alice")
-//    );
-//    produce_blocks(1);
-
-//    asset max(10, symbol(SY(0, NKT)));
-//    //1.0000000000000000000 => 0x8ac7230489e80000L
-//    share_type amount = 0x8ac7230489e80000L;
-//    static_assert(sizeof(share_type) <= sizeof(asset), "asset changed so test is no longer valid");
-//    static_assert(std::is_trivially_copyable<asset>::value, "asset is not trivially copyable");
-//    memcpy(&max, &amount, sizeof(share_type)); // hack in an invalid amount
-
-//    BOOST_CHECK_EXCEPTION( create( N(alice), max) , asset_type_exception, [](const asset_type_exception& e) {
-//       return expect_assert_message(e, "magnitude of asset amount must be less than 2^62");
-//    });
-
-// } FC_LOG_AND_RETHROW()
-
-// BOOST_FIXTURE_TEST_CASE( issue_tests, eosio_token_tester ) try {
-
-//    auto token = create( N(alice), asset::from_string("1000.000 TKN"));
-//    produce_blocks(1);
-
-//    issue( N(alice), asset::from_string("500.000 TKN"), "hola" );
-
-//    auto stats = get_stats("3,TKN");
-//    REQUIRE_MATCHING_OBJECT( stats, mvo()
-//       ("supply", "500.000 TKN")
-//       ("max_supply", "1000.000 TKN")
-//       ("issuer", "alice")
-//    );
-
-//    auto alice_balance = get_account(N(alice), "3,TKN");
-//    REQUIRE_MATCHING_OBJECT( alice_balance, mvo()
-//       ("balance", "500.000 TKN")
-//    );
-
-//    BOOST_REQUIRE_EQUAL( wasm_assert_msg( "quantity exceeds available supply" ),
-//                         issue( N(alice), asset::from_string("500.001 TKN"), "hola" )
-//    );
-
-//    BOOST_REQUIRE_EQUAL( wasm_assert_msg( "must issue positive quantity" ),
-//                         issue( N(alice), asset::from_string("-1.000 TKN"), "hola" )
-//    );
-
-//    BOOST_REQUIRE_EQUAL( success(),
-//                         issue( N(alice), asset::from_string("1.000 TKN"), "hola" )
-//    );
+   BOOST_CHECK_EXCEPTION( create( N(alice), max) , asset_type_exception, [](const asset_type_exception& e) {
+      return expect_assert_message(e, "magnitude of asset amount must be less than 2^62");
+   });
 
 
-// } FC_LOG_AND_RETHROW()
+} FC_LOG_AND_RETHROW()
+
+BOOST_FIXTURE_TEST_CASE( create_max_decimals, eosio_token_tester ) try {
+
+   auto token = create( N(alice), asset::from_string("1.000000000000000000 TKN"));
+   auto stats = get_stats("18,TKN");
+   REQUIRE_MATCHING_OBJECT( stats, mvo()
+      ("supply", "0.000000000000000000 TKN")
+      ("max_supply", "1.000000000000000000 TKN")
+      ("issuer", "alice")
+      ("recall", 1)
+      ("authorize", 1)
+      ("daily_inf_per_limit", 10000000000000000000)
+      ("yearly_inf_per_limit", 10000000000000000000)
+      ("allowed_daily_inflation", "1.000000000000000000 TKN")
+      ("avg_daily_inflation", "0.000000000000000000 TKN")
+      ("avg_yearly_inflation", "0.000000000000000000 TKN")
+      ("last_update", "2020-01-01T00:00:04")
+      ("authorizer", "")
+   );
+   produce_blocks(1);
+
+   asset max(10, symbol(SY(0, NKT)));
+   //1.0000000000000000000 => 0x8ac7230489e80000L
+   share_type amount = 0x8ac7230489e80000L;
+   static_assert(sizeof(share_type) <= sizeof(asset), "asset changed so test is no longer valid");
+   static_assert(std::is_trivially_copyable<asset>::value, "asset is not trivially copyable");
+   memcpy(&max, &amount, sizeof(share_type)); // hack in an invalid amount
+
+   BOOST_CHECK_EXCEPTION( create( N(alice), max) , asset_type_exception, [](const asset_type_exception& e) {
+      return expect_assert_message(e, "magnitude of asset amount must be less than 2^62");
+   });
+
+} FC_LOG_AND_RETHROW()
+
+BOOST_FIXTURE_TEST_CASE( issue_tests, eosio_token_tester ) try {
+
+   auto token = create( N(alice), asset::from_string("1000.000 TKN"));
+   produce_blocks(1);
+
+   issue( N(alice), asset::from_string("500.000 TKN"), "hola" );
+
+   auto stats = get_stats("3,TKN");
+   REQUIRE_MATCHING_OBJECT( stats, mvo()
+      ("supply", "500.000 TKN")
+      ("max_supply", "1000.000 TKN")
+      ("issuer", "alice")
+      ("recall", 1)
+      ("authorize", 1)
+      ("daily_inf_per_limit", 10000000000000000000)
+      ("yearly_inf_per_limit", 10000000000000000000)
+      ("allowed_daily_inflation", "1000.000 TKN")
+      ("avg_daily_inflation", "500.000 TKN")
+      ("avg_yearly_inflation", "500.000 TKN")
+      ("last_update", "2020-01-01T00:00:05")
+      ("authorizer", "")
+   );
+
+   auto alice_balance = get_account(N(alice), "3,TKN");
+   REQUIRE_MATCHING_OBJECT( alice_balance, mvo()
+      ("balance", "500.000 TKN")
+   );
+
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "quantity exceeds available supply" ),
+                        issue( N(alice), asset::from_string("500.001 TKN"), "hola" )
+   );
+
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "must issue positive quantity" ),
+                        issue( N(alice), asset::from_string("-1.000 TKN"), "hola" )
+   );
+
+   BOOST_REQUIRE_EQUAL( success(),
+                        issue( N(alice), asset::from_string("1.000 TKN"), "hola" )
+   );
+
+
+} FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE( retire_tests, eosio_token_tester ) try {
 
@@ -283,9 +328,9 @@ BOOST_FIXTURE_TEST_CASE( retire_tests, eosio_token_tester ) try {
       ("authorize", 1)
       ("daily_inf_per_limit", 10000000000000000000)
       ("yearly_inf_per_limit", 10000000000000000000)
-      ("allowed_daily_inflation", "1000 CERO")
-      ("avg_daily_inflation", "1000 CERO")
-      ("avg_yearly_inflation", "1000 CERO")
+      ("allowed_daily_inflation", "1000.000 TKN")
+      ("avg_daily_inflation", "500.000 TKN")
+      ("avg_yearly_inflation", "500.000 TKN")
       ("last_update", "2020-01-01T00:00:05")
       ("authorizer", "")
    );
@@ -305,9 +350,9 @@ BOOST_FIXTURE_TEST_CASE( retire_tests, eosio_token_tester ) try {
       ("authorize", 1)
       ("daily_inf_per_limit", 10000000000000000000)
       ("yearly_inf_per_limit", 10000000000000000000)
-      ("allowed_daily_inflation", "1000 CERO")
-      ("avg_daily_inflation", "1000 CERO")
-      ("avg_yearly_inflation", "1000 CERO")
+      ("allowed_daily_inflation", "1000.000 TKN")
+      ("avg_daily_inflation", "300.000 TKN")
+      ("avg_yearly_inflation", "300.000 TKN")
       ("last_update", "2020-01-01T00:00:05")
       ("authorizer", "")
    );
@@ -335,10 +380,10 @@ BOOST_FIXTURE_TEST_CASE( retire_tests, eosio_token_tester ) try {
       ("authorize", 1)
       ("daily_inf_per_limit", 10000000000000000000)
       ("yearly_inf_per_limit", 10000000000000000000)
-      ("allowed_daily_inflation", "1000 CERO")
-      ("avg_daily_inflation", "1000 CERO")
-      ("avg_yearly_inflation", "1000 CERO")
-      ("last_update", "2020-01-01T00:00:05")
+      ("allowed_daily_inflation", "1000.000 TKN")
+      ("avg_daily_inflation", "-0.007 TKN")
+      ("avg_yearly_inflation", "0.000 TKN")
+      ("last_update", "2020-01-01T00:00:07")
       ("authorizer", "")
    );
    alice_balance = get_account(N(alice), "3,TKN");
