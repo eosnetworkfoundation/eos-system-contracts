@@ -2,7 +2,10 @@
 
 ## Repo organization
 
-Current development is on the `main` branch. There aren't any releases yet; they'll eventually be on release branches.
+| branch                | description |
+| ------                | ----------- |
+| `main`                | Development for future releases |
+| `release/3.0.x`       | 3.0.x-* series of releases |
 
 ## Supported Operating Systems
 
@@ -49,6 +52,7 @@ mkdir -p ~/work
 cd ~/work
 git clone https://github.com/eosnetworkfoundation/mandel.git
 cd mandel
+git checkout v3.0.0-rc1
 git submodule update --init --recursive
 mkdir build
 cd build
