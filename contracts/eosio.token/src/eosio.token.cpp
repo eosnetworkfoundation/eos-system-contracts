@@ -34,11 +34,10 @@ void token::create( const name&   issuer,
 
 asset token::calculate_avg(uint64_t delta, uint64_t window_span_secs, asset current_avg)
 {
-    const uint64_t milli = 1000000;
-    const uint64_t window_travelled_raw = delta * milli / window_span_secs;
-    const uint64_t window_travelled_ppm = window_travelled_raw > milli ? milli : window_travelled_raw;
-    const uint64_t reverse_travelled_ppm = milli - window_travelled_ppm;
-    return asset(int64_t(current_avg.amount * int128_t(reverse_travelled_ppm) / milli), current_avg.symbol);
+    const uint64_t window_travelled_raw = delta * MILLI / window_span_secs;
+    const uint64_t window_travelled_ppm = window_travelled_raw > MILLI ? MILLI : window_travelled_raw;
+    const uint64_t reverse_travelled_ppm = MILLI - window_travelled_ppm;
+    return asset(int64_t(current_avg.amount * int128_t(reverse_travelled_ppm) / MILLI), current_avg.symbol);
 }
 
 void token::issue( const name& to, const asset& quantity, const string& memo )
@@ -59,22 +58,18 @@ void token::issue( const name& to, const asset& quantity, const string& memo )
 
     check( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
     check( quantity.amount <= st.max_supply.amount - st.supply.amount, "quantity exceeds available supply");
-
-    const uint64_t milli = 1000000;
-    const uint64_t day   = 60 * 60 * 24;
-    const uint64_t year  = day * 365;
-    
+   
     const uint64_t delta = current_time_point().sec_since_epoch() - st.last_update.sec_since_epoch();
 
-    const asset new_day_avg = calculate_avg(delta, day, st.avg_daily_inflation) + quantity;
-    const asset new_year_avg = calculate_avg(delta, year, st.avg_yearly_inflation) + quantity;
+    const asset new_day_avg = calculate_avg(delta, DAY, st.avg_daily_inflation) + quantity;
+    const asset new_year_avg = calculate_avg(delta, YEAR, st.avg_yearly_inflation) + quantity;
 
     const asset old_supply = st.supply;
     const asset new_supply = old_supply + quantity; 
 
     if (new_day_avg.amount > st.allowed_daily_inflation.amount) {
-       const uint64_t avg_daily_ppm_inf  = (new_day_avg.amount  * int128_t(milli)) / old_supply.amount;
-       const uint64_t avg_yearly_ppm_inf = (new_year_avg.amount * int128_t(milli)) / old_supply.amount;
+       const uint64_t avg_daily_ppm_inf  = (new_day_avg.amount  * int128_t(MILLI)) / old_supply.amount;
+       const uint64_t avg_yearly_ppm_inf = (new_year_avg.amount * int128_t(MILLI)) / old_supply.amount;
        
        check(avg_daily_ppm_inf < st.daily_inf_per_limit , "daily inflation reached");
        check(avg_yearly_ppm_inf < st.yearly_inf_per_limit, "yearly inflation reached");
@@ -155,12 +150,10 @@ void token::retire( const asset& quantity, const string& memo )
 
     check( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
 
-    const uint64_t day   = 60 * 60 * 24;
-    const uint64_t year  = day * 365;
     const uint64_t delta = current_time_point().sec_since_epoch() - st.last_update.sec_since_epoch();
 
-    const asset new_day_avg =  calculate_avg(delta, day, st.avg_daily_inflation) - quantity;
-    const asset new_year_avg = calculate_avg(delta, year, st.avg_yearly_inflation) - quantity;
+    const asset new_day_avg =  calculate_avg(delta, DAY, st.avg_daily_inflation) - quantity;
+    const asset new_year_avg = calculate_avg(delta, YEAR, st.avg_yearly_inflation) - quantity;
 
     statstable.modify( st, same_payer, [&]( auto& s ) {
        s.supply -= quantity;

@@ -12,6 +12,10 @@ namespace eosiosystem {
    class system_contract;
 }
 
+static constexpr uint64_t DAY   = 60 * 60 * 24;
+static constexpr uint64_t YEAR  = DAY * 365;
+static constexpr uint64_t MILLI  = 1000000;
+
 namespace eosio {
 
    using std::string;
