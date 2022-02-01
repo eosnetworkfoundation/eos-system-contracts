@@ -166,6 +166,8 @@ namespace eosio {
             bool     recall;
             // authorize - Specifies whether the issuer can elect an authorisation account, once false can never be changed
             bool     authorize;
+            // Optional Contract account to use for inline transfer actions, can be null
+            name     authorizer;
 
             uint64_t daily_inf_per_limit; /// ppm configured by user, can only decrease valid numbers >= 0
             uint64_t yearly_inf_per_limit; /// ppm configured by user, can only decrease valid numbers >= 0
@@ -178,8 +180,6 @@ namespace eosio {
             int64_t avg_yearly_inflation;
 
             time_point_sec last_update;
-            // Account to use for inline transfer action - can be null
-            name     authorizer;
 
             uint64_t primary_key()const { return supply.symbol.code().raw(); }
          };
