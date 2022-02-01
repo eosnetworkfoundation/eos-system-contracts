@@ -74,8 +74,6 @@ void token::issue( const name& to, const asset& quantity, const string& memo )
        check(avg_yearly_ppm_inf < st.yearly_inf_per_limit, "yearly inflation reached");
     }
  
-    // should this still be same_payer? 
-    // or should the issuer now take on the RAM burden?
     statstable.modify( st, same_payer, [&]( auto& s ) {
        s.supply = new_supply;
        s.last_update = current_time_point();
