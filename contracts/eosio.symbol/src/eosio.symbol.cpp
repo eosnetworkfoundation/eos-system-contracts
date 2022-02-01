@@ -46,7 +46,7 @@ void symb::buysymbol( const name buyer, const symbol_code& symbol )
     accounts_table accounts( get_self(), get_self().value );
     const auto& itr = accounts.find( buyer.value );
     check(itr != accounts.end(), "user not found");
-    check(itr->balance >= sale_price, "cannot afford");
+    check(itr->balance.quantity >= sale_price, "cannot afford");
 
     const name seller = st->owner;
 
@@ -92,7 +92,7 @@ void symb::withdraw( const name& owner, const extended_asset& amount )
     check(amount.contract == "eosio.token"_n, "invalid contract");
     check(amount.quantity.amount > 0, "withdrawal must be above 0");
     check(amount.quantity.symbol == EOS_SYMBOL, "unsupported symbol");
-    check(itr->balance >= amount.quantity, "insufficient balance");
+    check(itr->balance.quantity >= amount.quantity, "insufficient balance");
 
     action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, std::make_tuple(_self, owner, amount.quantity, string("refund")))
         .send();
@@ -262,12 +262,12 @@ void symb::add_balance( const name& owner, const asset& value, const name& ram_p
 
    if( itr == accounts.end() ) {
       accounts.emplace( ram_payer, [&](auto& a){
-        a.balance = value;
+        a.balance.quantity = value;
         a.account = owner;
       });
    } else {
       accounts.modify( itr, same_payer, [&](auto& a) {
-        a.balance += value;
+        a.balance.quantity += value;
       });
    }
 }
@@ -283,10 +283,10 @@ void symb::sub_balance( const name& owner, const asset& value ) {
     check(itr != accounts.end(), "account not found");
 
 
-    check(itr->balance >= value, "insufficient balance");
-    const asset new_balance = itr->balance - value;
+    check(itr->balance.quantity >= value, "insufficient balance");
+    const extended_asset new_balance = extended_asset(itr->balance.quantity - value, "eosio.token"_n);
 
-    if (new_balance == asset(0, EOS_SYMBOL)) {
+    if (new_balance.quantity == asset(0, EOS_SYMBOL)) {
         accounts.erase(itr);
     } else {
       accounts.modify( itr, same_payer, [&](auto& s) {

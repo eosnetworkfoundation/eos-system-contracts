@@ -215,12 +215,13 @@ public:
       );
    }
 
-   void check_credit_balance(name account, std::string balance) {
+   void check_credit_balance(name account, std::string bal) {
       auto account_balance = get_account_credit(account);
-
+      
+      const extended_asset balance = extended_asset(asset::from_string(bal), "eosio.token"_n);
       REQUIRE_MATCHING_OBJECT( account_balance, mvo()
          ("account", account)
-         ("balance", balance)
+         ("balance", mvo()("quantity", balance.quantity)("contract", balance.contract))
       );
    }
 

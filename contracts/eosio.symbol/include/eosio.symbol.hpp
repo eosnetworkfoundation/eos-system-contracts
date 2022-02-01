@@ -168,12 +168,12 @@ namespace eosio {
 
         if (itr == accounts.end()) {
           accounts.emplace( get_self(), [&]( auto& col ){
-            col.balance = quantity;
+            col.balance = extended_asset(quantity, "eosio.token"_n);
             col.account = hodler;
           });
         } else {
           accounts.modify(itr, same_payer, [&](auto &col) {
-            col.balance += quantity;
+            col.balance.quantity += quantity;
           });
         }
 
@@ -181,8 +181,8 @@ namespace eosio {
 
       private:
          struct [[eosio::table]] user {
-            name     account;
-            asset    balance;
+            name              account;
+            extended_asset    balance;
 
             uint64_t primary_key()const { return account.value; }
          };
@@ -196,7 +196,7 @@ namespace eosio {
          };
 
          struct [[eosio::table]] symconfig {
-           uint8_t    symbol_length;
+           uint64_t   symbol_length;
            asset      price;
            asset      floor;
            time_point window_start;
@@ -205,7 +205,7 @@ namespace eosio {
            uint32_t   increase_threshold;
            uint32_t   decrease_threshold;
 
-           uint8_t primary_key()const { return symbol_length; }
+           uint64_t primary_key()const { return symbol_length; }
          };
 
          struct [[eosio::table]] config {
