@@ -640,7 +640,7 @@ BOOST_FIXTURE_TEST_CASE( will_increase_price, eosio_symbol_test ) try {
    produce_block( fc::days(6) );
 
    BOOST_REQUIRE_EQUAL( success(),
-                     purchase( "bob"_n, sc("BULB"), asset::from_string("981.6950 EOS") ) );
+                        purchase( "bob"_n, sc("BULB"), asset::from_string("981.6950 EOS") ) );
 
    REQUIRE_MATCHING_OBJECT( get_sym_config(4), mvo()
       ("symbol_length", 4)
