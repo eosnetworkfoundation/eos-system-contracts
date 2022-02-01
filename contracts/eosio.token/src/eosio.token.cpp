@@ -34,8 +34,7 @@ void token::create( const name&   issuer,
 
 int64_t token::calculate_avg(uint64_t delta, uint64_t window_span_secs, int64_t current_avg)
 {
-    const uint64_t window_travelled_raw = delta * MILLI / window_span_secs;
-    const uint64_t window_travelled_ppm = window_travelled_raw > MILLI ? MILLI : window_travelled_raw;
+    const uint64_t window_travelled_ppm = std::min(delta * MILLI / window_span_secs, MILLI);
     const uint64_t reverse_travelled_ppm = MILLI - window_travelled_ppm;
     return int64_t(current_avg * int128_t(reverse_travelled_ppm) / MILLI);
 }
