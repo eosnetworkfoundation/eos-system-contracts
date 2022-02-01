@@ -116,7 +116,7 @@ public:
                            account_name to,
                            asset        quantity,
                            string       memo ) {
-      return push_action( actor, N(transfer), mvo()
+      return push_action( actor, "transfer"_n, mvo()
            ( "from", from)
            ( "to", to)
            ( "quantity", quantity)
@@ -364,11 +364,11 @@ BOOST_FIXTURE_TEST_CASE( retire_tests, eosio_token_tester ) try {
    //should fail to retire more than current supply
    BOOST_REQUIRE_EQUAL( wasm_assert_msg("overdrawn balance"), retire( "alice"_n, asset::from_string("500.000 TKN"), "hola" ) );
 
-   BOOST_REQUIRE_EQUAL( success(), transfer( N(alice), N(alice), N(bob), asset::from_string("200.000 TKN"), "hola" ) );
+   BOOST_REQUIRE_EQUAL( success(), transfer( "alice"_n, "alice"_n, "bob"_n, asset::from_string("200.000 TKN"), "hola" ) );
    //should fail to retire since tokens are not on the issuer's balance
    BOOST_REQUIRE_EQUAL( wasm_assert_msg("overdrawn balance"), retire( "alice"_n, asset::from_string("300.000 TKN"), "hola" ) );
    //transfer tokens back
-   BOOST_REQUIRE_EQUAL( success(), transfer( N(bob), N(bob), N(alice), asset::from_string("200.000 TKN"), "hola" ) );
+   BOOST_REQUIRE_EQUAL( success(), transfer( "bob"_n, "bob"_n, "alice"_n, asset::from_string("200.000 TKN"), "hola" ) );
 
    BOOST_REQUIRE_EQUAL( success(), retire( "alice"_n, asset::from_string("300.000 TKN"), "hola" ) );
    stats = get_stats("3,TKN");
@@ -424,7 +424,7 @@ BOOST_FIXTURE_TEST_CASE( transfer_tests, eosio_token_tester ) try {
       ("balance", "1000 CERO")
    );
 
-   transfer( N(alice), N(alice), N(bob), asset::from_string("300 CERO"), "hola" );
+   transfer( "alice"_n, "alice"_n, "bob"_n, asset::from_string("300 CERO"), "hola" );
 
    alice_balance = get_account("alice"_n, "0,CERO");
    REQUIRE_MATCHING_OBJECT( alice_balance, mvo()
@@ -441,11 +441,11 @@ BOOST_FIXTURE_TEST_CASE( transfer_tests, eosio_token_tester ) try {
    );
 
    BOOST_REQUIRE_EQUAL( wasm_assert_msg( "overdrawn balance" ),
-      transfer( N(alice), N(alice), N(bob), asset::from_string("701 CERO"), "hola" )
+      transfer( "alice"_n, "alice"_n, "bob"_n, asset::from_string("701 CERO"), "hola" )
    );
 
    BOOST_REQUIRE_EQUAL( wasm_assert_msg( "must transfer positive quantity" ),
-      transfer( N(alice), N(alice), N(bob), asset::from_string("-1000 CERO"), "hola" )
+      transfer( "alice"_n, "alice"_n, "bob"_n, asset::from_string("-1000 CERO"), "hola" )
    );
 
 
@@ -482,7 +482,7 @@ BOOST_FIXTURE_TEST_CASE( open_tests, eosio_token_tester ) try {
       ("balance", "0 CERO")
    );
 
-   BOOST_REQUIRE_EQUAL( success(), transfer( N(alice), N(alice), N(bob), asset::from_string("200 CERO"), "hola" ) );
+   BOOST_REQUIRE_EQUAL( success(), transfer( "alice"_n, "alice"_n, "bob"_n, asset::from_string("200 CERO"), "hola" ) );
 
    bob_balance = get_account("bob"_n, "0,CERO");
    REQUIRE_MATCHING_OBJECT( bob_balance, mvo()
@@ -511,7 +511,7 @@ BOOST_FIXTURE_TEST_CASE( close_tests, eosio_token_tester ) try {
       ("balance", "1000 CERO")
    );
 
-   BOOST_REQUIRE_EQUAL( success(), transfer( N(alice), N(alice), N(bob), asset::from_string("1000 CERO"), "hola" ) );
+   BOOST_REQUIRE_EQUAL( success(), transfer( "alice"_n, "alice"_n, "bob"_n, asset::from_string("1000 CERO"), "hola" ) );
 
    alice_balance = get_account("alice"_n, "0,CERO");
    REQUIRE_MATCHING_OBJECT( alice_balance, mvo()
@@ -526,15 +526,15 @@ BOOST_FIXTURE_TEST_CASE( close_tests, eosio_token_tester ) try {
 
 BOOST_FIXTURE_TEST_CASE( inflation_limiting, eosio_token_tester ) try {
 
-   BOOST_REQUIRE_EQUAL( success(), create( N(alice), asset::from_string("1000000.0000 MATE")) );
+   BOOST_REQUIRE_EQUAL( success(), create( "alice"_n, asset::from_string("1000000.0000 MATE")) );
 
 
-   auto alice_balance = get_account(N(alice), "4,MATE");
+   auto alice_balance = get_account("alice"_n, "4,MATE");
    BOOST_REQUIRE_EQUAL(true, alice_balance.is_null() );
 
-   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("1000.0000 MATE"), "hola" ) );
+   BOOST_REQUIRE_EQUAL( success(), issue( "alice"_n, asset::from_string("1000.0000 MATE"), "hola" ) );
 
-   alice_balance = get_account(N(alice), "4,MATE");
+   alice_balance = get_account("alice"_n, "4,MATE");
    REQUIRE_MATCHING_OBJECT( alice_balance, mvo()
       ("balance", "1000.0000 MATE")
    );
@@ -559,7 +559,7 @@ BOOST_FIXTURE_TEST_CASE( inflation_limiting, eosio_token_tester ) try {
    produce_block( fc::hours(5) );
    produce_block( fc::minutes(59) );
    produce_block( fc::seconds(59) );
-   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("1000.0000 MATE"), "hola" ) );
+   BOOST_REQUIRE_EQUAL( success(), issue( "alice"_n, asset::from_string("1000.0000 MATE"), "hola" ) );
 
    REQUIRE_MATCHING_OBJECT( get_stats("4,MATE"), mvo()
       ("supply", "2000.0000 MATE")
@@ -576,7 +576,7 @@ BOOST_FIXTURE_TEST_CASE( inflation_limiting, eosio_token_tester ) try {
       ("authorizer", "")
    );
 
-   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("1000.0000 MATE"), "hola" ) );
+   BOOST_REQUIRE_EQUAL( success(), issue( "alice"_n, asset::from_string("1000.0000 MATE"), "hola" ) );
 
    REQUIRE_MATCHING_OBJECT( get_stats("4,MATE"), mvo()
       ("supply", "3000.0000 MATE")
@@ -595,9 +595,9 @@ BOOST_FIXTURE_TEST_CASE( inflation_limiting, eosio_token_tester ) try {
 
    cout << get_stats("4,MATE") << "\n";
 
-   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("10000.0000 MATE"), "hola" ) );
+   BOOST_REQUIRE_EQUAL( success(), issue( "alice"_n, asset::from_string("10000.0000 MATE"), "hola" ) );
 
-   BOOST_REQUIRE_EQUAL( success(), update( N(alice), 
+   BOOST_REQUIRE_EQUAL( success(), update( "alice"_n, 
                                            sc("MATE"),
                                            true,
                                            true,
@@ -621,15 +621,15 @@ BOOST_FIXTURE_TEST_CASE( inflation_limiting, eosio_token_tester ) try {
       ("authorizer", "")
    );
 
-   // BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("1950.0000 MATE"), "hola" ) );
+   // BOOST_REQUIRE_EQUAL( success(), issue( "alice"_n, asset::from_string("1950.0000 MATE"), "hola" ) );
 
 
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE( no_ram_modify_issues, eosio_token_tester ) try {
 
-   BOOST_REQUIRE_EQUAL( success(), create( N(alice), asset::from_string("1000000.0000 MATE")) );
-   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("10000.0000 MATE"), "hola" ) );
+   BOOST_REQUIRE_EQUAL( success(), create( "alice"_n, asset::from_string("1000000.0000 MATE")) );
+   BOOST_REQUIRE_EQUAL( success(), issue( "alice"_n, asset::from_string("10000.0000 MATE"), "hola" ) );
 
    BOOST_REQUIRE_EQUAL( success(), transfer( "alice"_n, "alice"_n, "bob"_n, asset::from_string("50.0000 MATE"), "hola" ) );
 
@@ -651,8 +651,8 @@ BOOST_FIXTURE_TEST_CASE( no_ram_modify_issues, eosio_token_tester ) try {
 
 BOOST_FIXTURE_TEST_CASE( no_transfer_of_owner_issue, eosio_token_tester ) try {
 
-   BOOST_REQUIRE_EQUAL( success(), create( N(alice), asset::from_string("1000000.0000 MATE")) );
-   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("10000.0000 MATE"), "hola" ) );
+   BOOST_REQUIRE_EQUAL( success(), create( "alice"_n, asset::from_string("1000000.0000 MATE")) );
+   BOOST_REQUIRE_EQUAL( success(), issue( "alice"_n, asset::from_string("10000.0000 MATE"), "hola" ) );
 
    BOOST_REQUIRE_EQUAL( success(), transfer( "alice"_n, "alice"_n, "bob"_n, asset::from_string("50.0000 MATE"), "hola" ) );
 
@@ -675,8 +675,8 @@ BOOST_FIXTURE_TEST_CASE( no_transfer_of_owner_issue, eosio_token_tester ) try {
 
 BOOST_FIXTURE_TEST_CASE( cannot_recall_after_disable, eosio_token_tester ) try {
 
-   BOOST_REQUIRE_EQUAL( success(), create( N(alice), asset::from_string("1000000.0000 MATE")) );
-   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("10000.0000 MATE"), "hola" ) );
+   BOOST_REQUIRE_EQUAL( success(), create( "alice"_n, asset::from_string("1000000.0000 MATE")) );
+   BOOST_REQUIRE_EQUAL( success(), issue( "alice"_n, asset::from_string("10000.0000 MATE"), "hola" ) );
 
    BOOST_REQUIRE_EQUAL( success(), transfer( "alice"_n, "alice"_n, "bob"_n, asset::from_string("50.0000 MATE"), "hola" ) );
 
@@ -695,7 +695,7 @@ BOOST_FIXTURE_TEST_CASE( cannot_recall_after_disable, eosio_token_tester ) try {
            asset::from_string("3000.0000 MATE")));
 
    BOOST_REQUIRE_EQUAL(wasm_assert_msg("cannot enable recall once disabled"),
-       update(N(alice),
+       update("alice"_n,
            sc("MATE"),
            true,
            true,
@@ -714,10 +714,10 @@ BOOST_FIXTURE_TEST_CASE( cannot_recall_after_disable, eosio_token_tester ) try {
 
 BOOST_FIXTURE_TEST_CASE( retire_calc, eosio_token_tester ) try {
 
-   BOOST_REQUIRE_EQUAL( success(), create( N(alice), asset::from_string("1000000.0000 MATE")) );
+   BOOST_REQUIRE_EQUAL( success(), create( "alice"_n, asset::from_string("1000000.0000 MATE")) );
 
 
-   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("2000.0000 MATE"), "hola" ) );
+   BOOST_REQUIRE_EQUAL( success(), issue( "alice"_n, asset::from_string("2000.0000 MATE"), "hola" ) );
 
    REQUIRE_MATCHING_OBJECT( get_stats("4,MATE"), mvo()
       ("supply", "2000.0000 MATE")
@@ -739,7 +739,7 @@ BOOST_FIXTURE_TEST_CASE( retire_calc, eosio_token_tester ) try {
    produce_block( fc::seconds(59) );
 
 
-   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("300.0000 MATE"), "hola" ) );
+   BOOST_REQUIRE_EQUAL( success(), issue( "alice"_n, asset::from_string("300.0000 MATE"), "hola" ) );
 
    REQUIRE_MATCHING_OBJECT( get_stats("4,MATE"), mvo()
       ("supply", "2300.0000 MATE")
@@ -756,7 +756,7 @@ BOOST_FIXTURE_TEST_CASE( retire_calc, eosio_token_tester ) try {
       ("authorizer", "")
    );
 
-   BOOST_REQUIRE_EQUAL( success(), retire( N(alice), asset::from_string("300.0000 MATE"), "hola" ) );
+   BOOST_REQUIRE_EQUAL( success(), retire( "alice"_n, asset::from_string("300.0000 MATE"), "hola" ) );
 
    REQUIRE_MATCHING_OBJECT( get_stats("4,MATE"), mvo()
       ("supply", "2000.0000 MATE")
@@ -779,10 +779,10 @@ BOOST_FIXTURE_TEST_CASE( retire_calc, eosio_token_tester ) try {
 
 BOOST_FIXTURE_TEST_CASE( can_issue_in_negatives, eosio_token_tester ) try {
 
-   BOOST_REQUIRE_EQUAL( success(), create( N(alice), asset::from_string("1000000.0000 MATE")) );
+   BOOST_REQUIRE_EQUAL( success(), create( "alice"_n, asset::from_string("1000000.0000 MATE")) );
 
 
-   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("2000.0000 MATE"), "hola" ) );
+   BOOST_REQUIRE_EQUAL( success(), issue( "alice"_n, asset::from_string("2000.0000 MATE"), "hola" ) );
 
    REQUIRE_MATCHING_OBJECT( get_stats("4,MATE"), mvo()
       ("supply", "2000.0000 MATE")
@@ -804,7 +804,7 @@ BOOST_FIXTURE_TEST_CASE( can_issue_in_negatives, eosio_token_tester ) try {
    produce_block( fc::seconds(59) );
 
 
-   BOOST_REQUIRE_EQUAL( success(), retire( N(alice), asset::from_string("300.0000 MATE"), "hola" ) );
+   BOOST_REQUIRE_EQUAL( success(), retire( "alice"_n, asset::from_string("300.0000 MATE"), "hola" ) );
 
    REQUIRE_MATCHING_OBJECT( get_stats("4,MATE"), mvo()
       ("supply", "1700.0000 MATE")
@@ -825,7 +825,7 @@ BOOST_FIXTURE_TEST_CASE( can_issue_in_negatives, eosio_token_tester ) try {
    // produce_block( fc::minutes(59) );
    // produce_block( fc::seconds(59) );
 
-   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("50.0000 MATE"), "hola" ) );
+   BOOST_REQUIRE_EQUAL( success(), issue( "alice"_n, asset::from_string("50.0000 MATE"), "hola" ) );
 
    REQUIRE_MATCHING_OBJECT( get_stats("4,MATE"), mvo()
       ("supply", "1750.0000 MATE")
@@ -846,7 +846,7 @@ BOOST_FIXTURE_TEST_CASE( can_issue_in_negatives, eosio_token_tester ) try {
    produce_block( fc::minutes(59) );
    produce_block( fc::seconds(59) );
 
-   BOOST_REQUIRE_EQUAL( success(), issue( N(alice), asset::from_string("470.0000 MATE"), "hola" ) );
+   BOOST_REQUIRE_EQUAL( success(), issue( "alice"_n, asset::from_string("470.0000 MATE"), "hola" ) );
 
    REQUIRE_MATCHING_OBJECT( get_stats("4,MATE"), mvo()
       ("supply", "2220.0000 MATE")
