@@ -171,11 +171,11 @@ namespace eosio {
             uint64_t yearly_inf_per_limit; /// ppm configured by user, can only decrease valid numbers >= 0
 
             // absolute amount allowed
-            asset allowed_daily_inflation; /// config, >= 0, unit = token
+            int64_t allowed_daily_inflation; /// config, >= 0, unit = token
             // configured by user, can only decrease valid numbers >= 0
 
-            asset avg_daily_inflation;
-            asset avg_yearly_inflation;
+            int64_t avg_daily_inflation;
+            int64_t avg_yearly_inflation;
 
             time_point_sec last_update;
             // Account to use for inline transfer action - can be null
@@ -189,7 +189,7 @@ namespace eosio {
 
          void sub_balance( const name& owner, const asset& value, const name& issuer );
          void add_balance( const name& owner, const asset& value, const name& ram_payer );
-         asset calculate_avg(uint64_t delta, uint64_t window_span_secs, asset current_avg);
+         int64_t calculate_avg(uint64_t delta, uint64_t window_span_secs, int64_t current_avg);
    };
 
 }

@@ -17,8 +17,8 @@ void token::create( const name&   issuer,
     check( existing == statstable.end(), "token with symbol already exists" );
 
     statstable.emplace( get_self(), [&]( auto& s ) {
-       s.avg_daily_inflation     = asset(0, maximum_supply.symbol);
-       s.avg_yearly_inflation    = asset(0, maximum_supply.symbol);
+       s.avg_daily_inflation     = 0;
+       s.avg_yearly_inflation    = 0;
        s.supply.symbol           = maximum_supply.symbol;
        s.max_supply              = maximum_supply;
        s.issuer                  = issuer;
@@ -28,16 +28,16 @@ void token::create( const name&   issuer,
        s.last_update             = current_time_point();
        s.daily_inf_per_limit     = 10000000000000000000;
        s.yearly_inf_per_limit    = 10000000000000000000;
-       s.allowed_daily_inflation = maximum_supply;
+       s.allowed_daily_inflation = maximum_supply.amount;
     });
 }
 
-asset token::calculate_avg(uint64_t delta, uint64_t window_span_secs, asset current_avg)
+int64_t token::calculate_avg(uint64_t delta, uint64_t window_span_secs, int64_t current_avg)
 {
     const uint64_t window_travelled_raw = delta * MILLI / window_span_secs;
     const uint64_t window_travelled_ppm = window_travelled_raw > MILLI ? MILLI : window_travelled_raw;
     const uint64_t reverse_travelled_ppm = MILLI - window_travelled_ppm;
-    return asset(int64_t(current_avg.amount * int128_t(reverse_travelled_ppm) / MILLI), current_avg.symbol);
+    return int64_t(current_avg * int128_t(reverse_travelled_ppm) / MILLI);
 }
 
 void token::issue( const name& to, const asset& quantity, const string& memo )
@@ -61,15 +61,15 @@ void token::issue( const name& to, const asset& quantity, const string& memo )
    
     const uint64_t delta = current_time_point().sec_since_epoch() - st.last_update.sec_since_epoch();
 
-    const asset new_day_avg = calculate_avg(delta, DAY, st.avg_daily_inflation) + quantity;
-    const asset new_year_avg = calculate_avg(delta, YEAR, st.avg_yearly_inflation) + quantity;
+    const int64_t new_day_avg = calculate_avg(delta, DAY, st.avg_daily_inflation) + quantity.amount;
+    const int64_t new_year_avg = calculate_avg(delta, YEAR, st.avg_yearly_inflation) + quantity.amount;
 
     const asset old_supply = st.supply;
     const asset new_supply = old_supply + quantity; 
 
-    if (new_day_avg.amount > st.allowed_daily_inflation.amount) {
-       const uint64_t avg_daily_ppm_inf  = (new_day_avg.amount  * int128_t(MILLI)) / old_supply.amount;
-       const uint64_t avg_yearly_ppm_inf = (new_year_avg.amount * int128_t(MILLI)) / old_supply.amount;
+    if (new_day_avg > st.allowed_daily_inflation) {
+       const uint64_t avg_daily_ppm_inf  = (new_day_avg  * int128_t(MILLI)) / old_supply.amount;
+       const uint64_t avg_yearly_ppm_inf = (new_year_avg * int128_t(MILLI)) / old_supply.amount;
        
        check(avg_daily_ppm_inf < st.daily_inf_per_limit , "daily inflation reached");
        check(avg_yearly_ppm_inf < st.yearly_inf_per_limit, "yearly inflation reached");
@@ -119,7 +119,7 @@ void token::update( const symbol_code&    sym,
 
     check(daily_inf_per_limit <= st.daily_inf_per_limit, "cannot raise daily inflation percent limit");
     check(yearly_inf_per_limit <= st.yearly_inf_per_limit, "cannot raise yearly inflation percent limit");
-    check(allowed_daily_inflation.amount <= st.allowed_daily_inflation.amount, "cannot raise absolute daily inflation limit");
+    check(allowed_daily_inflation.amount <= st.allowed_daily_inflation, "cannot raise absolute daily inflation limit");
 
     statstable.modify( st, same_payer, [&]( auto& s ) {
       s.recall = recall;
@@ -127,7 +127,7 @@ void token::update( const symbol_code&    sym,
       s.authorizer = authorizer;
       s.daily_inf_per_limit = daily_inf_per_limit;
       s.yearly_inf_per_limit = yearly_inf_per_limit;
-      s.allowed_daily_inflation = allowed_daily_inflation;
+      s.allowed_daily_inflation = allowed_daily_inflation.amount;
     });
 
 }
@@ -152,8 +152,8 @@ void token::retire( const asset& quantity, const string& memo )
 
     const uint64_t delta = current_time_point().sec_since_epoch() - st.last_update.sec_since_epoch();
 
-    const asset new_day_avg =  calculate_avg(delta, DAY, st.avg_daily_inflation) - quantity;
-    const asset new_year_avg = calculate_avg(delta, YEAR, st.avg_yearly_inflation) - quantity;
+    const int64_t new_day_avg =  calculate_avg(delta, DAY, st.avg_daily_inflation) - quantity.amount;
+    const int64_t new_year_avg = calculate_avg(delta, YEAR, st.avg_yearly_inflation) - quantity.amount;
 
     statstable.modify( st, same_payer, [&]( auto& s ) {
        s.supply -= quantity;
