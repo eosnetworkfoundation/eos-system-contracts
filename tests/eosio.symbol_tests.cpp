@@ -814,4 +814,17 @@ BOOST_FIXTURE_TEST_CASE( can_take_trade_fees, eosio_symbol_test ) try {
 } FC_LOG_AND_RETHROW()
 
 
+BOOST_FIXTURE_TEST_CASE( transfer_will_update_credit_instance, eosio_symbol_test ) try {
+
+   transfer("eosio.token"_n, "bob"_n, asset::from_string("1000.0000 EOS"), "");
+
+   transfer("bob"_n, "eosio.symbol"_n, asset::from_string("1000.0000 EOS"), "");
+   check_credit_balance(N(bob), "1000.0000 EOS");
+
+   transfer("bob"_n, "eosio.symbol"_n, asset::from_string("5.0000 EOS"), "");
+   check_credit_balance(N(bob), "1005.0000 EOS");
+
+} FC_LOG_AND_RETHROW()
+
+
 BOOST_AUTO_TEST_SUITE_END()
