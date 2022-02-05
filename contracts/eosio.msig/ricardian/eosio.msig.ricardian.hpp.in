@@ -1,50 +1,44 @@
-<h1 class="contract">approve</h1>
+#pragma once
 
----
+namespace eosio_msig
+{
+   inline constexpr auto approve_ricardian = R"(---
 spec_version: "0.2.0"
 title: Approve Proposed Transaction
 summary: '{{nowrap level.actor}} approves the {{nowrap proposal_name}} proposal'
 icon: @ICON_BASE_URL@/@MULTISIG_ICON_URI@
 ---
 
-{{level.actor}} approves the {{proposal_name}} proposal proposed by {{proposer}} with the {{level.permission}} permission of {{level.actor}}.
+{{level.actor}} approves the {{proposal_name}} proposal proposed by {{proposer}} with the {{level.permission}} permission of {{level.actor}}.)";
 
-<h1 class="contract">cancel</h1>
-
----
+   inline constexpr auto cancel_ricardian = R"(---
 spec_version: "0.2.0"
 title: Cancel Proposed Transaction
 summary: '{{nowrap canceler}} cancels the {{nowrap proposal_name}} proposal'
 icon: @ICON_BASE_URL@/@MULTISIG_ICON_URI@
 ---
 
-{{canceler}} cancels the {{proposal_name}} proposal submitted by {{proposer}}.
+{{canceler}} cancels the {{proposal_name}} proposal submitted by {{proposer}}.)";
 
-<h1 class="contract">exec</h1>
-
----
+   inline constexpr auto exec_ricardian = R"(---
 spec_version: "0.2.0"
 title: Execute Proposed Transaction
 summary: '{{nowrap executer}} executes the {{nowrap proposal_name}} proposal'
 icon: @ICON_BASE_URL@/@MULTISIG_ICON_URI@
 ---
 
-{{executer}} executes the {{proposal_name}} proposal submitted by {{proposer}} if the minimum required approvals for the proposal have been secured.
+{{executer}} executes the {{proposal_name}} proposal submitted by {{proposer}} if the minimum required approvals for the proposal have been secured.)";
 
-<h1 class="contract">invalidate</h1>
-
----
+   inline constexpr auto invalidate_ricardian = R"(---
 spec_version: "0.2.0"
 title: Invalidate All Approvals
 summary: '{{nowrap account}} invalidates approvals on outstanding proposals'
 icon: @ICON_BASE_URL@/@MULTISIG_ICON_URI@
 ---
 
-{{account}} invalidates all approvals on proposals which have not yet executed.
+{{account}} invalidates all approvals on proposals which have not yet executed.)";
 
-<h1 class="contract">propose</h1>
-
----
+   inline constexpr auto propose_ricardian = R"(---
 spec_version: "0.2.0"
 title: Propose Transaction
 summary: '{{nowrap proposer}} creates the {{nowrap proposal_name}}'
@@ -59,15 +53,14 @@ The proposal requests approvals from the following accounts at the specified per
    + {{this.permission}} permission of {{this.actor}}
 {{/each}}
 
-If the proposed transaction is not executed prior to {{trx.expiration}}, the proposal will automatically expire.
+If the proposed transaction is not executed prior to {{trx.expiration}}, the proposal will automatically expire.)";
 
-<h1 class="contract">unapprove</h1>
-
----
+   inline constexpr auto unapprove_ricardian = R"(---
 spec_version: "0.2.0"
 title: Unapprove Proposed Transaction
 summary: '{{nowrap level.actor}} revokes the approval previously provided to {{nowrap proposal_name}} proposal'
 icon: @ICON_BASE_URL@/@MULTISIG_ICON_URI@
 ---
 
-{{level.actor}} revokes the approval previously provided at their {{level.permission}} permission level from the {{proposal_name}} proposal proposed by {{proposer}}.
+{{level.actor}} revokes the approval previously provided at their {{level.permission}} permission level from the {{proposal_name}} proposal proposed by {{proposer}}.)";
+} // namespace eosio_msig

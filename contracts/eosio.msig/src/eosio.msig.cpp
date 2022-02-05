@@ -1,12 +1,14 @@
+#include <eosio.msig/eosio.msig.hpp>
+
 #include <eosio/action.hpp>
 #include <eosio/crypto.hpp>
 #include <eosio/permission.hpp>
 
-#include <eosio.msig/eosio.msig.hpp>
+using namespace eosio;
 
-namespace eosio {
+namespace eosio_msig {
 
-void multisig::propose( ignore<name> proposer,
+void contract::propose( ignore<name> proposer,
                         ignore<name> proposal_name,
                         ignore<std::vector<permission_level>> requested,
                         ignore<transaction> trx )
@@ -56,15 +58,15 @@ void multisig::propose( ignore<name> proposer,
    });
 }
 
-void multisig::approve( name proposer, name proposal_name, permission_level level,
-                        const eosio::binary_extension<eosio::checksum256>& proposal_hash )
+void contract::approve( name proposer, name proposal_name, permission_level level,
+                        const eosio::tracked_might_not_exist<eosio::checksum256>& proposal_hash )
 {
    require_auth( level );
 
-   if( proposal_hash ) {
+   if( proposal_hash.filled ) {
       proposals proptable( get_self(), proposer.value );
       auto& prop = proptable.get( proposal_name.value, "proposal not found" );
-      assert_sha256( prop.packed_transaction.data(), prop.packed_transaction.size(), *proposal_hash );
+      assert_sha256( prop.packed_transaction.data(), prop.packed_transaction.size(), proposal_hash.value );
    }
 
    approvals apptable( get_self(), proposer.value );
@@ -91,7 +93,7 @@ void multisig::approve( name proposer, name proposal_name, permission_level leve
    }
 }
 
-void multisig::unapprove( name proposer, name proposal_name, permission_level level ) {
+void contract::unapprove( name proposer, name proposal_name, permission_level level ) {
    require_auth( level );
 
    approvals apptable( get_self(), proposer.value );
@@ -115,7 +117,7 @@ void multisig::unapprove( name proposer, name proposal_name, permission_level le
    }
 }
 
-void multisig::cancel( name proposer, name proposal_name, name canceler ) {
+void contract::cancel( name proposer, name proposal_name, name canceler ) {
    require_auth( canceler );
 
    proposals proptable( get_self(), proposer.value );
@@ -139,7 +141,7 @@ void multisig::cancel( name proposer, name proposal_name, name canceler ) {
    }
 }
 
-void multisig::exec( name proposer, name proposal_name, name executer ) {
+void contract::exec( name proposer, name proposal_name, name executer ) {
    require_auth( executer );
 
    proposals proptable( get_self(), proposer.value );
@@ -188,7 +190,7 @@ void multisig::exec( name proposer, name proposal_name, name executer ) {
    proptable.erase(prop);
 }
 
-void multisig::invalidate( name account ) {
+void contract::invalidate( name account ) {
    require_auth( account );
    invalidations inv_table( get_self(), get_self().value );
    auto it = inv_table.find( account.value );
@@ -204,4 +206,11 @@ void multisig::invalidate( name account ) {
    }
 }
 
-} /// namespace eosio
+} // namespace eosio_msig
+
+EOSIO_ACTION_DISPATCHER(eosio_msig::actions)
+EOSIO_ABIGEN(actions(eosio_msig::actions),
+             table("proposal"_n, eosio_msig::proposal),
+             table("approvals"_n, eosio_msig::old_approvals_info),
+             table("approvals2"_n, eosio_msig::approvals_info),
+             table("invals"_n, eosio_msig::invalidation))
