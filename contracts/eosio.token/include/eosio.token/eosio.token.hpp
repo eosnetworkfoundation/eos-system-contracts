@@ -2,14 +2,32 @@
 
 #include <eosio/asset.hpp>
 #include <eosio/eosio.hpp>
+#include "eosio.token.ricardian.hpp"
 
-#include <string>
+namespace eosio_token {
+   struct account {
+      eosio::asset   balance;
 
-namespace eosiosystem {
-   class system_contract;
-}
+      bool operator==(const account&) const = default;
+      bool operator!=(const account&) const = default;
+      uint64_t primary_key() const { return balance.symbol.code().raw(); }
+   };
+   EOSIO_REFLECT(account, balance)
 
-namespace eosio {
+   typedef eosio::multi_index<"accounts"_n, account> accounts;
+
+   struct currency_stats {
+      eosio::asset   supply;
+      eosio::asset   max_supply;
+      eosio::name    issuer;
+
+      bool operator==(const currency_stats&) const = default;
+      bool operator!=(const currency_stats&) const = default;
+      uint64_t primary_key() const { return supply.symbol.code().raw(); }
+   };
+   EOSIO_REFLECT(currency_stats, supply, max_supply, issuer)
+
+   typedef eosio::multi_index<"stat"_n, currency_stats> stats;
 
    using std::string;
 
@@ -22,9 +40,9 @@ namespace eosio {
     * 
     * Similarly, the `stats` multi-index table, holds instances of `currency_stats` objects for each row, which contains information about current supply, maximum supply, and the creator account for a symbol token. The `stats` table is scoped to the token symbol.  Therefore, when one queries the `stats` table for a token symbol the result is one single entry/row corresponding to the queried symbol token if it was previously created, or nothing, otherwise.
     */
-   class [[eosio::contract("eosio.token")]] token : public contract {
+   class contract : public eosio::contract {
       public:
-         using contract::contract;
+         using eosio::contract::contract;
 
          /**
           * Allows `issuer` account to create a token in supply of `maximum_supply`. If validation is successful a new entry in statstable for token symbol scope gets created.
@@ -37,9 +55,8 @@ namespace eosio {
           * @pre maximum_supply has to be smaller than the maximum supply allowed by the system: 1^62 - 1.
           * @pre Maximum supply must be positive;
           */
-         [[eosio::action]]
-         void create( const name&   issuer,
-                      const asset&  maximum_supply);
+         void create( const eosio::name&   issuer,
+                      const eosio::asset&  maximum_supply);
          /**
           *  This action issues to `to` account a `quantity` of tokens.
           *
@@ -47,8 +64,7 @@ namespace eosio {
           * @param quntity - the amount of tokens to be issued,
           * @memo - the memo string that accompanies the token issue transaction.
           */
-         [[eosio::action]]
-         void issue( const name& to, const asset& quantity, const string& memo );
+         void issue( const eosio::name& to, const eosio::asset& quantity, const std::string& memo );
 
          /**
           * The opposite for create action, if all validations succeed,
@@ -57,8 +73,7 @@ namespace eosio {
           * @param quantity - the quantity of tokens to retire,
           * @param memo - the memo string to accompany the transaction.
           */
-         [[eosio::action]]
-         void retire( const asset& quantity, const string& memo );
+         void retire( const eosio::asset& quantity, const std::string& memo );
 
          /**
           * Allows `from` account to transfer to `to` account the `quantity` tokens.
@@ -69,11 +84,10 @@ namespace eosio {
           * @param quantity - the quantity of tokens to be transferred,
           * @param memo - the memo string to accompany the transaction.
           */
-         [[eosio::action]]
-         void transfer( const name&    from,
-                        const name&    to,
-                        const asset&   quantity,
-                        const string&  memo );
+         void transfer( const eosio::name&   from,
+                        const eosio::name&   to,
+                        const eosio::asset&  quantity,
+                        const std::string&   memo );
          /**
           * Allows `ram_payer` to create an account `owner` with zero balance for
           * token `symbol` at the expense of `ram_payer`.
@@ -85,8 +99,7 @@ namespace eosio {
           * More information can be read [here](https://github.com/EOSIO/eosio.contracts/issues/62)
           * and [here](https://github.com/EOSIO/eosio.contracts/issues/61).
           */
-         [[eosio::action]]
-         void open( const name& owner, const symbol& symbol, const name& ram_payer );
+         void open( const eosio::name& owner, const eosio::symbol& symbol, const eosio::name& ram_payer );
 
          /**
           * This action is the opposite for open, it closes the account `owner`
@@ -98,49 +111,33 @@ namespace eosio {
           * @pre The pair of owner plus symbol has to exist otherwise no action is executed,
           * @pre If the pair of owner plus symbol exists, the balance has to be zero.
           */
-         [[eosio::action]]
-         void close( const name& owner, const symbol& symbol );
+         void close( const eosio::name& owner, const eosio::symbol& symbol );
 
-         static asset get_supply( const name& token_contract_account, const symbol_code& sym_code )
+         static eosio::asset get_supply( const eosio::name& token_contract_account, const eosio::symbol_code& sym_code )
          {
             stats statstable( token_contract_account, sym_code.raw() );
             const auto& st = statstable.get( sym_code.raw() );
             return st.supply;
          }
 
-         static asset get_balance( const name& token_contract_account, const name& owner, const symbol_code& sym_code )
+         static eosio::asset get_balance( const eosio::name& token_contract_account, const eosio::name& owner, const eosio::symbol_code& sym_code )
          {
             accounts accountstable( token_contract_account, owner.value );
             const auto& ac = accountstable.get( sym_code.raw() );
             return ac.balance;
          }
 
-         using create_action = eosio::action_wrapper<"create"_n, &token::create>;
-         using issue_action = eosio::action_wrapper<"issue"_n, &token::issue>;
-         using retire_action = eosio::action_wrapper<"retire"_n, &token::retire>;
-         using transfer_action = eosio::action_wrapper<"transfer"_n, &token::transfer>;
-         using open_action = eosio::action_wrapper<"open"_n, &token::open>;
-         using close_action = eosio::action_wrapper<"close"_n, &token::close>;
       private:
-         struct [[eosio::table]] account {
-            asset    balance;
+         void sub_balance( const eosio::name& owner, const eosio::asset& value );
+         void add_balance( const eosio::name& owner, const eosio::asset& value, const eosio::name& ram_payer );
+   }; // contract
 
-            uint64_t primary_key()const { return balance.symbol.code().raw(); }
-         };
-
-         struct [[eosio::table]] currency_stats {
-            asset    supply;
-            asset    max_supply;
-            name     issuer;
-
-            uint64_t primary_key()const { return supply.symbol.code().raw(); }
-         };
-
-         typedef eosio::multi_index< "accounts"_n, account > accounts;
-         typedef eosio::multi_index< "stat"_n, currency_stats > stats;
-
-         void sub_balance( const name& owner, const asset& value );
-         void add_balance( const name& owner, const asset& value, const name& ram_payer );
-   };
-
-}
+   EOSIO_ACTIONS(contract,
+                 "eosio.token"_n,
+                 action(create, issuer, maximum_supply, ricardian_contract(create_ricardian)),
+                 action(issue, to, quantity, memo, ricardian_contract(issue_ricardian)),
+                 action(retire, quantity, memo, ricardian_contract(retire_ricardian)),
+                 action(transfer, from, to, quantity, memo, ricardian_contract(transfer_ricardian)),
+                 action(open, owner, symbol, ram_payer, ricardian_contract(open_ricardian)),
+                 action(close, owner, symbol, ricardian_contract(close_ricardian)))
+} // namespace eosio_token
