@@ -59,7 +59,7 @@ void contract::propose( ignore<name> proposer,
 }
 
 void contract::approve( name proposer, name proposal_name, permission_level level,
-                        const eosio::tracked_might_not_exist<eosio::checksum256>& proposal_hash )
+                        const eosio::might_not_exist<eosio::checksum256>& proposal_hash )
 {
    require_auth( level );
 

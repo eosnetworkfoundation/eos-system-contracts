@@ -2,7 +2,7 @@
 
 #include <eosio/eosio.hpp>
 #include <eosio/ignore.hpp>
-#include <eosio/tracked_might_not_exist.hpp>
+#include <eosio/might_not_exist.hpp>
 #include <eosio/transaction.hpp>
 #include "eosio.msig.ricardian.hpp"
 
@@ -104,7 +104,7 @@ namespace eosio_msig {
           * @param proposal_hash - Transaction's checksum
           */
          void approve(eosio::name proposer, eosio::name proposal_name, eosio::permission_level level,
-                      const eosio::tracked_might_not_exist<eosio::checksum256>& proposal_hash);
+                      const eosio::might_not_exist<eosio::checksum256>& proposal_hash);
 
          /**
           * Unapprove action revokes an existing proposal. This action is the reverse of the `approve` action: if all validations pass
