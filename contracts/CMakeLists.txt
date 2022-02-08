@@ -23,6 +23,7 @@ execute_process(COMMAND ln -sf ${WASI_SDK_PREFIX} ${CMAKE_CURRENT_BINARY_DIR}/wa
 
 function(add_contract contract sources)
     add_executable(${contract} ${sources})
+    target_compile_options(${contract} PUBLIC -flto)
     target_link_libraries(${contract} eosio-contract-simple-malloc)
     target_include_directories(${contract} PUBLIC include ${CMAKE_CURRENT_BINARY_DIR}/ricardian)
 
@@ -42,4 +43,4 @@ endfunction()
 add_subdirectory(eosio.msig)
 # add_subdirectory(eosio.system)
 add_subdirectory(eosio.token)
-# add_subdirectory(eosio.wrap)
+add_subdirectory(eosio.wrap)

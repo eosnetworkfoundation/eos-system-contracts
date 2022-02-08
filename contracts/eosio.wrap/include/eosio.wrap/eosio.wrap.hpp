@@ -3,8 +3,11 @@
 #include <eosio/eosio.hpp>
 #include <eosio/ignore.hpp>
 #include <eosio/transaction.hpp>
+#include "eosio.wrap.ricardian.hpp"
 
-namespace eosio {
+using namespace eosio;
+
+namespace eosio_wrap {
    /**
     * The `eosio.wrap` system contract allows block producers to bypass authorization checks or run privileged actions with 15/21 producer approval and thus simplifies block producers superuser actions. It also makes these actions easier to audit.
     *
@@ -12,9 +15,9 @@ namespace eosio {
     *
     * The only action implemented by the `eosio.wrap` system contract is the `exec` action. This action allows for execution of a transaction, which is passed to the `exec` method in the form of a packed transaction in json format via the 'trx' parameter and the `executer` account that executes the transaction. The same `executer` account will also be used to pay the RAM and CPU fees needed to execute the transaction.
     */
-   class [[eosio::contract("eosio.wrap")]] wrap : public contract {
+   class contract : public eosio::contract {
       public:
-         using contract::contract;
+         using eosio::contract::contract;
 
          /**
           * Execute action.
@@ -30,9 +33,10 @@ namespace eosio {
           * @param executer - account executing the transaction,
           * @param trx - the transaction to be executed.
           */
-         [[eosio::action]]
          void exec( ignore<name> executer, ignore<transaction> trx );
-
-         using exec_action = eosio::action_wrapper<"exec"_n, &wrap::exec>;
    };
-} /// namespace eosio
+
+   EOSIO_ACTIONS(contract,
+                 "eosio.wrap"_n,
+                 action(exec, executer, trx, ricardian_contract(exec_ricardian)))
+} // namespace eosio_wrap
