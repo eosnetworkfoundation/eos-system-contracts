@@ -39,7 +39,7 @@ function(add_contract contract sources)
     )
 endfunction()
 
-# add_subdirectory(eosio.bios)
+add_subdirectory(eosio.bios)
 add_subdirectory(eosio.msig)
 # add_subdirectory(eosio.system)
 add_subdirectory(eosio.token)
