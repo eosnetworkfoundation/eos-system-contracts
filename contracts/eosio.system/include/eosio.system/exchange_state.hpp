@@ -3,7 +3,7 @@
 #include <eosio/asset.hpp>
 #include <eosio/multi_index.hpp>
 
-namespace eosiosystem {
+namespace eosio_system {
 
    using eosio::asset;
    using eosio::symbol;
@@ -14,7 +14,7 @@ namespace eosiosystem {
     * The state of the bancor exchange is entirely contained within this struct.
     * There are no external side effects associated with using this API.
     */
-   struct [[eosio::table, eosio::contract("eosio.system")]] exchange_state {
+   struct exchange_state {
       asset    supply;
 
       struct connector {
@@ -45,4 +45,4 @@ namespace eosiosystem {
    };
 
    typedef eosio::multi_index< "rammarket"_n, exchange_state > rammarket;
-} /// namespace eosiosystem
+} // namespace eosio_system

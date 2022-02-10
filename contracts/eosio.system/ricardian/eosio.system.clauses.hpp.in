@@ -1,10 +1,10 @@
-<h1 class="clause">UserAgreement</h1>
+#pragma once
 
-User agreement for the chain can go here.
+namespace eosio_system {
 
-<h1 class="clause">BlockProducerAgreement</h1>
+   inline constexpr auto user_agreement_clause = R"(User agreement for the chain can go here.)";
 
-I, {{producer}}, hereby nominate myself for consideration as an elected block producer.
+   inline constexpr auto bp_clause = R"(I, {{producer}}, hereby nominate myself for consideration as an elected block producer.
 
 If {{producer}} is selected to produce blocks by the system contract, I will sign blocks with my registered block signing keys and I hereby attest that I will keep these keys secret and secure.
 
@@ -60,4 +60,6 @@ I, {{producer}}, agree not to produce blocks before my scheduled time unless I h
 
 I, {{producer}}, agree not to publish blocks with timestamps more than 500ms in the future unless the prior block is more than 75% full by either NET or CPU bandwidth metrics.
 
-I, {{producer}}, agree not to set the RAM supply to more RAM than my nodes contain and to resign if I am unable to provide the RAM approved by more than two-thirds of active block producers, as shown in the system parameters.
+I, {{producer}}, agree not to set the RAM supply to more RAM than my nodes contain and to resign if I am unable to provide the RAM approved by more than two-thirds of active block producers, as shown in the system parameters.)";
+
+} // namespace eosio_system

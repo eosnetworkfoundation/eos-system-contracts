@@ -21,26 +21,34 @@ find_package(clsdk REQUIRED)
 execute_process(COMMAND ln -sf ${clsdk_DIR} ${CMAKE_CURRENT_BINARY_DIR}/clsdk)
 execute_process(COMMAND ln -sf ${WASI_SDK_PREFIX} ${CMAKE_CURRENT_BINARY_DIR}/wasi-sdk)
 
-function(add_contract contract sources)
-    add_executable(${contract} ${sources})
-    target_compile_options(${contract} PUBLIC -flto)
-    target_link_libraries(${contract} eosio-contract-simple-malloc)
-    target_include_directories(${contract} PUBLIC include ${CMAKE_CURRENT_BINARY_DIR}/ricardian)
-
-    add_executable(${contract}-debug ${sources})
-    target_link_libraries(${contract}-debug eosio-contract-simple-malloc-debug)
-    target_include_directories(${contract}-debug PUBLIC include ${CMAKE_CURRENT_BINARY_DIR}/ricardian)
-
-    add_executable(${contract}-abigen ${sources})
+function(generate_abi contract dir)
+    add_executable(${contract}-abigen ${ARGN})
     target_link_libraries(${contract}-abigen eosio-contract-abigen)
     target_include_directories(${contract}-abigen PUBLIC include ${CMAKE_CURRENT_BINARY_DIR}/ricardian)
     add_custom_command(TARGET ${contract}-abigen POST_BUILD
-        COMMAND cltester ${contract}-abigen.wasm >${contract}.abi
+        COMMAND mkdir -p ${dir}
+        COMMAND cltester ${contract}-abigen.wasm >${dir}/${contract}.abi
     )
+endfunction()
+
+function(add_contract contract)
+    generate_abi(${contract} . ${ARGN})
+
+    add_library(${contract}-headers INTERFACE)
+    target_include_directories(${contract}-headers INTERFACE include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_BINARY_DIR}/ricardian)
+
+    add_executable(${contract} ${ARGN})
+    target_compile_options(${contract} PUBLIC -flto)
+    target_link_libraries(${contract} ${contract}-headers eosio-contract-simple-malloc)
+
+    add_executable(${contract}-debug ${ARGN})
+    target_link_libraries(${contract}-debug ${contract}-headers eosio-contract-simple-malloc-debug)
 endfunction()
 
 add_subdirectory(eosio.bios)
 add_subdirectory(eosio.msig)
-# add_subdirectory(eosio.system)
+add_subdirectory(eosio.system)
 add_subdirectory(eosio.token)
 add_subdirectory(eosio.wrap)

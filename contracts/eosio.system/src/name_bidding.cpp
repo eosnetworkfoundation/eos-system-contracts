@@ -3,10 +3,9 @@
 
 #include <eosio/transaction.hpp>
 
-namespace eosiosystem {
+namespace eosio_system {
 
    using eosio::current_time_point;
-   using eosio::token;
 
    void system_contract::bidname( const name& bidder, const name& newname, const asset& bid ) {
       require_auth( bidder );
@@ -18,7 +17,7 @@ namespace eosiosystem {
       check( !is_account( newname ), "account already exists" );
       check( bid.symbol == core_symbol(), "asset must be system token" );
       check( bid.amount > 0, "insufficient bid" );
-      token::transfer_action transfer_act{ token_account, { {bidder, active_permission} } };
+      eosio_token::actions::transfer transfer_act{ token_account, { {bidder, active_permission} } };
       transfer_act.send( bidder, names_account, bid, std::string("bid name ")+ newname.to_string() );
       name_bid_table bids(get_self(), get_self().value);
       print( name{bidder}, " bid ", bid, " on ", name{newname}, "\n" );
@@ -72,9 +71,9 @@ namespace eosiosystem {
       auto it = refunds_table.find( bidder.value );
       check( it != refunds_table.end(), "refund not found" );
 
-      token::transfer_action transfer_act{ token_account, { {names_account, active_permission}, {bidder, active_permission} } };
+      eosio_token::actions::transfer transfer_act{ token_account, { {names_account, active_permission}, {bidder, active_permission} } };
       transfer_act.send( names_account, bidder, asset(it->amount), std::string("refund bid on name ")+(name{newname}).to_string() );
       refunds_table.erase( it );
    }
 
-}
+} // namespace eosio_system

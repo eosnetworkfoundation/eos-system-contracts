@@ -8,7 +8,7 @@
 #include <eosio.system/eosio.system.hpp>
 #include <eosio.token/eosio.token.hpp>
 
-namespace eosiosystem {
+namespace eosio_system {
 
    using eosio::asset;
    using eosio::const_mem_fun;
@@ -17,7 +17,6 @@ namespace eosiosystem {
    using eosio::permission_level;
    using eosio::seconds;
    using eosio::time_point_sec;
-   using eosio::token;
 
    /**
     *  This action will buy an exact amount of ram and bill the payer the current market price.
@@ -58,11 +57,11 @@ namespace eosiosystem {
       // quant_after_fee.amount should be > 0 if quant.amount > 1.
       // If quant.amount == 1, then quant_after_fee.amount == 0 and the next inline transfer will fail causing the buyram action to fail.
       {
-         token::transfer_action transfer_act{ token_account, { {payer, active_permission}, {ram_account, active_permission} } };
+         eosio_token::actions::transfer transfer_act{ token_account, { {payer, active_permission}, {ram_account, active_permission} } };
          transfer_act.send( payer, ram_account, quant_after_fee, "buy ram" );
       }
       if ( fee.amount > 0 ) {
-         token::transfer_action transfer_act{ token_account, { {payer, active_permission} } };
+         eosio_token::actions::transfer transfer_act{ token_account, { {payer, active_permission} } };
          transfer_act.send( payer, ramfee_account, fee, "ram fee" );
          channel_to_rex( ramfee_account, fee );
       }
@@ -146,13 +145,13 @@ namespace eosiosystem {
       }
 
       {
-         token::transfer_action transfer_act{ token_account, { {ram_account, active_permission}, {account, active_permission} } };
+         eosio_token::actions::transfer transfer_act{ token_account, { {ram_account, active_permission}, {account, active_permission} } };
          transfer_act.send( ram_account, account, asset(tokens_out), "sell ram" );
       }
       auto fee = ( tokens_out.amount + 199 ) / 200; /// .5% fee (round up)
       // since tokens_out.amount was asserted to be at least 2 earlier, fee.amount < tokens_out.amount
       if ( fee > 0 ) {
-         token::transfer_action transfer_act{ token_account, { {account, active_permission} } };
+         eosio_token::actions::transfer transfer_act{ token_account, { {account, active_permission} } };
          transfer_act.send( account, ramfee_account, asset(fee, core_symbol()), "sell ram fee" );
          channel_to_rex( ramfee_account, asset(fee, core_symbol() ));
       }
@@ -336,7 +335,7 @@ namespace eosiosystem {
 
          auto transfer_amount = net_balance + cpu_balance;
          if ( 0 < transfer_amount.amount ) {
-            token::transfer_action transfer_act{ token_account, { {source_stake_from, active_permission} } };
+            eosio_token::actions::transfer transfer_act{ token_account, { {source_stake_from, active_permission} } };
             transfer_act.send( source_stake_from, stake_account, asset(transfer_amount), "stake bandwidth" );
          }
       }
@@ -405,10 +404,10 @@ namespace eosiosystem {
       check( req != refunds_tbl.end(), "refund request not found" );
       check( req->request_time + seconds(refund_delay_sec) <= current_time_point(),
              "refund is not available yet" );
-      token::transfer_action transfer_act{ token_account, { {stake_account, active_permission}, {req->owner, active_permission} } };
+      eosio_token::actions::transfer transfer_act{ token_account, { {stake_account, active_permission}, {req->owner, active_permission} } };
       transfer_act.send( stake_account, req->owner, req->net_amount + req->cpu_amount, "unstake" );
       refunds_tbl.erase( req );
    }
 
 
-} //namespace eosiosystem
+} // namespace eosio_system

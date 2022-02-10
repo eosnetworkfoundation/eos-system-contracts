@@ -2,10 +2,9 @@
 #include <eosio.token/eosio.token.hpp>
 #include <eosio.system/rex.results.hpp>
 
-namespace eosiosystem {
+namespace eosio_system {
 
    using eosio::current_time_point;
-   using eosio::token;
    using eosio::seconds;
 
    void system_contract::deposit( const name& owner, const asset& amount )
@@ -16,7 +15,7 @@ namespace eosiosystem {
       check( 0 < amount.amount, "must deposit a positive amount" );
       // inline transfer from owner's token balance
       {
-         token::transfer_action transfer_act{ token_account, { owner, active_permission } };
+         eosio_token::actions::transfer transfer_act{ token_account, { owner, active_permission } };
          transfer_act.send( owner, rex_account, amount, "deposit to REX fund" );
       }
       transfer_to_fund( owner, amount );
@@ -32,7 +31,7 @@ namespace eosiosystem {
       transfer_from_fund( owner, amount );
       // inline transfer to owner's token balance
       {
-         token::transfer_action transfer_act{ token_account, { rex_account, active_permission } };
+         eosio_token::actions::transfer transfer_act{ token_account, { rex_account, active_permission } };
          transfer_act.send( rex_account, owner, amount, "withdraw from REX fund" );
       }
    }
@@ -50,7 +49,7 @@ namespace eosiosystem {
       runrex(2);
       update_rex_account( from, asset( 0, core_symbol() ), delta_rex_stake );
       // dummy action added so that amount of REX tokens purchased shows up in action trace
-      rex_results::buyresult_action buyrex_act( rex_account, std::vector<eosio::permission_level>{ } );
+      rex_results::actions::buyresult buyrex_act( rex_account, std::vector<eosio::permission_level>{ } );
       buyrex_act.send( rex_received );
    }
 
@@ -82,7 +81,7 @@ namespace eosiosystem {
       const asset payment = from_net + from_cpu;
       // inline transfer from stake_account to rex_account
       {
-         token::transfer_action transfer_act{ token_account, { stake_account, active_permission } };
+         eosio_token::actions::transfer transfer_act{ token_account, { stake_account, active_permission } };
          transfer_act.send( stake_account, rex_account, payment, "buy REX with staked tokens" );
       }
       const asset rex_received = add_to_rex_pool( payment );
@@ -90,7 +89,7 @@ namespace eosiosystem {
       runrex(2);
       update_rex_account( owner, asset( 0, core_symbol() ), rex_stake_delta - payment, true );
       // dummy action added so that amount of REX tokens purchased shows up in action trace
-      rex_results::buyresult_action buyrex_act( rex_account, std::vector<eosio::permission_level>{ } );
+      rex_results::actions::buyresult buyrex_act( rex_account, std::vector<eosio::permission_level>{ } );
       buyrex_act.send( rex_received );
    }
 
@@ -139,7 +138,7 @@ namespace eosiosystem {
       check( pending_sell_order.amount <= bitr->matured_rex, "insufficient funds for current and scheduled orders" );
       // dummy action added so that sell order proceeds show up in action trace
       if ( current_order.success ) {
-         rex_results::sellresult_action sellrex_act( rex_account, std::vector<eosio::permission_level>{ } );
+         rex_results::actions::sellresult sellrex_act( rex_account, std::vector<eosio::permission_level>{ } );
          sellrex_act.send( current_order.proceeds );
       }
    }
@@ -607,7 +606,7 @@ namespace eosiosystem {
                      order.close();
                   });
                   /// send dummy action to show owner and proceeds of filled sellrex order
-                  rex_results::orderresult_action order_act( rex_account, std::vector<eosio::permission_level>{ } );
+                  rex_results::actions::orderresult order_act( rex_account, std::vector<eosio::permission_level>{ } );
                   order_act.send( order_owner, result.proceeds );
                }
             }
@@ -748,7 +747,7 @@ namespace eosiosystem {
          c.loan_num     = pool->loan_num;
       });
 
-      rex_results::rentresult_action rentresult_act{ rex_account, std::vector<eosio::permission_level>{ } };
+      rex_results::actions::rentresult rentresult_act{ rex_account, std::vector<eosio::permission_level>{ } };
       rentresult_act.send( asset{ rented_tokens, core_symbol() } );
       return rented_tokens;
    }
@@ -924,7 +923,7 @@ namespace eosiosystem {
       if ( rex_available() ) {
          add_to_rex_return_pool( amount );
          // inline transfer to rex_account
-         token::transfer_action transfer_act{ token_account, { from, active_permission } };
+         eosio_token::actions::transfer transfer_act{ token_account, { from, active_permission } };
          transfer_act.send( from, rex_account, amount,
                             std::string("transfer from ") + from.to_string() + " to eosio.rex" );
          return;
@@ -1218,4 +1217,4 @@ namespace eosiosystem {
       }
    }
 
-}; /// namespace eosiosystem
+}; // namespace eosio_system

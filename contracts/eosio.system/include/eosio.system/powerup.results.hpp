@@ -1,12 +1,8 @@
 #pragma once
 
-#include <eosio/asset.hpp>
-#include <eosio/eosio.hpp>
-#include <eosio/name.hpp>
+#include <eosio.system/eosio.system.hpp>
 
-using eosio::action_wrapper;
-using eosio::asset;
-using eosio::name;
+namespace powup_results {
 
 /**
  * The action `powerresult` of `power.results` is a no-op.
@@ -14,7 +10,7 @@ using eosio::name;
  * This inline convenience action does not have any effect, however,
  * its data includes the result of the parent action and appears in its trace.
  */
-class [[eosio::contract("powup.results")]] powup_results : eosio::contract {
+class contract : eosio::contract {
    public:
 
       using eosio::contract::contract;
@@ -26,8 +22,11 @@ class [[eosio::contract("powup.results")]] powup_results : eosio::contract {
        * @param powup_net - amount of powup NET tokens
        * @param powup_cpu - amount of powup CPU tokens
        */
-      [[eosio::action]]
-      void powupresult( const asset& fee, const int64_t powup_net, const int64_t powup_cpu );
-
-      using powupresult_action  = action_wrapper<"powupresult"_n,  &powup_results::powupresult>;
+      void powupresult( const eosio::asset& fee, const int64_t powup_net, const int64_t powup_cpu );
 };
+
+EOSIO_ACTIONS(contract,
+              eosio_system::system_contract::reserv_account,
+              action(powupresult, fee, powup_net, powup_cpu))
+
+} // namespace powup_results

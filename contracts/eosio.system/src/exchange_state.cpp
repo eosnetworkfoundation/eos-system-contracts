@@ -4,7 +4,7 @@
 
 #include <cmath>
 
-namespace eosiosystem {
+namespace eosio_system {
 
    using eosio::check;
 
@@ -107,4 +107,4 @@ namespace eosiosystem {
       return inp;
    }
 
-} /// namespace eosiosystem
+} // namespace eosio_system

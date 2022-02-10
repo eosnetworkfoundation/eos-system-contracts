@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace eosiosystem {
+namespace eosio_system {
 
 void update_weight(time_point_sec now, powerup_state_resource& res, int64_t& delta_available);
 
@@ -391,8 +391,8 @@ void system_contract::powerup(const name& payer, const name& receiver, uint32_t 
    state_sing.set(state, get_self());
 
    // inline noop action
-   powup_results::powupresult_action powupresult_act{ reserv_account, std::vector<eosio::permission_level>{ } };
+   powup_results::actions::powupresult powupresult_act{ reserv_account, std::vector<eosio::permission_level>{ } };
    powupresult_act.send( fee, net_amount, cpu_amount );
 }
 
-} // namespace eosiosystem
+} // namespace eosio_system

@@ -1,7 +1,7 @@
 #include <eosio.system/limit_auth_changes.hpp>
 #include <eosio.system/eosio.system.hpp>
 
-namespace eosiosystem {
+namespace eosio_system {
 
    void system_contract::limitauthchg(const name& account, const std::vector<name>& allow_perms,
                                       const std::vector<name>& disallow_perms) {
@@ -34,8 +34,8 @@ namespace eosiosystem {
       }
    }
 
-   void check_auth_change(name contract, name account, const binary_extension<name>& authorized_by) {
-      name by(authorized_by.has_value() ? authorized_by.value().value : 0);
+   void check_auth_change(name contract, name account, const might_not_exist<name>& authorized_by) {
+      name by(authorized_by.value);
       if(by.value)
          eosio::require_auth({account, by});
       limit_auth_change_table table(contract, contract.value);
@@ -53,4 +53,4 @@ namespace eosiosystem {
             "authorized_by appears in disallow_perms");
    }
 
-} // namespace eosiosystem
+} // namespace eosio_system

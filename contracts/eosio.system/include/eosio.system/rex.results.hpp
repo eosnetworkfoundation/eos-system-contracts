@@ -1,10 +1,9 @@
 #pragma once
 
-#include <eosio/asset.hpp>
-#include <eosio/eosio.hpp>
-#include <eosio/name.hpp>
+#include <eosio.system/eosio.system.hpp>
 
-using eosio::action_wrapper;
+namespace rex_results {
+
 using eosio::asset;
 using eosio::name;
 
@@ -14,7 +13,7 @@ using eosio::name;
  * An inline convenience action does not have any effect, however,
  * its data includes the result of the parent action and appears in its trace.
  */
-class [[eosio::contract("rex.results")]] rex_results : eosio::contract {
+class contract : eosio::contract {
    public:
 
       using eosio::contract::contract;
@@ -24,7 +23,6 @@ class [[eosio::contract("rex.results")]] rex_results : eosio::contract {
        *
        * @param rex_received - amount of tokens used in buy order
        */
-      [[eosio::action]]
       void buyresult( const asset& rex_received );
 
       /**
@@ -32,7 +30,6 @@ class [[eosio::contract("rex.results")]] rex_results : eosio::contract {
        *
        * @param proceeds - amount of tokens used in sell order
        */
-      [[eosio::action]]
       void sellresult( const asset& proceeds );
 
       /**
@@ -41,7 +38,6 @@ class [[eosio::contract("rex.results")]] rex_results : eosio::contract {
        * @param owner - the owner of the order
        * @param proceeds - amount of tokens used in order
        */
-      [[eosio::action]]
       void orderresult( const name& owner, const asset& proceeds );
 
       /**
@@ -49,11 +45,14 @@ class [[eosio::contract("rex.results")]] rex_results : eosio::contract {
        *
        * @param rented_tokens - amount of rented tokens
        */
-      [[eosio::action]]
       void rentresult( const asset& rented_tokens );
-
-      using buyresult_action   = action_wrapper<"buyresult"_n,   &rex_results::buyresult>;
-      using sellresult_action  = action_wrapper<"sellresult"_n,  &rex_results::sellresult>;
-      using orderresult_action = action_wrapper<"orderresult"_n, &rex_results::orderresult>;
-      using rentresult_action  = action_wrapper<"rentresult"_n,  &rex_results::rentresult>;
 };
+
+EOSIO_ACTIONS(contract,
+              eosio_system::system_contract::rex_account,
+              action(buyresult, rex_received),
+              action(sellresult, proceeds),
+              action(orderresult, owner, proceeds),
+              action(rentresult, rented_tokens))
+
+} // namespace rex_results

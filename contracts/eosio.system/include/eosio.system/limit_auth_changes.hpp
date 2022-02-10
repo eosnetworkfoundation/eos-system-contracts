@@ -2,10 +2,10 @@
 
 #include <eosio/multi_index.hpp>
 
-namespace eosiosystem {
+namespace eosio_system {
    using eosio::name;
 
-   struct [[eosio::table("limitauthchg"),eosio::contract("eosio.system")]] limit_auth_change {
+   struct limit_auth_change {
       uint8_t              version = 0;
       name                 account;
       std::vector<name>    allow_perms;
@@ -17,4 +17,4 @@ namespace eosiosystem {
    };
 
    typedef eosio::multi_index<"limitauthchg"_n, limit_auth_change> limit_auth_change_table;
-} // namespace eosiosystem
+} // namespace eosio_system

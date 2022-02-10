@@ -10,7 +10,6 @@
 
 namespace eosio_bios {
 
-   using eosio::action_wrapper;
    using eosio::authority;
    using eosio::check;
    using eosio::checksum256;

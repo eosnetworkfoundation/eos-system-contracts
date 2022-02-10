@@ -16,7 +16,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace eosiosystem {
+namespace eosio_system {
 
    using eosio::const_mem_fun;
    using eosio::current_time_point;
@@ -43,7 +43,7 @@ namespace eosiosystem {
             info.is_active          = true;
             info.url                = url;
             info.location           = location;
-            info.producer_authority.emplace( producer_authority );
+            info.producer_authority = {producer_authority, true};
             if ( info.last_claim_time == time_point() )
                info.last_claim_time = ct;
          });
@@ -66,7 +66,7 @@ namespace eosiosystem {
             info.url                = url;
             info.location           = location;
             info.last_claim_time    = ct;
-            info.producer_authority.emplace( producer_authority );
+            info.producer_authority = {producer_authority, true};
          });
          _producers2.emplace( producer, [&]( producer_info2& info ){
             info.owner                     = producer;
@@ -449,4 +449,4 @@ namespace eosiosystem {
       );
    }
 
-} /// namespace eosiosystem
+} // namespace eosio_system

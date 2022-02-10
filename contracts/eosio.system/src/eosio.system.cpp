@@ -1,4 +1,6 @@
 #include <eosio.system/eosio.system.hpp>
+#include <eosio.system/limit_auth_changes.hpp>
+#include <eosio.system.clauses.hpp>
 #include <eosio.token/eosio.token.hpp>
 
 #include <eosio/crypto.hpp>
@@ -6,10 +8,9 @@
 
 #include <cmath>
 
-namespace eosiosystem {
+namespace eosio_system {
 
    using eosio::current_time_point;
-   using eosio::token;
 
    double get_continuous_rate(int64_t annual_rate) {
       return std::log1p(double(annual_rate)/double(100*inflation_precision));
@@ -110,7 +111,7 @@ namespace eosiosystem {
    }
 
 #ifdef EOSIO_SYSTEM_BLOCKCHAIN_PARAMETERS
-   extern "C" [[eosio::wasm_import]] void set_parameters_packed(const void*, size_t);
+   extern "C" [[clang::import_name("set_parameters_packed")]] void set_parameters_packed(const void*, size_t);
 #endif
 
    void system_contract::setparams( const blockchain_parameters_t& params ) {
@@ -145,9 +146,9 @@ namespace eosiosystem {
              << uint8_t(14) << params.max_inline_action_size
              << uint8_t(15) << params.max_inline_action_depth
              << uint8_t(16) << params.max_authority_depth;
-      if(params.max_action_return_value_size)
+      if(params.max_action_return_value_size.filled)
       {
-         stream << uint8_t(17) << params.max_action_return_value_size.value();
+         stream << uint8_t(17) << params.max_action_return_value_size.value;
          ++buf[0];
       }
 
@@ -201,7 +202,7 @@ namespace eosiosystem {
        .max_call_depth = 251
    };
 
-   extern "C" [[eosio::wasm_import]] void set_wasm_parameters_packed( const void*, size_t );
+   extern "C" [[clang::import_name("set_wasm_parameters_packed")]] void set_wasm_parameters_packed( const void*, size_t );
 
    void set_wasm_parameters( const wasm_parameters& params )
    {
@@ -472,7 +473,7 @@ namespace eosiosystem {
    }
 
    void native::setabi( const name& acnt, const std::vector<char>& abi,
-                        const binary_extension<std::string>& memo ) {
+                        const might_not_exist<std::string>& memo ) {
       eosio::multi_index< "abihash"_n, abi_hash >  table(get_self(), get_self().value);
       auto itr = table.find( acnt.value );
       if( itr == table.end() ) {
@@ -494,7 +495,7 @@ namespace eosiosystem {
       auto itr = _rammarket.find(ramcore_symbol.raw());
       check( itr == _rammarket.end(), "system contract has already been initialized" );
 
-      auto system_token_supply   = eosio::token::get_supply(token_account, core.code() );
+      auto system_token_supply   = eosio_token::contract::get_supply(token_account, core.code() );
       check( system_token_supply.symbol == core, "specified core symbol does not exist (precision mismatch)" );
 
       check( system_token_supply.amount > 0, "system token supply must be greater than 0" );
@@ -507,8 +508,40 @@ namespace eosiosystem {
          m.quote.balance.symbol = core;
       });
 
-      token::open_action open_act{ token_account, { {get_self(), active_permission} } };
+      eosio_token::actions::open open_act{ token_account, { {get_self(), active_permission} } };
       open_act.send( rex_account, core, get_self() );
    }
 
-} /// eosio.system
+} // namespace eosio_system
+
+EOSIO_ACTION_DISPATCHER(eosio_system::actions)
+EOSIO_ABIGEN(
+   variant("block_signing_authority", eosio::block_signing_authority),
+   actions(eosio_system::actions),
+   ricardian_clause("UserAgreement", eosio_system::user_agreement_clause),
+   ricardian_clause("BlockProducerAgreement", eosio_system::bp_clause),
+   table("abihash"_n, eosio_system::abi_hash),
+   table("bidrefunds"_n, eosio_system::bid_refund),
+   table("cpuloan"_n, eosio_system::rex_loan),
+   table("delband"_n, eosio_system::delegated_bandwidth),
+   table("global"_n, eosio_system::eosio_global_state),
+   table("global2"_n, eosio_system::eosio_global_state2),
+   table("global3"_n, eosio_system::eosio_global_state3),
+   table("global4"_n, eosio_system::eosio_global_state4),
+   table("limitauthchg"_n, eosio_system::limit_auth_change),
+   table("namebids"_n, eosio_system::name_bid),
+   table("netloan"_n, eosio_system::rex_loan),
+   table("powup.order"_n, eosio_system::powerup_order),
+   table("powup.state"_n, eosio_system::powerup_state),
+   table("producers"_n, eosio_system::producer_info),
+   table("producers2"_n, eosio_system::producer_info2),
+   table("rammarket"_n, eosio_system::exchange_state),
+   table("refunds"_n, eosio_system::refund_request),
+   table("retbuckets"_n, eosio_system::rex_return_buckets),
+   table("rexbal"_n, eosio_system::rex_balance),
+   table("rexfund"_n, eosio_system::rex_fund),
+   table("rexpool"_n, eosio_system::rex_pool),
+   table("rexqueue"_n, eosio_system::rex_order),
+   table("rexretpool"_n, eosio_system::rex_return_pool),
+   table("userres"_n, eosio_system::user_resources),
+   table("voters"_n, eosio_system::voter_info))

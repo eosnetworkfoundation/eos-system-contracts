@@ -1,11 +1,15 @@
 #include <eosio.system/rex.results.hpp>
 
-void rex_results::buyresult( const asset& rex_received ) { }
+namespace rex_results {
 
-void rex_results::sellresult( const asset& proceeds ) { }
+void contract::buyresult( const asset& rex_received ) { }
 
-void rex_results::orderresult( const name& owner, const asset& proceeds ) { }
+void contract::sellresult( const asset& proceeds ) { }
 
-void rex_results::rentresult( const asset& rented_tokens ) { }
+void contract::orderresult( const name& owner, const asset& proceeds ) { }
 
-extern "C" void apply( uint64_t, uint64_t, uint64_t ) { }
+void contract::rentresult( const asset& rented_tokens ) { }
+
+}
+
+EOSIO_ABIGEN(actions(rex_results::actions))
