@@ -51,3 +51,4 @@ add_subdirectory(eosio.token)
 add_subdirectory(eosio.wrap)
 
 add_subdirectory(test_contracts)
+add_subdirectory(eosio.boot)
