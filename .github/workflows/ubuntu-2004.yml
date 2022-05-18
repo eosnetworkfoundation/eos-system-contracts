@@ -7,7 +7,7 @@ on:
   pull_request:
     types: [assigned, opened, synchronize, reopened, labeled]
 env:
-  BUILDER_IMAGE: "ghcr.io/eosnetworkfoundation/contract-builder-ubuntu-20.04-unpinned:8840c8a14a73c7802f34d4b8f4fa5d6180a70ec9"
+  BUILDER_IMAGE: "ghcr.io/eosnetworkfoundation/contract-builder-ubuntu-20.04-unpinned:61d503c54e0e1893d04b3a470933d553b35e957d"
 jobs:
   ubuntu-2004-build:
     name: Ubuntu 20.04 | Build
