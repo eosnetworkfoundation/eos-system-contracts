@@ -123,7 +123,7 @@ void system_contract::cfgpowerup(powerup_config& args) {
    powerup_state_singleton state_sing{ get_self(), 0 };
    auto                   state = state_sing.get_or_default();
 
-   eosio::check(eosio::is_account(reserv_account), "eosio.reserv account must first be created");
+   eosio::check(eosio::is_account(reserve_account), "eosio.reserv account must first be created"); // cspell:disable-line
 
    int64_t net_delta_available = 0;
    int64_t cpu_delta_available = 0;
@@ -248,9 +248,9 @@ void system_contract::cfgpowerup(powerup_config& args) {
    state.net.adjusted_utilization = std::min(state.net.adjusted_utilization, state.net.weight);
    state.cpu.adjusted_utilization = std::min(state.cpu.adjusted_utilization, state.cpu.weight);
 
-   adjust_resources(get_self(), reserv_account, core_symbol, net_delta_available, cpu_delta_available, true);
+   adjust_resources(get_self(), reserve_account, core_symbol, net_delta_available, cpu_delta_available, true);
    state_sing.set(state, get_self());
-} // system_contract::configpower
+}
 
 /**
  *  @pre 0 <= state.min_price.amount <= state.max_price.amount
@@ -327,7 +327,7 @@ void system_contract::powerupexec(const name& user, uint16_t max) {
    int64_t cpu_delta_available = 0;
    process_powerup_queue(now, core_symbol, state, orders, max, net_delta_available, cpu_delta_available);
 
-   adjust_resources(get_self(), reserv_account, core_symbol, net_delta_available, cpu_delta_available, true);
+   adjust_resources(get_self(), reserve_account, core_symbol, net_delta_available, cpu_delta_available, true);
    state_sing.set(state, get_self());
 }
 
@@ -386,12 +386,12 @@ void system_contract::powerup(const name& payer, const name& receiver, uint32_t 
    cpu_delta_available -= cpu_amount;
 
    adjust_resources(payer, receiver, core_symbol, net_amount, cpu_amount, true);
-   adjust_resources(get_self(), reserv_account, core_symbol, net_delta_available, cpu_delta_available, true);
+   adjust_resources(get_self(), reserve_account, core_symbol, net_delta_available, cpu_delta_available, true);
    channel_to_rex(payer, fee, true);
    state_sing.set(state, get_self());
 
    // inline noop action
-   powup_results::powupresult_action powupresult_act{ reserv_account, std::vector<eosio::permission_level>{ } };
+   powup_results::powupresult_action powupresult_act{ reserve_account, std::vector<eosio::permission_level>{ } };
    powupresult_act.send( fee, net_amount, cpu_amount );
 }
 

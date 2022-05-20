@@ -9,7 +9,7 @@ using eosio::asset;
 using eosio::name;
 
 /**
- * The action `powerresult` of `power.results` is a no-op.
+ * The action `powupresult` is a no-op.
  * It is added as an inline convenience action to `powerup` reservation.
  * This inline convenience action does not have any effect, however,
  * its data includes the result of the parent action and appears in its trace.
