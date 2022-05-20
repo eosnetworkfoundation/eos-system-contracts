@@ -1,11 +1,3 @@
-set(EOSIO_SYSTEM_CONFIGURABLE_WASM_LIMITS
-    Yes
-    CACHE STRING "Enables use of the host functions activated by the CONFIGURABLE_WASM_LIMITS protocol feature")
-
-set(EOSIO_SYSTEM_BLOCKCHAIN_PARAMETERS
-    Yes
-    CACHE STRING "Enables use of the host functions activated by the BLOCKCHAIN_PARAMETERS protocol feature")
-
 add_contract(
   eosio.system
   eosio.system
@@ -21,12 +13,12 @@ add_contract(
   ${CMAKE_CURRENT_SOURCE_DIR}/src/limit_auth_changes.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/block_info.cpp)
 
-if(EOSIO_SYSTEM_CONFIGURABLE_WASM_LIMITS)
-  target_compile_definitions(eosio.system PUBLIC EOSIO_SYSTEM_CONFIGURABLE_WASM_LIMITS)
+if(SYSTEM_CONFIGURABLE_WASM_LIMITS)
+  target_compile_definitions(eosio.system PUBLIC SYSTEM_CONFIGURABLE_WASM_LIMITS)
 endif()
 
-if(EOSIO_SYSTEM_BLOCKCHAIN_PARAMETERS)
-  target_compile_definitions(eosio.system PUBLIC EOSIO_SYSTEM_BLOCKCHAIN_PARAMETERS)
+if(SYSTEM_BLOCKCHAIN_PARAMETERS)
+  target_compile_definitions(eosio.system PUBLIC SYSTEM_BLOCKCHAIN_PARAMETERS)
 endif()
 
 target_include_directories(eosio.system PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include

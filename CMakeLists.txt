@@ -20,13 +20,11 @@ include(ExternalProject)
 set(EOSIO_WASM_OLD_BEHAVIOR "Off")
 find_package(eosio.cdt)
 
-set(EOSIO_SYSTEM_CONFIGURABLE_WASM_LIMITS
-    Yes
-    CACHE STRING "Enables use of the host functions activated by the CONFIGURABLE_WASM_LIMITS protocol feature")
+option(SYSTEM_CONFIGURABLE_WASM_LIMITS
+       "Enables use of the host functions activated by the CONFIGURABLE_WASM_LIMITS protocol feature" ON)
 
-set(EOSIO_SYSTEM_BLOCKCHAIN_PARAMETERS
-    Yes
-    CACHE STRING "Enables use of the host functions activated by the BLOCKCHAIN_PARAMETERS protocol feature")
+option(SYSTEM_BLOCKCHAIN_PARAMETERS
+       "Enables use of the host functions activated by the BLOCKCHAIN_PARAMETERS protocol feature" ON)
 
 ExternalProject_Add(
   contracts_project
@@ -34,8 +32,8 @@ ExternalProject_Add(
   BINARY_DIR ${CMAKE_BINARY_DIR}/contracts
   CMAKE_ARGS -DCMAKE_BUILD_TYPE=Release
              -DCMAKE_TOOLCHAIN_FILE=${EOSIO_CDT_ROOT}/lib/cmake/eosio.cdt/EosioWasmToolchain.cmake
-             -DEOSIO_SYSTEM_CONFIGURABLE_WASM_LIMITS=${EOSIO_SYSTEM_CONFIGURABLE_WASM_LIMITS}
-             -DEOSIO_SYSTEM_BLOCKCHAIN_PARAMETERS=${EOSIO_SYSTEM_BLOCKCHAIN_PARAMETERS}
+             -DSYSTEM_CONFIGURABLE_WASM_LIMITS=${SYSTEM_CONFIGURABLE_WASM_LIMITS}
+             -DSYSTEM_BLOCKCHAIN_PARAMETERS=${SYSTEM_BLOCKCHAIN_PARAMETERS}
   UPDATE_COMMAND ""
   PATCH_COMMAND ""
   TEST_COMMAND ""
@@ -56,17 +54,11 @@ elseif(UNIX)
 endif()
 set(SECP256K1_ROOT "/usr/local")
 
-string(REPLACE ";" "|" TEST_PREFIX_PATH "${CMAKE_PREFIX_PATH}")
-string(REPLACE ";" "|" TEST_FRAMEWORK_PATH "${CMAKE_FRAMEWORK_PATH}")
-string(REPLACE ";" "|" TEST_MODULE_PATH "${CMAKE_MODULE_PATH}")
-
-set(BUILD_TESTS
-    FALSE
-    CACHE BOOL "Build unit tests")
+option(BUILD_TESTS "Build unit tests" OFF)
 
 if(BUILD_TESTS)
   message(STATUS "Building unit tests.")
   add_subdirectory(tests)
 else()
-  message(STATUS "Unit tests will not be built. To build unit tests, set BUILD_TESTS to true.")
+  message(STATUS "Unit tests will not be built. To build unit tests, set BUILD_TESTS to ON.")
 endif()

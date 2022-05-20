@@ -142,8 +142,7 @@ latest_block_batch_info_result get_latest_block_batch_info(uint32_t    batch_sta
    // Find information on start block of the latest block batch recorded in the blockinfo table.
 
    auto start_block_info_itr = t.find(latest_block_batch_start_height);
-   if (start_block_info_itr == t.cend() || start_block_info_itr->block_height != latest_block_batch_start_height) //
-   {
+   if (start_block_info_itr == t.cend() || start_block_info_itr->block_height != latest_block_batch_start_height) {
       // Record for information on start block of the latest block batch could not be found in blockinfo table.
       // This is either because of:
       //    * a gap in recording info due to a failed onblock action;

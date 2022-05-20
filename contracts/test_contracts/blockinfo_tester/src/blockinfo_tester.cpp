@@ -1,6 +1,5 @@
 #include <blockinfo_tester/blockinfo_tester.hpp>
 
-#include <cstdio>
 #include <type_traits>
 #include <vector>
 
@@ -27,26 +26,12 @@ auto process(get_latest_block_batch_info request) -> latest_block_batch_info_res
    response.result           = std::move(res.result);
    response.error_code.value = static_cast<uint32_t>(res.error_code);
 
-   /*
-   auto print_timestamp = [](const eosio::time_point& timestamp) {
-      eosio::print(timestamp.to_string());
-      eosio::print(".");
-      int64_t microseconds_remaining = (timestamp.time_since_epoch().count() % 1000000);
-      std::printf("%06d", microseconds_remaining);
-   };
-   */
-
    eosio::print("get_latest_block_batch_info: response error_code = ", response.error_code.value, "\n");
    if (response.result.has_value()) {
       const auto& result = *response.result;
-      eosio::print("get_latest_block_batch_info: response result: ");
-      eosio::print("\n    batch_start_height          = ", result.batch_start_height);
-      //eosio::print("\n    batch_start_timestamp       = ");
-      //print_timestamp(result.batch_start_timestamp);
-      eosio::print("\n    batch_current_end_height    = ", result.batch_current_end_height);
-      //eosio::print("\n    batch_current_end_timestamp = ");
-      //print_timestamp(result.batch_current_end_timestamp);
-      eosio::print("\n");
+      eosio::print("get_latest_block_batch_info: response result:\n");
+      eosio::print("    batch_start_height          = ", result.batch_start_height, "\n");
+      eosio::print("    batch_current_end_height    = ", result.batch_current_end_height, "\n");
    }
 
    return response;

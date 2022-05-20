@@ -81,7 +81,7 @@ namespace eosiosystem {
    static constexpr int64_t  default_inflation_pay_factor  = 50000;   // producers pay share = 10000 / 50000 = 20% of the inflation
    static constexpr int64_t  default_votepay_factor        = 40000;   // per-block pay share = 10000 / 40000 = 25% of the producer pay
 
-#ifdef EOSIO_SYSTEM_BLOCKCHAIN_PARAMETERS
+#ifdef SYSTEM_BLOCKCHAIN_PARAMETERS
    struct blockchain_parameters_v1 : eosio::blockchain_parameters
    {
       eosio::binary_extension<uint32_t> max_action_return_value_size;
@@ -1245,7 +1245,7 @@ namespace eosiosystem {
          [[eosio::action]]
          void setparams( const blockchain_parameters_t& params );
 
-#ifdef EOSIO_SYSTEM_CONFIGURABLE_WASM_LIMITS
+#ifdef SYSTEM_CONFIGURABLE_WASM_LIMITS
          /**
           * Sets the WebAssembly limits.  Valid parameters are "low",
           * "default" (equivalent to low), and "high".  A value of "high"

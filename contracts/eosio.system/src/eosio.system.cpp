@@ -109,7 +109,7 @@ namespace eosiosystem {
       _gstate2.new_ram_per_block = bytes_per_block;
    }
 
-#ifdef EOSIO_SYSTEM_BLOCKCHAIN_PARAMETERS
+#ifdef SYSTEM_BLOCKCHAIN_PARAMETERS
    extern "C" [[eosio::wasm_import]] void set_parameters_packed(const void*, size_t);
 #endif
 
@@ -117,7 +117,7 @@ namespace eosiosystem {
       require_auth( get_self() );
       (eosio::blockchain_parameters&)(_gstate) = params;
       check( 3 <= _gstate.max_authority_depth, "max_authority_depth should be at least 3" );
-#ifndef EOSIO_SYSTEM_BLOCKCHAIN_PARAMETERS
+#ifndef SYSTEM_BLOCKCHAIN_PARAMETERS
       set_blockchain_parameters( params );
 #else
       constexpr size_t param_count = 18;
@@ -155,7 +155,7 @@ namespace eosiosystem {
 #endif
    }
 
-#ifdef EOSIO_SYSTEM_CONFIGURABLE_WASM_LIMITS
+#ifdef SYSTEM_CONFIGURABLE_WASM_LIMITS
 
    // The limits on contract WebAssembly modules
    struct wasm_parameters

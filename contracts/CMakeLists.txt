@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.5)
 
 project(contracts)
 
+option(SYSTEM_CONFIGURABLE_WASM_LIMITS
+       "Enables use of the host functions activated by the CONFIGURABLE_WASM_LIMITS protocol feature" ON)
+
+option(SYSTEM_BLOCKCHAIN_PARAMETERS
+       "Enables use of the host functions activated by the BLOCKCHAIN_PARAMETERS protocol feature" ON)
+
 set(EOSIO_WASM_OLD_BEHAVIOR "Off")
 find_package(eosio.cdt)
 
