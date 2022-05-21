@@ -109,7 +109,7 @@ namespace eosiosystem {
       _gstate2.new_ram_per_block = bytes_per_block;
    }
 
-#ifdef EOSIO_SYSTEM_BLOCKCHAIN_PARAMETERS
+#ifdef SYSTEM_BLOCKCHAIN_PARAMETERS
    extern "C" [[eosio::wasm_import]] void set_parameters_packed(const void*, size_t);
 #endif
 
@@ -117,7 +117,7 @@ namespace eosiosystem {
       require_auth( get_self() );
       (eosio::blockchain_parameters&)(_gstate) = params;
       check( 3 <= _gstate.max_authority_depth, "max_authority_depth should be at least 3" );
-#ifndef EOSIO_SYSTEM_BLOCKCHAIN_PARAMETERS
+#ifndef SYSTEM_BLOCKCHAIN_PARAMETERS
       set_blockchain_parameters( params );
 #else
       constexpr size_t param_count = 18;
@@ -155,9 +155,9 @@ namespace eosiosystem {
 #endif
    }
 
-#ifdef EOSIO_SYSTEM_CONFIGURABLE_WASM_LIMITS
+#ifdef SYSTEM_CONFIGURABLE_WASM_LIMITS
 
-   // The limits on contract webassmebly modules
+   // The limits on contract WebAssembly modules
    struct wasm_parameters
    {
       uint32_t max_mutable_global_bytes;
@@ -433,12 +433,12 @@ namespace eosiosystem {
     *
     */
    void native::newaccount( const name&       creator,
-                            const name&       newact,
+                            const name&       new_account_name,
                             ignore<authority> owner,
                             ignore<authority> active ) {
 
       if( creator != get_self() ) {
-         uint64_t tmp = newact.value >> 4;
+         uint64_t tmp = new_account_name.value >> 4;
          bool has_dot = false;
 
          for( uint32_t i = 0; i < 12; ++i ) {
@@ -446,10 +446,10 @@ namespace eosiosystem {
            tmp >>= 5;
          }
          if( has_dot ) { // or is less than 12 characters
-            auto suffix = newact.suffix();
-            if( suffix == newact ) {
+            auto suffix = new_account_name.suffix();
+            if( suffix == new_account_name ) {
                name_bid_table bids(get_self(), get_self().value);
-               auto current = bids.find( newact.value );
+               auto current = bids.find( new_account_name.value );
                check( current != bids.end(), "no active bid for name" );
                check( current->high_bidder == creator, "only highest bidder can claim" );
                check( current->high_bid < 0, "auction for name is not closed yet" );
@@ -460,15 +460,15 @@ namespace eosiosystem {
          }
       }
 
-      user_resources_table  userres( get_self(), newact.value );
+      user_resources_table  userres( get_self(), new_account_name.value );
 
-      userres.emplace( newact, [&]( auto& res ) {
-        res.owner = newact;
+      userres.emplace( new_account_name, [&]( auto& res ) {
+        res.owner = new_account_name;
         res.net_weight = asset( 0, system_contract::get_core_symbol() );
         res.cpu_weight = asset( 0, system_contract::get_core_symbol() );
       });
 
-      set_resource_limits( newact, 0, 0, 0 );
+      set_resource_limits( new_account_name, 0, 0, 0 );
    }
 
    void native::setabi( const name& acnt, const std::vector<char>& abi,

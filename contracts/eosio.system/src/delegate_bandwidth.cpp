@@ -33,7 +33,7 @@ namespace eosiosystem {
 
 
    /**
-    *  When buying ram the payer irreversiblly transfers quant to system contract and only
+    *  When buying ram the payer irreversibly transfers quant to system contract and only
     *  the receiver may reclaim the tokens via the sellram action. The receiver pays for the
     *  storage of all database records associated with this action.
     *
@@ -328,7 +328,7 @@ namespace eosiosystem {
                                       from
             );
             out.delay_sec = refund_delay_sec;
-            eosio::cancel_deferred( from.value ); // TODO: Remove this line when replacing deferred trxs is fixed
+            eosio::cancel_deferred( from.value ); // TODO: Remove this line when replacing deferred transactions is fixed
             out.send( from.value, from, true );
          } else {
             eosio::cancel_deferred( from.value );

@@ -46,7 +46,7 @@ dpkg -i eosio.cdt_1.7.0-1-ubuntu-18.04_amd64.deb
 
 #
 # Build Mandel from sources. Not needed if you use
-# -DBUILD_TESTS=no
+# -DBUILD_TESTS=OFF
 #
 mkdir -p ~/work
 cd ~/work
@@ -69,18 +69,18 @@ export PATH=~/work/mandel/build/bin:$PATH
 # cd to this contracts repo  
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=yes ..
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON ..
 make -j $(nproc)
 ```
 
 We support the following CMake options:
 ```
 -DCMAKE_BUILD_TYPE=DEBUG                    Debug builds
--DBUILD_TESTS=no                            Don't build the tests; it
+-DBUILD_TESTS=OFF                           Don't build the tests; it
                                             builds much faster without them
--DEOSIO_SYSTEM_CONFIGURABLE_WASM_LIMITS=no  Disables use of the CONFIGURABLE_WASM_LIMITS
+-DSYSTEM_CONFIGURABLE_WASM_LIMITS=OFF       Disables use of the CONFIGURABLE_WASM_LIMITS
                                             protocol feature
--DEOSIO_SYSTEM_BLOCKCHAIN_PARAMETERS=no     Disables use of the BLOCKCHAIN_PARAMETERS
+-DSYSTEM_BLOCKCHAIN_PARAMETERS=OFF          Disables use of the BLOCKCHAIN_PARAMETERS
                                             protocol feature
 ```
 
