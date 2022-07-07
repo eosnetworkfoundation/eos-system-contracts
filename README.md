@@ -27,7 +27,7 @@ The `main` branch contains the latest state of development; do not use this for 
 To build and run the tests as well, [EOSIO](https://github.com/eosnetworkfoundation/mandel) is also required as a dependency, which may have its further restrictions on supported operating systems.
 ## Building
 
-The build guide below will assume you are running Ubuntu 20.04 though, as mentioned above, other operating systems may also be supported.
+The build guide below will assume you are running Ubuntu 20.04. However, as mentioned above, other operating systems may also be supported.
 
 ### Build or install CDT dependency
 
@@ -37,35 +37,35 @@ The easiest way to satisfy this dependency is to install CDT on your system thro
 
 Alternatively, you can build CDT from source. Please refer to the guide in the [CDT README](https://github.com/eosnetworkfoundation/mandel.cdt#building) for instructions on how to do this. If you choose to go with building CDT from source, please keep the path to the build directory in the shell environment variable `CDT_BUILD_PATH` for later use when building the system contracts.
 
-### Build or install EOSIO dependency
+### Optionally build EOSIO dependency
 
 The EOSIO dependency is optional. It is only needed if you wish to also build the tests using the `BUILD_TESTS` CMake flag.
 
-The easiest way to satisfy this dependency is to install EOSIO on your system through a package. Find the release of a compatible version of EOSIO from its [releases page](https://github.com/eosnetworkfoundation/mandel/releases), download the package file appropriate for your OS from the attached assets, and install the package.
+Unfortunately, it is not currently possible to satisfy the contract testing dependencies through the EOSIO packages made available from the [EOSIO releases page](https://github.com/eosnetworkfoundation/mandel/releases). So if you want to build the contract tests, you will first need to build EOSIO from source.
 
-Alternatively, you can build EOSIO from source. Please refer to the guide in the [EOSIO README](https://github.com/eosnetworkfoundation/mandel/#building-from-source) for instructions on how to do this. If you choose to go with building EOSIO from source, please keep the path to the build directory in the shell environment variable `EOSIO_BUILD_PATH` for later use when building the system contracts.
+Please refer to the guide in the [EOSIO README](https://github.com/eosnetworkfoundation/mandel/#building-from-source) for instructions on how to do this. If you choose to go with building EOSIO from source, please keep the path to the build directory in the shell environment variable `EOSIO_BUILD_PATH` for later use when building the system contracts.
 
 ### Build system contracts
 
 Beyond CDT and optionally EOSIO (if also building the tests), no additional dependencies are required to build the system contracts.
 
-The instructions below assuming you are building the system contracts with tests and with both the CDT and EOSIO dependencies installed. For some other configurations, expand the hidden panels placed lower within this section.
+The instructions below assume you are building the system contracts with tests, have already built EOSIO from source, and have the CDT dependency installed on your system. For some other configurations, expand the hidden panels placed lower within this section.
 
 For all configurations, you should first `cd` into the directory containing cloned system contracts repository.
 
-Build system contracts with tests and installed CDT and EOSIO packages:
+Build system contracts with tests using EOSIO built from source and with installed CDT package:
 
 ```
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON ..
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -Deosio_DIR="${EOSIO_BUILD_PATH}/lib/cmake/eosio" ..
 make -j $(nproc)
 ```
 
 **Note:** `CMAKE_BUILD_TYPE` has no impact on the WASM files generated for the contracts. It only impacts how the test binaries are built. Use `-DCMAKE_BUILD_TYPE=Debug` if you want to create test binaries that you can debug.
 
 <details>
-<summary>Build system contracts with tests and manually built CDT and EOSIO</summary>
+<summary>Build system contracts with tests using EOSIO and CDT both built from source</summary>
 
 ```
 mkdir build
@@ -76,7 +76,7 @@ make -j $(nproc)
 </details>
 
 <details>
-<summary>Build system contracts without tests and with manually built CDT</summary>
+<summary>Build system contracts without tests and with CDT build from source</summary>
 
 ```
 mkdir build
