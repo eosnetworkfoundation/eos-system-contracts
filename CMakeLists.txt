@@ -17,8 +17,7 @@ message(STATUS "Building eosio.contracts v${VERSION_FULL}")
 
 include(ExternalProject)
 
-set(EOSIO_WASM_OLD_BEHAVIOR "Off")
-find_package(eosio.cdt)
+find_package(cdt)
 
 option(SYSTEM_CONFIGURABLE_WASM_LIMITS
        "Enables use of the host functions activated by the CONFIGURABLE_WASM_LIMITS protocol feature" ON)
@@ -31,7 +30,7 @@ ExternalProject_Add(
   SOURCE_DIR ${CMAKE_SOURCE_DIR}/contracts
   BINARY_DIR ${CMAKE_BINARY_DIR}/contracts
   CMAKE_ARGS -DCMAKE_BUILD_TYPE=Release
-             -DCMAKE_TOOLCHAIN_FILE=${EOSIO_CDT_ROOT}/lib/cmake/eosio.cdt/EosioWasmToolchain.cmake
+             -DCMAKE_TOOLCHAIN_FILE=${CDT_ROOT}/lib/cmake/cdt/CDTWasmToolchain.cmake
              -DSYSTEM_CONFIGURABLE_WASM_LIMITS=${SYSTEM_CONFIGURABLE_WASM_LIMITS}
              -DSYSTEM_BLOCKCHAIN_PARAMETERS=${SYSTEM_BLOCKCHAIN_PARAMETERS}
   UPDATE_COMMAND ""

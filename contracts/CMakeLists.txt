@@ -8,28 +8,27 @@ option(SYSTEM_CONFIGURABLE_WASM_LIMITS
 option(SYSTEM_BLOCKCHAIN_PARAMETERS
        "Enables use of the host functions activated by the BLOCKCHAIN_PARAMETERS protocol feature" ON)
 
-set(EOSIO_WASM_OLD_BEHAVIOR "Off")
-find_package(eosio.cdt)
+find_package(cdt)
 
-set(EOSIO_CDT_VERSION_MIN "1.7")
-set(EOSIO_CDT_VERSION_SOFT_MAX "1.8")
-# set(EOSIO_CDT_VERSION_HARD_MAX "")
+set(CDT_VERSION_MIN "3.0")
+set(CDT_VERSION_SOFT_MAX "3.0")
+# set(CDT_VERSION_HARD_MAX "")
 
-# Check the version of eosio.cdt
+# Check the version of CDT
 set(VERSION_MATCH_ERROR_MSG "")
-eosio_check_version(VERSION_OUTPUT "${EOSIO_CDT_VERSION}" "${EOSIO_CDT_VERSION_MIN}" "${EOSIO_CDT_VERSION_SOFT_MAX}"
-                    "${EOSIO_CDT_VERSION_HARD_MAX}" VERSION_MATCH_ERROR_MSG)
+CDT_CHECK_VERSION(VERSION_OUTPUT "${CDT_VERSION}" "${CDT_VERSION_MIN}" "${CDT_VERSION_SOFT_MAX}"
+                    "${CDT_VERSION_HARD_MAX}" VERSION_MATCH_ERROR_MSG)
 if(VERSION_OUTPUT STREQUAL "MATCH")
-  message(STATUS "Using eosio.cdt version ${EOSIO_CDT_VERSION}")
+  message(STATUS "Using CDT version ${CDT_VERSION}")
 elseif(VERSION_OUTPUT STREQUAL "WARN")
   message(
     WARNING
-      "Using eosio.cdt version ${EOSIO_CDT_VERSION} even though it exceeds the maximum supported version of ${EOSIO_CDT_VERSION_SOFT_MAX}; continuing with configuration, however build may fail.\nIt is recommended to use eosio.cdt version ${EOSIO_CDT_VERSION_SOFT_MAX}.x"
+      "Using CDT version ${CDT_VERSION} even though it exceeds the maximum supported version of ${CDT_VERSION_SOFT_MAX}; continuing with configuration, however build may fail.\nIt is recommended to use CDT version ${CDT_VERSION_SOFT_MAX}.x"
   )
 else() # INVALID OR MISMATCH
   message(
     FATAL_ERROR
-      "Found eosio.cdt version ${EOSIO_CDT_VERSION} but it does not satisfy version requirements: ${VERSION_MATCH_ERROR_MSG}\nPlease use eosio.cdt version ${EOSIO_CDT_VERSION_SOFT_MAX}.x"
+      "Found CDT version ${CDT_VERSION} but it does not satisfy version requirements: ${VERSION_MATCH_ERROR_MSG}\nPlease use CDT version ${CDT_VERSION_SOFT_MAX}.x"
   )
 endif(VERSION_OUTPUT STREQUAL "MATCH")
 
@@ -45,10 +44,10 @@ set(TRANSFER_ICON_URI "transfer.png#5dfad0df72772ee1ccc155e670c1d124f5c5122f1d50
 set(VOTING_ICON_URI "voting.png#db28cd3db6e62d4509af3644ce7d377329482a14bb4bfaca2aa5f1400d8e8a84")
 
 add_subdirectory(eosio.bios)
+add_subdirectory(eosio.boot)
 add_subdirectory(eosio.msig)
 add_subdirectory(eosio.system)
 add_subdirectory(eosio.token)
 add_subdirectory(eosio.wrap)
 
 add_subdirectory(test_contracts)
-add_subdirectory(eosio.boot)
