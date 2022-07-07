@@ -198,7 +198,7 @@ namespace eosiosystem {
        .max_module_bytes = 20*1024*1024,
        .max_code_bytes = 20*1024*1024,
        .max_pages = 528,
-       .max_call_depth = 251
+       .max_call_depth = 1024
    };
 
    extern "C" [[eosio::wasm_import]] void set_wasm_parameters_packed( const void*, size_t );
