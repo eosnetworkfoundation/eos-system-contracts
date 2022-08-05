@@ -1,6 +1,5 @@
 ---
 content_title: RAM as system resource
-link_text: RAM as system resource
 ---
 
 ## What is RAM
@@ -9,13 +8,9 @@ RAM is the memory, the storage space, where the blockchain stores data. If your 
 
 ### Related documentation articles
 
-- Multi-index table [explainer documentation page](https://developers.eos.io/manuals/eosio.cdt/latest/group__multiindex)
+- Multi-index table [reference documentation page](https://docs.eosnetwork.com/reference/mandel-cdt/classeosio_1_1multi__index.html)
 
-- Multi-index table [how to documentation page](https://developers.eos.io/manuals/eosio.cdt/latest/how-to-guides/multi-index)
-
-- Singleton [reference documentation page](https://developers.eos.io/manuals/eosio.cdt/latest/group__singleton/#singleton-table) 
-
-- Singleton [how to documentation page](https://developers.eos.io/manuals/eosio.cdt/latest/how-to-guides/multi-index/how-to-define-a-singleton)
+- Singleton [reference documentation page](https://docs.eosnetwork.com/reference/mandel-cdt/classeosio_1_1singleton.html)
 
 ## RAM High Performance
 
@@ -34,6 +29,6 @@ RAM is a very important system resource because of the following reasons:
   - A portion of the occupied RAM is freed by the smart contract.
   - More RAM is allocated to the smart contract account through the RAM buying process.
 
-RAM is a scarce resource priced according to the unique Bancor liquidity algorithm which is implemented in the system contract [here](https://github.com/EOSIO/eos/blob/905e7c85714aee4286fa180ce946f15ceb4ce73c/contracts/eosio.system/exchange_state.hpp).
+RAM is a scarce resource priced according to the unique Bancor liquidity algorithm which is implemented in the system contract [here](http://docs.eosnetwork.com/reference/mandel-contracts/structeosiosystem_1_1exchange__state.html).
 
-The RAM system resource must be purchased using the system token. Refer to the [cleos manual](https://developers.eos.io/manuals/eos/v2.0/cleos/how-to-guides/how-to-buy-ram) to learn how to buy RAM via the command line interface.
+The RAM system resource must be purchased using the system token. Refer to the [cleos manual](/developer-tools/02_cleos/02_how-to-guides/how-to-buy-ram.md) to learn how to buy RAM via the command line interface.
