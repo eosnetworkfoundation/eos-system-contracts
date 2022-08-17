@@ -701,3 +701,14 @@ icon: @ICON_BASE_URL@/@REX_ICON_URI@
 ---
 
 Withdraws {{amount}} from {{owner}}’s REX fund and transfer them to {{owner}}’s liquid balance.
+
+<h1 class="contract">powerup</h1>
+
+---
+spec_version: "0.2.0"
+title: Powerup resources
+summary: 'User may powerup to reserve resources'
+icon: @ICON_BASE_URL@/@RESOURCE_ICON_URI@
+---
+
+Users may use the powerup action to reserve resources.
