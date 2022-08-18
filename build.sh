@@ -2,33 +2,25 @@
 set -eo pipefail
 
 function usage() {
-   printf "Usage: $0 OPTION...
-  -e DIR      Directory where EOSIO is installed. (Default: $HOME/eosio/X.Y)
-  -c DIR      Directory where EOSIO.CDT is installed. (Default: /usr/local/eosio.cdt)
-  -t          Build unit tests.
-  -y          Noninteractive mode (Uses defaults for each prompt.)
+  printf "Usage: $0 OPTION...
+  -c DIR      Path to CDT installation/build directory. (Optional if using CDT installled at standard system location.)
+  -l DIR      Path to Leap build directory. Optional, but must be specified to build tests.
   -h          Print this help menu.
-   \\n" "$0" 1>&2
-   exit 1
+  \\n" "$0" 1>&2
+  exit 1
 }
 
-BUILD_TESTS=false
+BUILD_TESTS=OFF
 
 if [ $# -ne 0 ]; then
-  while getopts "e:c:tyh" opt; do
+  while getopts "c:l:h" opt; do
     case "${opt}" in
-      e )
-        EOSIO_DIR_PROMPT=$OPTARG
-      ;;
       c )
-        CDT_DIR_PROMPT=$OPTARG
+        CDT_INSTALL_DIR=$(realpath $OPTARG)
       ;;
-      t )
-        BUILD_TESTS=true
-      ;;
-      y )
-        NONINTERACTIVE=true
-        PROCEED=true
+      l )
+        LEAP_BUILD_DIR=$(realpath $OPTARG)
+        BUILD_TESTS=ON
       ;;
       h )
         usage
@@ -48,37 +40,45 @@ if [ $# -ne 0 ]; then
   done
 fi
 
-# Source helper functions and variables.
-. ./scripts/.environment
-. ./scripts/helper.sh
+LEAP_DIR_CMAKE_OPTION=''
 
-if [[ ${BUILD_TESTS} == true ]]; then
-   # Prompt user for location of eosio.
-   eosio-directory-prompt
+if [[ "${BUILD_TESTS}" == "ON" ]]; then
+  if [[ ! -f "$LEAP_BUILD_DIR/lib/cmake/leap/leap-config.cmake" ]]; then
+    echo "Invalid path to Leap build directory: $LEAP_BUILD_DIR"
+    echo "Leap build directory is required to build tests. If you do not wish to build tests, leave off the -l option."
+    echo "Cannot proceed. Exiting..."
+    exit 1;
+  fi
+
+  echo "Using Leap build directory at: $LEAP_BUILD_DIR"
+  echo ""
+  LEAP_DIR_CMAKE_OPTION="-Dleap_DIR=${LEAP_BUILD_DIR}/lib/cmake/leap"
 fi
 
-# Prompt user for location of eosio.cdt.
-cdt-directory-prompt
+CDT_DIR_CMAKE_OPTION=''
 
-# Include CDT_INSTALL_DIR in CMAKE_FRAMEWORK_PATH
-echo "Using EOSIO.CDT installation at: $CDT_INSTALL_DIR"
-export CMAKE_FRAMEWORK_PATH="${CDT_INSTALL_DIR}:${CMAKE_FRAMEWORK_PATH}"
-
-if [[ ${BUILD_TESTS} == true ]]; then
-   # Ensure eosio version is appropriate.
-   nodeos-version-check
-
-   # Include EOSIO_INSTALL_DIR in CMAKE_FRAMEWORK_PATH
-   echo "Using EOSIO installation at: $EOSIO_INSTALL_DIR"
-   export CMAKE_FRAMEWORK_PATH="${EOSIO_INSTALL_DIR}:${CMAKE_FRAMEWORK_PATH}"
+if [[ -z $CDT_INSTALL_DIR ]]; then
+  echo "No CDT location was specified. Assuming installed in standard location."
+  echo ""
+else
+  if [[ ! -f "$CDT_INSTALL_DIR/lib/cmake/cdt/cdt-config.cmake" ]]; then
+    echo "Invalid path to CDT installation/build directory: $CDT_INSTALL_DIR"
+    echo "If CDT is installed at the standard system location, then you do not need to use the -c option."
+    echo "Cannot proceed. Exiting..."
+    exit 1;
+  fi
+  
+  echo "Using CDT installation/build at: $CDT_INSTALL_DIR"
+  echo ""
+  CDT_DIR_CMAKE_OPTION="-Dcdt_DIR=${CDT_INSTALL_DIR}/lib/cmake/cdt"
 fi
 
-printf "\t=========== Building eosio.contracts ===========\n\n"
+printf "\t=========== Building eos-system-contracts ===========\n\n"
 RED='\033[0;31m'
 NC='\033[0m'
 CPU_CORES=$(getconf _NPROCESSORS_ONLN)
 mkdir -p build
 pushd build &> /dev/null
-cmake -DBUILD_TESTS=${BUILD_TESTS} ../
+cmake -DBUILD_TESTS=${BUILD_TESTS} ${LEAP_DIR_CMAKE_OPTION} ${CDT_DIR_CMAKE_OPTION} ../
 make -j $CPU_CORES
 popd &> /dev/null
