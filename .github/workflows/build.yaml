@@ -1,0 +1,79 @@
+name: "Build & Test"
+
+on:
+  push:
+    branches:
+      - main
+      - "release/*"
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      override-leap-dev:
+        description: 'Override leap-dev ref'
+        type: string
+      override-cdt:
+        description: 'Override cdt ref'
+        type: string
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Setup leap-dev & cdt versions
+        id: versions
+        run: |
+          if [[ "${{inputs.override-leap-dev}}" == "" ]]; then
+            echo "::set-output name=leap-dev-ref::*"                              #default leap-dev ref
+          else
+            echo "::set-output name=leap-dev-ref::${{inputs.override-leap-dev}}"
+          fi
+          if [[ "${{inputs.override-cdt}}" == "" ]]; then
+            echo "::set-output name=cdt-ref::*"                                   #defect cdt ref
+          else
+            echo "::set-output name=cdt-ref::${{inputs.override-cdt}}"
+          fi
+      - name: Download cdt
+        uses: AntelopeIO/asset-artifact-download-action@v1
+        with:
+          owner: AntelopeIO
+          repo: cdt
+          file: 'cdt_.*amd64.deb'
+          ref: '${{steps.versions.outputs.cdt-ref}}'
+          prereleases: true
+          artifact-name: cdt_ubuntu_package_amd64
+          token: ${{github.token}}
+      - name: Download leap-dev
+        uses: AntelopeIO/asset-artifact-download-action@v1
+        with:
+          owner: AntelopeIO
+          repo: leap
+          file: 'leap-dev.*x86_64.deb'
+          ref: '${{steps.versions.outputs.leap-dev-ref}}'
+          prereleases: true
+          artifact-name: leap-dev-ubuntu20-amd64
+          container-package: experimental-binaries
+          token: ${{github.token}}
+      - name: Install packages
+        run: |
+          sudo apt install ./*.deb
+          sudo apt-get install cmake
+          rm ./*.deb
+      - uses: actions/checkout@v3
+        with:
+          path: src
+      - name: Build & Test
+        run: |
+          cmake -S src -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=On
+          cmake --build build -- -j $(nproc)
+          tar zcf build.tar.gz build
+          cd build/tests; ctest --output-on-failure -j $(nproc)
+      - name: Upload builddir
+        uses: actions/upload-artifact@v3
+        with:
+          name: builddir
+          path: build.tar.gz
