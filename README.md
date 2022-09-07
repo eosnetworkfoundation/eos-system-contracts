@@ -1,8 +1,19 @@
 # EOS system contracts
 
-EOS system contracts are a collection of contracts deployable to an [Antelope](https://github.com/AntelopeIO) blockchain, but specifically designed for the EOS blockchain, which implements a lot of critical functionality that is expected from blockchains. For example, the concept of the core token of the blockchain is introduced through the system contracts. In addition, the system contracts can build upon primitives provided by the base EOSIO protocol to enable more useful capabilities, such as:
-* decentralized, open-access resource management through staking tokens or paying fees which builds upon the Antelope protocol's primitive mechanism of assigning resource quotas to accounts;
-* higher-level consensus mechanisms (e.g. Delegated Proof of Stake or Proof of Authority) which build upon the Antelope protocol's base consensus algorithm that advances finality of blocks based on confirmations from a selected set of block producers.
+EOS system contracts are a collection of contracts deployable to an [Antelope](https://github.com/AntelopeIO) blockchain, but specifically designed for the EOS blockchain, which implements a lot of critical functionality that goes beyond what is provided by the base Antelope protocol.
+
+The Antelope protocol includes capabilities such as:
+* an accounts and permissions system which enables a flexible permission system that allows authorization authority over specific actions in a transaction to be satisfied by the appropriate combination of signatures;
+* a consensus algorithm to propose and finalize blocks by a set of active block producers that can be arbitrarily selected by privileged smart contracts running on the blockchain;
+* a basic resource management system that tracks usage of CPU/NET and RAM per account and enforces limits based on per-account quotas that can be adjusted by privileged smart contracts.
+
+However, the Antelope protocol itself does not immediately provide:
+* a mechanism for multiple accounts to reach consensus on authorization of a proposed transaction on-chain before executing it;
+* a consensus mechanism that goes beyond the consensus algorithm to determine how block producers are selected and to align incentives by providing appropriate rewards and punishments to block producers or the entities that get them into that position;
+* more sophisticated resource management systems that create markets for users to acquire resource rights;
+* or, even something as seemingly basic as the concept of tokens (whether fungible or non-fungible).
+
+The system contracts in this repository provide all of the above and more by building higher-level features or abstractions on top of the primitive mechanisms provided by the Antelope protocol.
 
 The collection of system contracts consists of the following individual contracts:
 
