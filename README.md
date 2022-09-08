@@ -1,6 +1,6 @@
-# EOS system contracts
+# Reference contracts
 
-EOS system contracts are a collection of contracts deployable to an [Antelope](https://github.com/AntelopeIO) blockchain, but specifically designed for the EOS blockchain, which implements a lot of critical functionality that goes beyond what is provided by the base Antelope protocol.
+Reference contracts are a collection of contracts deployable to an [Antelope](https://github.com/AntelopeIO) blockchain which implements a lot of critical functionality that goes beyond what is provided by the base Antelope protocol.
 
 The Antelope protocol includes capabilities such as:
 * an accounts and permissions system which enables a flexible permission system that allows authorization authority over specific actions in a transaction to be satisfied by the appropriate combination of signatures;
@@ -13,9 +13,9 @@ However, the Antelope protocol itself does not immediately provide:
 * more sophisticated resource management systems that create markets for users to acquire resource rights;
 * or, even something as seemingly basic as the concept of tokens (whether fungible or non-fungible).
 
-The system contracts in this repository provide all of the above and more by building higher-level features or abstractions on top of the primitive mechanisms provided by the Antelope protocol.
+The reference contracts in this repository provide all of the above and more by building higher-level features or abstractions on top of the primitive mechanisms provided by the Antelope protocol.
 
-The collection of system contracts consists of the following individual contracts:
+The collection of reference contracts consists of the following individual contracts:
 
 * [boot contract](contracts/eosio.boot/include/eosio.boot/eosio.boot.hpp): A minimal contract that only serves the purpose of activating protocol features which enables other more sophisticated contracts to be deployed onto the blockchain. (Note: this contract must be deployed to the privileged `eosio` account.)
 * [bios contract](contracts/eosio.bios/include/eosio.bios/eosio.bios.hpp): A simple alternative to the core contract which is suitable for test chains or perhaps centralized blockchains. (Note: this contract must be deployed to the privileged `eosio` account.)
@@ -30,10 +30,11 @@ The collection of system contracts consists of the following individual contract
 
 ## Repository organization
 
-The `main` branch contains the latest state of development; do not use this for production. Refer to the [releases page](https://github.com/eosnetworkfoundation/eos-system-contracts/releases) for current information on releases, pre-releases, and obsolete releases as well as the corresponding tags for those releases.
+The `main` branch contains the latest state of development; do not use this for production. Refer to the [releases page](https://github.com/AntelopeIO/reference-contracts/releases) for current information on releases, pre-releases, and obsolete releases as well as the corresponding tags for those releases.
+
 ## Supported Operating Systems
 
-[CDT](https://github.com/AntelopeIO/cdt) is required to build contracts. Any operating systems supported by CDT is sufficient to build the system contracts.
+[CDT](https://github.com/AntelopeIO/cdt) is required to build contracts. Any operating systems supported by CDT is sufficient to build the reference contracts.
 
 To build and run the tests as well, [Leap](https://github.com/AntelopeIO/leap) is also required as a dependency, which may have its further restrictions on supported operating systems.
 ## Building
@@ -42,11 +43,11 @@ The build guide below will assume you are running Ubuntu 20.04. However, as ment
 
 ### Build or install CDT dependency
 
-The CDT dependency is required. This release of the system contracts requires at least version 3.0 of CDT. 
+The CDT dependency is required with a minimum version of 3.0.
 
 The easiest way to satisfy this dependency is to install CDT on your system through a package. Find the release of a compatible version of CDT from its [releases page](https://github.com/AntelopeIO/cdt/releases), download the package file appropriate for your OS from the attached assets, and install the package.
 
-Alternatively, you can build CDT from source. Please refer to the guide in the [CDT README](https://github.com/AntelopeIO/cdt#building-from-source) for instructions on how to do this. If you choose to go with building CDT from source, please keep the path to the build directory in the shell environment variable `CDT_BUILD_PATH` for later use when building the system contracts.
+Alternatively, you can build CDT from source. Please refer to the guide in the [CDT README](https://github.com/AntelopeIO/cdt#building-from-source) for instructions on how to do this. If you choose to go with building CDT from source, please keep the path to the build directory in the shell environment variable `CDT_BUILD_PATH` for later use when building the reference contracts.
 
 ### Optionally build Leap dependency
 
@@ -54,17 +55,17 @@ The Leap dependency is optional. It is only needed if you wish to also build the
 
 Unfortunately, it is not currently possible to satisfy the contract testing dependencies through the Leap packages made available from the [Leap releases page](https://github.com/AntelopeIO/leap/releases). So if you want to build the contract tests, you will first need to build Leap from source.
 
-Please refer to the guide in the [Leap README](https://github.com/AntelopeIO/leap#building-from-source) for instructions on how to do this. If you choose to go with building Leap from source, please keep the path to the build directory in the shell environment variable `LEAP_BUILD_PATH` for later use when building the system contracts.
+Please refer to the guide in the [Leap README](https://github.com/AntelopeIO/leap#building-from-source) for instructions on how to do this. If you choose to go with building Leap from source, please keep the path to the build directory in the shell environment variable `LEAP_BUILD_PATH` for later use when building the reference contracts.
 
-### Build system contracts
+### Build reference contracts
 
-Beyond CDT and optionally Leap (if also building the tests), no additional dependencies are required to build the system contracts.
+Beyond CDT and optionally Leap (if also building the tests), no additional dependencies are required to build the reference contracts.
 
-The instructions below assume you are building the system contracts with tests, have already built Leap from source, and have the CDT dependency installed on your system. For some other configurations, expand the hidden panels placed lower within this section.
+The instructions below assume you are building the reference contracts with tests, have already built Leap from source, and have the CDT dependency installed on your system. For some other configurations, expand the hidden panels placed lower within this section.
 
-For all configurations, you should first `cd` into the directory containing cloned system contracts repository.
+For all configurations, you should first `cd` into the directory containing cloned reference contracts repository.
 
-Build system contracts with tests using Leap built from source and with installed CDT package:
+Build reference contracts with tests using Leap built from source and with installed CDT package:
 
 ```
 mkdir build
@@ -76,7 +77,7 @@ make -j $(nproc)
 **Note:** `CMAKE_BUILD_TYPE` has no impact on the WASM files generated for the contracts. It only impacts how the test binaries are built. Use `-DCMAKE_BUILD_TYPE=Debug` if you want to create test binaries that you can debug.
 
 <details>
-<summary>Build system contracts with tests using Leap and CDT both built from source</summary>
+<summary>Build reference contracts with tests using Leap and CDT both built from source</summary>
 
 ```
 mkdir build
@@ -87,7 +88,7 @@ make -j $(nproc)
 </details>
 
 <details>
-<summary>Build system contracts without tests and with CDT build from source</summary>
+<summary>Build reference contracts without tests and with CDT build from source</summary>
 
 ```
 mkdir build
@@ -100,7 +101,7 @@ make -j $(nproc)
 
 #### Supported CMake options
 
-The following is a list of custom CMake options supported in building the system contracts (default values are shown below):
+The following is a list of custom CMake options supported in building the reference contracts (default values are shown below):
 
 ```
 -DBUILD_TESTS=OFF                       Do not build the tests

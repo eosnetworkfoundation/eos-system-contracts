@@ -73,7 +73,7 @@ else
   CDT_DIR_CMAKE_OPTION="-Dcdt_DIR=${CDT_INSTALL_DIR}/lib/cmake/cdt"
 fi
 
-printf "\t=========== Building eos-system-contracts ===========\n\n"
+printf "\t=========== Building reference-contracts ===========\n\n"
 RED='\033[0;31m'
 NC='\033[0m'
 CPU_CORES=$(getconf _NPROCESSORS_ONLN)
