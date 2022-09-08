@@ -30,7 +30,8 @@ The collection of reference contracts consists of the following individual contr
 
 ## Repository organization
 
-The `main` branch contains the latest state of development which should include functional code but it may not be very stable. That branch can be used as the source of new features and bug fixes that can be pulled into forked repositories along with appropriate fork-specific changes added on top which are then stabilized, tested, and officially released as a supported version. There will not be official releases of the contracts from this repository.
+The `main` branch contains the latest state of development; do not use this for production. Refer to the [releases page](https://github.com/AntelopeIO/reference-contracts/releases) for current information on releases, pre-releases, and obsolete releases as well as the corresponding tags for those releases.
+
 ## Supported Operating Systems
 
 [CDT](https://github.com/AntelopeIO/cdt) is required to build contracts. Any operating systems supported by CDT is sufficient to build the reference contracts.
