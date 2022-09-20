@@ -309,7 +309,7 @@ namespace eosiosystem {
          if ( !rb.rex_maturities.empty() && rb.rex_maturities.back().first == maturity ) {
             rb.rex_maturities.back().second += rex.amount;
          } else {
-            rb.rex_maturities.emplace_back( maturity, rex.amount );
+            rb.rex_maturities.emplace_back( pair_time_point_sec_int64 { maturity, rex.amount } );
          }
       });
       put_rex_savings( bitr, rex_in_savings - rex.amount );
@@ -664,7 +664,25 @@ namespace eosiosystem {
 
          if ( new_return_bucket ) {
             _rexretbuckets.modify( ret_buckets_elem, same_payer, [&]( auto& rb ) {
-               rb.return_buckets[new_bucket_time] = new_bucket_rate;
+               auto& return_buckets = rb.return_buckets;
+               auto iter = return_buckets.begin();
+               auto added = false;
+               // sort by first
+               while ( iter != return_buckets.end() ) {
+                  if ( new_bucket_time < iter->first ) {
+                     return_buckets.insert( iter, pair_time_point_sec_int64 { new_bucket_time, new_bucket_rate });
+                     added = true;
+                     break;
+                  } else if ( new_bucket_time == iter->first ) {
+                     *iter = pair_time_point_sec_int64 { new_bucket_time, new_bucket_rate };
+                     added = true;
+                     break;
+                  }
+                  ++iter;
+               }
+               if ( !added ) {
+                  return_buckets.emplace_back( pair_time_point_sec_int64 { new_bucket_time, new_bucket_rate });
+               }
             });
          }
       }
@@ -677,14 +695,11 @@ namespace eosiosystem {
             auto& return_buckets = rb.return_buckets;
             auto iter = return_buckets.begin();
             while ( iter != return_buckets.end() && iter->first <= time_threshold ) {
-               auto next = iter;
-               ++next;
                const uint32_t overtime = get_elapsed_intervals( effective_time,
                                                                 iter->first + seconds(rex_return_pool::total_intervals * rex_return_pool::dist_interval) );
                surplus      += iter->second * overtime;
                expired_rate += iter->second;
-               return_buckets.erase(iter);
-               iter = next;
+               iter         =  return_buckets.erase(iter);
             }
          });
 
@@ -975,7 +990,7 @@ namespace eosiosystem {
       _rexbalance.modify( bitr, same_payer, [&]( auto& rb ) {
          while ( !rb.rex_maturities.empty() && rb.rex_maturities.front().first <= now ) {
             rb.matured_rex += rb.rex_maturities.front().second;
-            rb.rex_maturities.pop_front();
+            rb.rex_maturities.erase(rb.rex_maturities.begin());
          }
       });
    }
@@ -995,10 +1010,10 @@ namespace eosiosystem {
          rb.matured_rex = rex_in_sell_order.amount;
          while ( !rb.rex_maturities.empty() ) {
             total += rb.rex_maturities.front().second;
-            rb.rex_maturities.pop_front();
+            rb.rex_maturities.erase(rb.rex_maturities.begin());
          }
          if ( total > 0 ) {
-            rb.rex_maturities.emplace_back( get_rex_maturity(), total );
+            rb.rex_maturities.emplace_back( pair_time_point_sec_int64{ get_rex_maturity(), total } );
          }
       });
       put_rex_savings( bitr, rex_in_savings );
@@ -1138,7 +1153,7 @@ namespace eosiosystem {
          if ( !rb.rex_maturities.empty() && rb.rex_maturities.back().first == maturity ) {
             rb.rex_maturities.back().second += rex_received.amount;
          } else {
-            rb.rex_maturities.emplace_back( maturity, rex_received.amount );
+            rb.rex_maturities.emplace_back( pair_time_point_sec_int64 { maturity, rex_received.amount } );
          }
       });
       put_rex_savings( bitr, rex_in_savings );
@@ -1183,7 +1198,7 @@ namespace eosiosystem {
          if ( !rb.rex_maturities.empty() && rb.rex_maturities.back().first == end_of_days ) {
             rb.rex_maturities.back().second += rex;
          } else {
-            rb.rex_maturities.emplace_back( end_of_days, rex );
+            rb.rex_maturities.emplace_back( pair_time_point_sec_int64{ end_of_days, rex } );
          }
       });
    }
