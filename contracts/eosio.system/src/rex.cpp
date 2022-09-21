@@ -664,24 +664,13 @@ namespace eosiosystem {
 
          if ( new_return_bucket ) {
             _rexretbuckets.modify( ret_buckets_elem, same_payer, [&]( auto& rb ) {
-               auto& return_buckets = rb.return_buckets;
-               auto iter = return_buckets.begin();
-               auto added = false;
-               // sort by first
-               while ( iter != return_buckets.end() ) {
-                  if ( new_bucket_time < iter->first ) {
-                     return_buckets.insert( iter, pair_time_point_sec_int64 { new_bucket_time, new_bucket_rate });
-                     added = true;
-                     break;
-                  } else if ( new_bucket_time == iter->first ) {
-                     *iter = pair_time_point_sec_int64 { new_bucket_time, new_bucket_rate };
-                     added = true;
-                     break;
-                  }
-                  ++iter;
-               }
-               if ( !added ) {
-                  return_buckets.emplace_back( pair_time_point_sec_int64 { new_bucket_time, new_bucket_rate });
+               auto iter = std::lower_bound(rb.return_buckets.begin(), rb.return_buckets.end(), new_bucket_time, [](const pair_time_point_sec_int64& bucket, time_point_sec first) {
+                  return bucket.first < first;
+               });
+               if ((iter != rb.return_buckets.end()) && (iter->first == new_bucket_time)) {
+                  iter->second = new_bucket_rate;
+               } else {
+                  rb.return_buckets.insert(iter, pair_time_point_sec_int64{new_bucket_time, new_bucket_rate});
                }
             });
          }
@@ -694,13 +683,13 @@ namespace eosiosystem {
          _rexretbuckets.modify( ret_buckets_elem, same_payer, [&]( auto& rb ) {
             auto& return_buckets = rb.return_buckets;
             auto iter = return_buckets.begin();
-            while ( iter != return_buckets.end() && iter->first <= time_threshold ) {
+            for (; iter != return_buckets.end() && iter->first <= time_threshold; ++iter) {
                const uint32_t overtime = get_elapsed_intervals( effective_time,
                                                                 iter->first + seconds(rex_return_pool::total_intervals * rex_return_pool::dist_interval) );
                surplus      += iter->second * overtime;
                expired_rate += iter->second;
-               iter         =  return_buckets.erase(iter);
             }
+            return_buckets.erase(return_buckets.begin(), iter);
          });
 
          _rexretpool.modify( ret_pool_elem, same_payer, [&]( auto& rp ) {
