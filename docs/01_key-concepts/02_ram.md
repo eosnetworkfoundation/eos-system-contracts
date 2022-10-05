@@ -8,9 +8,9 @@ RAM is the memory, the storage space, where the blockchain stores data. If your 
 
 ### Related documentation articles
 
-- Multi-index table [reference documentation page](https://docs.eosnetwork.com/reference/mandel-cdt/classeosio_1_1multi__index.html)
+- Multi-index table [reference documentation page](http://docs.eosnetwork.com/cdt/latest/reference/Modules/group__multiindex)
 
-- Singleton [reference documentation page](https://docs.eosnetwork.com/reference/mandel-cdt/classeosio_1_1singleton.html)
+- Singleton [reference documentation page](https://docs.eosnetwork.com/cdt/latest/reference/Classes/classeosio_1_1singleton)
 
 ## RAM High Performance
 
@@ -29,6 +29,6 @@ RAM is a very important system resource because of the following reasons:
   - A portion of the occupied RAM is freed by the smart contract.
   - More RAM is allocated to the smart contract account through the RAM buying process.
 
-RAM is a scarce resource priced according to the unique Bancor liquidity algorithm which is implemented in the system contract [here](http://docs.eosnetwork.com/reference/mandel-contracts/structeosiosystem_1_1exchange__state.html).
+RAM is a scarce resource priced according to the unique Bancor liquidity algorithm which is implemented in the system contract [here](https://docs.eosnetwork.com/system-contracts/latest/reference/Classes/structeosiosystem_1_1exchange__state).
 
-The RAM system resource must be purchased using the system token. Refer to the [cleos manual](/developer-tools/02_cleos/02_how-to-guides/how-to-buy-ram.md) to learn how to buy RAM via the command line interface.
+The RAM system resource must be purchased using the system token. Refer to the [cleos manual](https://docs.eosnetwork.com/leap/latest/cleos/how-to-guides/how-to-buy-ram) to learn how to buy RAM via the command line interface.
