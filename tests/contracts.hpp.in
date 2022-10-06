@@ -24,6 +24,8 @@ struct contracts {
       static std::vector<char>    system_abi_old() { return read_abi("${CMAKE_CURRENT_SOURCE_DIR}/test_contracts/old_versions/v1.2.1/eosio.system/eosio.system.abi"); }
       static std::vector<uint8_t> msig_wasm_old() { return read_wasm("${CMAKE_CURRENT_SOURCE_DIR}/test_contracts/old_versions/v1.2.1/eosio.msig/eosio.msig.wasm"); }
       static std::vector<char>    msig_abi_old() { return read_abi("${CMAKE_CURRENT_SOURCE_DIR}/test_contracts/old_versions/v1.2.1/eosio.msig/eosio.msig.abi"); }
+      static std::vector<uint8_t> sendinline_wasm() {return read_wasm("${CMAKE_CURRENT_SOURCE_DIR}/test_contracts/old_versions/v1.8.3/sendinline/sendinline.wasm"); }
+      static std::vector<char>    sendinline_abi() {return read_abi("${CMAKE_CURRENT_SOURCE_DIR}/test_contracts/old_versions/v1.8.3/sendinline/sendinline.abi"); }   
    };
 };
 
