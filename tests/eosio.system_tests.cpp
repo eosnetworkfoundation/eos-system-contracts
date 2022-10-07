@@ -2732,7 +2732,7 @@ BOOST_FIXTURE_TEST_CASE(producers_upgrade_system_contract, eosio_system_tester) 
    //change `default_max_inline_action_size` to 512 KB
    eosio::chain::chain_config params = control->get_global_properties().configuration;
    params.max_inline_action_size = 512 * 1024;
-   base_tester::push_action( config::system_account_name, N(setparams), config::system_account_name, mutable_variant_object()
+   base_tester::push_action( config::system_account_name, "setparams"_n, config::system_account_name, mutable_variant_object()
                               ("params", params) );
 
    produce_blocks();
