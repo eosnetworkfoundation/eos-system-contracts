@@ -1063,7 +1063,7 @@ BOOST_FIXTURE_TEST_CASE( sendinline, eosio_msig_tester ) try {
                               ("account", "alice")
                               ("permission", "perm")
                               ("parent", "active")
-                              ("auth",  authority{ 1, {}, {permission_level_weight{ {"sendinline"_n, config::eosio_code_name}, 1}}, {} })
+                              ("auth",  authority{ 1, {}, {permission_level_weight{ {"sendinline"_n, config::active_name}, 1}}, {} })
    );
    produce_blocks();
 
@@ -1125,12 +1125,6 @@ BOOST_FIXTURE_TEST_CASE( sendinline, eosio_msig_tester ) try {
                                     ("level", permission_level{"sendinline"_n, "eosio.code"_n})
    );
 
-   action unapprove_act = get_action("eosio.msig"_n, "unapprove"_n, {}, mvo()
-                                    ("proposer", "bob")
-                                    ("proposal_name", "first")
-                                    ("level", permission_level{"sendinline"_n, "eosio.code"_n})
-   );
-
    transaction trx = reqauth( "alice"_n, {permission_level{"alice"_n, "perm"_n}}, abi_serializer_max_time );
 
    base_tester::push_action( "eosio.msig"_n, "propose"_n, "bob"_n, mvo()
@@ -1140,47 +1134,7 @@ BOOST_FIXTURE_TEST_CASE( sendinline, eosio_msig_tester ) try {
                               ("requested", std::vector<permission_level>{{ "sendinline"_n, "eosio.code"_n }})
    );
    produce_blocks();
-#if 0
-   // `approve` shall fail when being sent from the wrong contract
-   BOOST_REQUIRE_EXCEPTION( base_tester::push_action( "wrongcon"_n, "send"_n, "bob"_n, mvo()
-                              ("contract", "eosio.msig")
-                              ("action_name", "approve")
-                              ("auths", std::vector<permission_level>{{"bob"_n, config::active_name}})
-                              ("payload", approve_act.data)
-                            ),
-                            eosio_assert_message_exception,
-                            eosio_assert_message_is("wrong contract sent `approve` action for eosio.code permmission")
-   );
-   // `approve` shall succeed when being sent from the correct contract
-   base_tester::push_action( "sendinline"_n "send"_n, "bob"_n, mvo()
-                              ("contract", "eosio.msig")
-                              ("action_name", "approve")
-                              ("auths", std::vector<permission_level>{{"bob"_n, config::eosio_code_name}})
-                              ("payload", approve_act.data)
-   );
-   produce_blocks();
-
-   // `unapprove` shall fail when being sent from the wrong contract
-   BOOST_REQUIRE_EXCEPTION( base_tester::push_action( "wrongcon"_n, "send"_n, "bob"_n, mvo()
-                              ("contract", "eosio.msig"_n)
-                              ("action_name", "unapprove")
-                              ("auths", std::vector<permission_level>{})
-                              ("payload", unapprove_act.data)
-                            ),
-                            eosio_assert_message_exception,
-                            eosio_assert_message_is("wrong contract sent `unapprove` action for eosio.code permmission")
-   );
-
-   // `unapprove` shall succeed when being sent from the correct contract
-   base_tester::push_action( "sendinline"_n, "send"_n, "bob"_n, mvo()
-                              ("contract", "eosio.msig"_n)
-                              ("action_name", "unapprove")
-                              ("auths", std::vector<permission_level>{})
-                              ("payload", unapprove_act.data)
-   );
-   produce_blocks();
-#endif
-   // `approve` to get back into a state ready for `exec`
+   
    base_tester::push_action( "sendinline"_n, "send"_n, "bob"_n, mvo()
                               ("contract", "eosio.msig")
                               ("action_name", "approve")
