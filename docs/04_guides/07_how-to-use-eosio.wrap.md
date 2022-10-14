@@ -638,7 +638,7 @@ If the two hashes match then the local WebAssembly code is the one deployed on t
 
 ## 2.1 Example: Updating owner authority of an arbitrary account
 
-This example will demonstrate how to use the deployed eosio.wrap contract together with the eosio.msig contract to allow a greater than two-thirds supermajority of block producers of an EOSIO blockchain to change the owner authority of an arbitrary account. The example will use cleos: in particular, the `cleos multisig` command, the `cleos set account permission` sub-command, and the `cleos wrap exec` sub-command. However, the guide also demonstrates what to do if the `cleos wrap exec` sub-command is not available.
+This example will demonstrate how to use the deployed eosio.wrap contract together with the eosio.msig contract to allow a greater than two-thirds supermajority of block producers of an Antelope blockchain to change the owner authority of an arbitrary account. The example will use cleos: in particular, the `cleos multisig` command, the `cleos set account permission` sub-command, and the `cleos wrap exec` sub-command. However, the guide also demonstrates what to do if the `cleos wrap exec` sub-command is not available.
 
 This guide assumes that there are 21 active block producers on the chain with account names: `blkproducera`, `blkproducerb`, ..., `blkproduceru`. Block producer `blkproducera` will act as the lead block producer handling the proposal of the transaction.
 
