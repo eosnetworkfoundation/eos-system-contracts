@@ -37,7 +37,7 @@ This formula has the following outcomes:
 
 * If an account waited `number of blocks in the window` without executing any transaction it resets to zero usage.
 
-* If an account issues a transaction with every block it would always be `(number of blocks in the window - 1) / (number of blocks in the window)`, a very small value, very close to zero. Mathematically it _never_ reaches zero but the Antelope implementation truncates off the tiny numbers to zero.
+* If an account issues a transaction with every block it would always be `(number of blocks in the window - 1) / (number of blocks in the window)`, a very small value, very close to zero. Mathematically it _never_ reaches zero but the EOS implementation truncates off the tiny numbers to zero.
 
 * The accounts that execute transactions more often than the ones that execute less transactions, replenish their resources slower than the later. In other words, the more transactions an account executes the slower the replenish of resources.
 
