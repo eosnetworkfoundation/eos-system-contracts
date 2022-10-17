@@ -3,6 +3,9 @@
 #include <eosio/chain/abi_serializer.hpp>
 #include <eosio/chain/global_property_object.hpp>
 #include <eosio/chain/wast_to_wasm.hpp>
+#include <eosio/chain/permission_link_object.hpp>
+#include <eosio/chain/permission_object.hpp>
+
 
 #include <Runtime/Runtime.h>
 
@@ -512,7 +515,8 @@ BOOST_FIXTURE_TEST_CASE( update_system_contract_all_approve, eosio_msig_tester )
    transaction_trace_ptr trx_trace;
    control->applied_transaction.connect(
    [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      trx_trace = std::get<0>(p);
+      if (!trx_trace)
+         trx_trace = std::get<0>(p);
    } );
 
    push_action( "alice"_n, "exec"_n, mvo()
@@ -528,12 +532,12 @@ BOOST_FIXTURE_TEST_CASE( update_system_contract_all_approve, eosio_msig_tester )
    BOOST_REQUIRE_EQUAL( fc::unsigned_int{1}, trx_trace->action_traces.at(0).action_ordinal );
    BOOST_REQUIRE_EQUAL( fc::unsigned_int{0}, trx_trace->action_traces.at(0).creator_action_ordinal );
    BOOST_REQUIRE_EQUAL( fc::unsigned_int{0}, trx_trace->action_traces.at(0).closest_unnotified_ancestor_action_ordinal );
-   // EOSIO 1.8 N() macro returns a uint64_t rather than a struct name
+   
    BOOST_REQUIRE_EQUAL( "eosio.msig"_n, action_name{trx_trace->action_traces.at(0).receiver} );
    BOOST_REQUIRE_EQUAL( "eosio.msig"_n, name{trx_trace->action_traces.at(0).act.account} );
    BOOST_REQUIRE_EQUAL( "exec"_n, name{trx_trace->action_traces.at(0).act.name} );
    BOOST_REQUIRE_EQUAL( "alice"_n, name{trx_trace->action_traces.at(0).act.authorization[0].actor} );
-   BOOST_REQUIRE_EQUAL( "ctive"_n, name{trx_trace->action_traces.at(0).act.authorization[0].permission} );
+   BOOST_REQUIRE_EQUAL( "active"_n, name{trx_trace->action_traces.at(0).act.authorization[0].permission} );
 
    BOOST_REQUIRE_EQUAL( fc::unsigned_int{2}, trx_trace->action_traces.at(1).action_ordinal );
    BOOST_REQUIRE_EQUAL( fc::unsigned_int{1}, trx_trace->action_traces.at(1).creator_action_ordinal );
@@ -667,7 +671,8 @@ BOOST_FIXTURE_TEST_CASE( update_system_contract_major_approve, eosio_msig_tester
    transaction_trace_ptr trx_trace;
    control->applied_transaction.connect(
    [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      trx_trace = std::get<0>(p);
+      if (!trx_trace)
+         trx_trace = std::get<0>(p);
    } );
 
    // execute by another producer different from proposer
@@ -684,7 +689,7 @@ BOOST_FIXTURE_TEST_CASE( update_system_contract_major_approve, eosio_msig_tester
    BOOST_REQUIRE_EQUAL( fc::unsigned_int{1}, trx_trace->action_traces.at(0).action_ordinal );
    BOOST_REQUIRE_EQUAL( fc::unsigned_int{0}, trx_trace->action_traces.at(0).creator_action_ordinal );
    BOOST_REQUIRE_EQUAL( fc::unsigned_int{0}, trx_trace->action_traces.at(0).closest_unnotified_ancestor_action_ordinal );
-   // EOSIO 1.8 N() macro returns a uint64_t rather than a struct name
+   
    BOOST_REQUIRE_EQUAL( "eosio.msig"_n, action_name{trx_trace->action_traces.at(0).receiver} );
    BOOST_REQUIRE_EQUAL( "eosio.msig"_n, name{trx_trace->action_traces.at(0).act.account} );
    BOOST_REQUIRE_EQUAL( "exec"_n, name{trx_trace->action_traces.at(0).act.name} );
@@ -1039,13 +1044,68 @@ BOOST_FIXTURE_TEST_CASE( switch_proposal_and_fail_approve_with_hash, eosio_msig_
 
 BOOST_FIXTURE_TEST_CASE( sendinline, eosio_msig_tester ) try {
    create_accounts( {"sendinline"_n} );
-   set_code( "sendinline"_n, contracts::util::sendinline_wasm() );
-   set_abi( "sendinline"_n, contracts::util::sendinline_abi().data() );
+   set_code( "sendinline"_n, system_contracts::testing::test_contracts::sendinline_wasm() );
+   set_abi( "sendinline"_n, system_contracts::testing::test_contracts::sendinline_abi().data() );
 
    create_accounts( {"wrongcon"_n} );
-   set_code( "wrongcon"_n, contracts::util::sendinline_wasm() );
-   set_abi( "wrongcon"_n, contracts::util::sendinline_abi().data() );
+   set_code( "wrongcon"_n, system_contracts::testing::test_contracts::sendinline_wasm() );
+   set_abi( "wrongcon"_n, system_contracts::testing::test_contracts::sendinline_abi().data() );
    produce_blocks();
+
+   // TODO: debug output, remove
+   struct linked_action {
+   name                account;
+   std::optional<name> action;
+   };
+
+   auto get_linked_action_map = [&](account_name acc_name){
+      const auto& links = control->db().get_index<permission_link_index,by_permission_name>();
+      auto iter = links.lower_bound( boost::make_tuple( acc_name ) );
+
+      std::multimap<name, linked_action> result;
+      while (iter != links.end() && iter->account == acc_name ) {
+         auto action = iter->message_type.empty() ? std::optional<name>() : std::optional<name>(iter->message_type);
+         result.emplace(std::make_pair(iter->required_permission, linked_action{iter->code, std::move(action)}));
+         ++iter;
+      }
+
+      return result;
+   };
+   auto get_linked_actions = [&](chain::name acc_name, chain::name perm_name) {
+      auto link_bounds = get_linked_action_map(acc_name).equal_range(perm_name);
+      auto linked_actions = std::vector<linked_action>();
+      linked_actions.reserve(get_linked_action_map(acc_name).count(perm_name));
+      for (auto link = link_bounds.first; link != link_bounds.second; ++link) {
+         linked_actions.push_back(link->second);
+      }
+      return linked_actions;
+   };
+
+   {
+      const auto& permissions = control->db().get_index<permission_index,by_owner>();
+      auto perm = permissions.lower_bound( boost::make_tuple( "sendinline"_n ) );
+      while( perm != permissions.end() && perm->owner == "sendinline"_n ) {
+         /// TODO: lookup perm->parent name
+         name parent;
+
+         // Don't lookup parent if null
+         if( perm->parent._id ) {
+            const auto* p = control->db().find<permission_object,by_id>( perm->parent );
+            if( p ) {
+               parent = p->name;
+            }
+         }
+
+         auto linked_actions = get_linked_actions("sendinline"_n, perm->name);
+         
+         auto auth = perm->auth.to_authority();
+         BOOST_TEST_MESSAGE("sendinline permissions: " << perm->name.to_string() 
+                        << ", parent: " << parent.to_string() 
+                        << ", auth: {threshold: " << auth.threshold << ", accounts_size: " << auth.accounts.size() << ", accounts[0]: {" << auth.accounts[0].weight << ", {" << auth.accounts[0].permission.actor.to_string() << ", " << auth.accounts[0].permission.permission.to_string() << "}}"
+                        << ", linked actions size: " << linked_actions.size() );
+         ++perm;
+      }
+   }
 
    action act = get_action( config::system_account_name, "reqauth"_n, {}, mvo()("from", "alice"));
 
@@ -1058,6 +1118,32 @@ BOOST_FIXTURE_TEST_CASE( sendinline, eosio_msig_tester ) try {
                           unsatisfied_authorization,
                           fc_exception_message_starts_with("transaction declares authority")
    );
+   // TODO: debug output, remove
+   {
+      const auto& permissions = control->db().get_index<permission_index,by_owner>();
+      auto perm = permissions.lower_bound( boost::make_tuple( "alice"_n ) );
+      while( perm != permissions.end() && perm->owner == "alice"_n ) {
+         /// TODO: lookup perm->parent name
+         name parent;
+
+         // Don't lookup parent if null
+         if( perm->parent._id ) {
+            const auto* p = control->db().find<permission_object,by_id>( perm->parent );
+            if( p ) {
+               parent = p->name;
+            }
+         }
+
+         auto linked_actions = get_linked_actions("alice"_n, perm->name);
+         
+         auto auth = perm->auth.to_authority();
+         BOOST_TEST_MESSAGE("alice permissions: " << perm->name.to_string() 
+                        << ", parent: " << parent.to_string() 
+                        << ", auth: {threshold: " << auth.threshold << ", accounts_size: " << auth.accounts.size() << ", accounts[0]: {" << auth.accounts[0].weight << ", {" << auth.accounts[0].permission.actor.to_string() << ", " << auth.accounts[0].permission.permission.to_string() << "}}"
+                        << ", linked actions size: " << linked_actions.size() );
+         ++perm;
+      }
+   }
 
    base_tester::push_action(config::system_account_name, "updateauth"_n, "alice"_n, mvo()
                               ("account", "alice")
@@ -1066,6 +1152,32 @@ BOOST_FIXTURE_TEST_CASE( sendinline, eosio_msig_tester ) try {
                               ("auth",  authority{ 1, {}, {permission_level_weight{ {"sendinline"_n, config::active_name}, 1}}, {} })
    );
    produce_blocks();
+   // TODO: debug output, remove
+   {
+      const auto& permissions = control->db().get_index<permission_index,by_owner>();
+      auto perm = permissions.lower_bound( boost::make_tuple( "alice"_n ) );
+      while( perm != permissions.end() && perm->owner == "alice"_n ) {
+         /// TODO: lookup perm->parent name
+         name parent;
+
+         // Don't lookup parent if null
+         if( perm->parent._id ) {
+            const auto* p = control->db().find<permission_object,by_id>( perm->parent );
+            if( p ) {
+               parent = p->name;
+            }
+         }
+
+         auto linked_actions = get_linked_actions("alice"_n, perm->name);
+         
+         auto auth = perm->auth.to_authority();
+         BOOST_TEST_MESSAGE("alice permissions: " << perm->name.to_string() 
+                        << ", parent: " << parent.to_string() 
+                        << ", auth: {threshold: " << auth.threshold << ", accounts_size: " << auth.accounts.size() << ", accounts[0]: {" << auth.accounts[0].weight << ", {" << auth.accounts[0].permission.actor.to_string() << ", " << auth.accounts[0].permission.permission.to_string() << "}}"
+                        << ", linked actions size: " << linked_actions.size() );
+         ++perm;
+      }
+   }
 
    base_tester::push_action( config::system_account_name, "linkauth"_n, "alice"_n, mvo()
                               ("account", "alice")
@@ -1131,10 +1243,37 @@ BOOST_FIXTURE_TEST_CASE( sendinline, eosio_msig_tester ) try {
                               ("proposer", "bob")
                               ("proposal_name", "first")
                               ("trx", trx)
-                              ("requested", std::vector<permission_level>{{ "sendinline"_n, "eosio.code"_n }})
+                              ("requested", std::vector<permission_level>{{ "sendinline"_n, config::active_name }})
    );
    produce_blocks();
-   
+
+   // TODO: debug output, remove
+   {
+      const auto& permissions = control->db().get_index<permission_index,by_owner>();
+      auto perm = permissions.lower_bound( boost::make_tuple( "sendinline"_n ) );
+      while( perm != permissions.end() && perm->owner == "sendinline"_n ) {
+         /// TODO: lookup perm->parent name
+         name parent;
+
+         // Don't lookup parent if null
+         if( perm->parent._id ) {
+            const auto* p = control->db().find<permission_object,by_id>( perm->parent );
+            if( p ) {
+               parent = p->name;
+            }
+         }
+
+         auto linked_actions = get_linked_actions("sendinline"_n, perm->name);
+         
+         auto auth = perm->auth.to_authority();
+         BOOST_TEST_MESSAGE("sendinline permissions: " << perm->name.to_string() 
+                        << ", parent: " << parent.to_string() 
+                        << ", auth: {threshold: " << auth.threshold << ", accounts_size: " << auth.accounts.size() << ", accounts[0]: {" << auth.accounts[0].weight << ", {" << auth.accounts[0].permission.actor.to_string() << ", " << auth.accounts[0].permission.permission.to_string() << "}}"
+                        << ", linked actions size: " << linked_actions.size() );
+         ++perm;
+      }
+   }
+
    base_tester::push_action( "sendinline"_n, "send"_n, "bob"_n, mvo()
                               ("contract", "eosio.msig")
                               ("action_name", "approve")
