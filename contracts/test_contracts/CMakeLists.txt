@@ -1,1 +1,2 @@
 add_subdirectory(blockinfo_tester)
+add_subdirectory(sendinline)
