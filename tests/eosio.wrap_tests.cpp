@@ -73,12 +73,7 @@ public:
       set_producers( {"prod1"_n, "prod2"_n, "prod3"_n, "prod4"_n, "prod5"_n} );
 
       produce_blocks();
-
-      const auto& accnt = control->db().get<account_object,by_name>( "eosio.wrap"_n );
-      abi_def abi;
-      BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt.abi, abi), true);
-      abi_ser.set_abi(abi, abi_serializer::create_yield_function(abi_serializer_max_time));
-
+      
       while( control->pending_block_producer().to_string() == "eosio" ) {
          produce_block();
       }
@@ -112,8 +107,6 @@ public:
    transaction wrap_exec( account_name executer, const transaction& trx, uint32_t expiration = base_tester::DEFAULT_EXPIRATION_DELTA );
 
    transaction reqauth( account_name from, const vector<permission_level>& auths, uint32_t expiration = base_tester::DEFAULT_EXPIRATION_DELTA );
-
-   abi_serializer abi_ser;
 };
 
 transaction eosio_wrap_tester::wrap_exec( account_name executer, const transaction& trx, uint32_t expiration ) {
@@ -301,7 +294,7 @@ BOOST_FIXTURE_TEST_CASE( wrap_with_msig_unapprove, eosio_wrap_tester ) try {
 BOOST_FIXTURE_TEST_CASE( wrap_with_msig_producers_change, eosio_wrap_tester ) try {
    create_accounts( { "newprod1"_n } );
 
-   auto trx = reqauth( "bob"_n, {permission_level{"bob"_n, config::active_name}} );
+   auto trx = reqauth( "bob"_n, {permission_level{"bob"_n, config::active_name}}, 120 );
    auto wrap_trx = wrap_exec( "alice"_n, trx, 36000 );
 
    propose( "carol"_n, "first"_n,
@@ -354,7 +347,7 @@ BOOST_FIXTURE_TEST_CASE( wrap_with_msig_producers_change, eosio_wrap_tester ) tr
                            ("proposer",      "carol")
                            ("executer",      "alice")
    );
-   
+
    BOOST_REQUIRE( bool(trx_trace) );
    BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trx_trace->receipt->status );
    BOOST_REQUIRE_EQUAL( 3, trx_trace->action_traces.size() );
