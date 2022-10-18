@@ -211,20 +211,31 @@ BOOST_FIXTURE_TEST_CASE( propose_approve_execute, eosio_msig_tester ) try {
                   ("level",         permission_level{ "alice"_n, config::active_name })
    );
 
-   transaction_trace_ptr trace;
-   control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      trace = std::get<0>(p);
-   } );
-   push_action( "alice"_n, "exec"_n, mvo()
-                  ("proposer",      "alice")
-                  ("proposal_name", "first")
-                  ("executer",      "alice")
+   transaction_trace_ptr trace = push_action( "alice"_n, "exec"_n, mvo()
+                                             ("proposer",      "alice")
+                                             ("proposal_name", "first")
+                                             ("executer",      "alice")
    );
 
    BOOST_REQUIRE( bool(trace) );
-   BOOST_REQUIRE_EQUAL( 1, trace->action_traces.size() );
    BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
+   BOOST_REQUIRE_EQUAL( 2, trace->action_traces.size() );
+
+   auto exec_trace = trace->action_traces.at(0);
+   BOOST_REQUIRE_EQUAL( "eosio.msig"_n, exec_trace.receiver );
+   BOOST_REQUIRE_EQUAL( "eosio.msig"_n, exec_trace.act.account );
+   BOOST_REQUIRE_EQUAL( "exec"_n, exec_trace.act.name );
+   BOOST_REQUIRE_EQUAL( 1, exec_trace.act.authorization.size() );
+   BOOST_REQUIRE_EQUAL( "alice"_n, exec_trace.act.authorization.at(0).actor );
+   BOOST_REQUIRE_EQUAL( "active"_n, exec_trace.act.authorization.at(0).permission );
+
+   auto reqauth_trace = trace->action_traces.at(1);
+   BOOST_REQUIRE_EQUAL( "eosio"_n, reqauth_trace.receiver );
+   BOOST_REQUIRE_EQUAL( "eosio"_n, reqauth_trace.act.account );
+   BOOST_REQUIRE_EQUAL( "reqauth"_n, reqauth_trace.act.name );
+   BOOST_REQUIRE_EQUAL( 1, reqauth_trace.act.authorization.size() );
+   BOOST_REQUIRE_EQUAL( "alice"_n, reqauth_trace.act.authorization.at(0).actor );
+   BOOST_REQUIRE_EQUAL( "active"_n, reqauth_trace.act.authorization.at(0).permission );
 } FC_LOG_AND_RETHROW()
 
 
@@ -296,21 +307,33 @@ BOOST_FIXTURE_TEST_CASE( propose_approve_by_two, eosio_msig_tester ) try {
                   ("level",         permission_level{ "bob"_n, config::active_name })
    );
 
-   transaction_trace_ptr trace;
-   control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      trace = std::get<0>(p);
-   } );
-
-   push_action( "alice"_n, "exec"_n, mvo()
-                  ("proposer",      "alice")
-                  ("proposal_name", "first")
-                  ("executer",      "alice")
+   transaction_trace_ptr trace = push_action( "alice"_n, "exec"_n, mvo()
+                                            ("proposer",      "alice")
+                                            ("proposal_name", "first")
+                                            ("executer",      "alice")
    );
 
    BOOST_REQUIRE( bool(trace) );
-   BOOST_REQUIRE_EQUAL( 1, trace->action_traces.size() );
    BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
+   BOOST_REQUIRE_EQUAL( 2, trace->action_traces.size() );
+
+   auto exec_trace = trace->action_traces.at(0);
+   BOOST_REQUIRE_EQUAL( "eosio.msig"_n, exec_trace.receiver );
+   BOOST_REQUIRE_EQUAL( "eosio.msig"_n, exec_trace.act.account );
+   BOOST_REQUIRE_EQUAL( "exec"_n, exec_trace.act.name );
+   BOOST_REQUIRE_EQUAL( 1, exec_trace.act.authorization.size() );
+   BOOST_REQUIRE_EQUAL( "alice"_n, exec_trace.act.authorization.at(0).actor );
+   BOOST_REQUIRE_EQUAL( "active"_n, exec_trace.act.authorization.at(0).permission );
+
+   auto reqauth_trace = trace->action_traces.at(1);
+   BOOST_REQUIRE_EQUAL( "eosio"_n, reqauth_trace.receiver );
+   BOOST_REQUIRE_EQUAL( "eosio"_n, reqauth_trace.act.account );
+   BOOST_REQUIRE_EQUAL( "reqauth"_n, reqauth_trace.act.name );
+   BOOST_REQUIRE_EQUAL( 2, reqauth_trace.act.authorization.size() );
+   BOOST_REQUIRE_EQUAL( "alice"_n, reqauth_trace.act.authorization.at(0).actor );
+   BOOST_REQUIRE_EQUAL( "active"_n, reqauth_trace.act.authorization.at(0).permission );
+   BOOST_REQUIRE_EQUAL( "bob"_n, reqauth_trace.act.authorization.at(1).actor );
+   BOOST_REQUIRE_EQUAL( "active"_n, reqauth_trace.act.authorization.at(1).permission );
 } FC_LOG_AND_RETHROW()
 
 
@@ -386,21 +409,33 @@ BOOST_FIXTURE_TEST_CASE( big_transaction, eosio_msig_tester ) try {
                   ("level",         permission_level{ "bob"_n, config::active_name })
    );
 
-   transaction_trace_ptr trace;
-   control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      trace = std::get<0>(p);
-   } );
-
-   push_action( "alice"_n, "exec"_n, mvo()
-                  ("proposer",      "alice")
-                  ("proposal_name", "first")
-                  ("executer",      "alice")
+   transaction_trace_ptr trace = push_action( "alice"_n, "exec"_n, mvo()
+                                            ("proposer",      "alice")
+                                            ("proposal_name", "first")
+                                            ("executer",      "alice")
    );
 
    BOOST_REQUIRE( bool(trace) );
-   BOOST_REQUIRE_EQUAL( 1, trace->action_traces.size() );
    BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
+   BOOST_REQUIRE_EQUAL( 2, trace->action_traces.size() );
+
+   auto exec_trace = trace->action_traces.at(0);
+   BOOST_REQUIRE_EQUAL( "eosio.msig"_n, exec_trace.receiver );
+   BOOST_REQUIRE_EQUAL( "eosio.msig"_n, exec_trace.act.account );
+   BOOST_REQUIRE_EQUAL( "exec"_n, exec_trace.act.name );
+   BOOST_REQUIRE_EQUAL( 1, exec_trace.act.authorization.size() );
+   BOOST_REQUIRE_EQUAL( "alice"_n, exec_trace.act.authorization.at(0).actor );
+   BOOST_REQUIRE_EQUAL( "active"_n, exec_trace.act.authorization.at(0).permission );
+
+   auto setcode_trace = trace->action_traces.at(1);
+   BOOST_REQUIRE_EQUAL( "eosio"_n, setcode_trace.receiver );
+   BOOST_REQUIRE_EQUAL( "eosio"_n, setcode_trace.act.account );
+   BOOST_REQUIRE_EQUAL( "setcode"_n, setcode_trace.act.name );
+   BOOST_REQUIRE_EQUAL( 2, setcode_trace.act.authorization.size() );
+   BOOST_REQUIRE_EQUAL( "alice"_n, setcode_trace.act.authorization.at(0).actor );
+   BOOST_REQUIRE_EQUAL( "active"_n, setcode_trace.act.authorization.at(0).permission );
+   BOOST_REQUIRE_EQUAL( "bob"_n, setcode_trace.act.authorization.at(1).actor );
+   BOOST_REQUIRE_EQUAL( "active"_n, setcode_trace.act.authorization.at(1).permission );
 } FC_LOG_AND_RETHROW()
 
 
@@ -511,42 +546,40 @@ BOOST_FIXTURE_TEST_CASE( update_system_contract_all_approve, eosio_msig_tester )
                   ("proposal_name", "first")
                   ("level",         permission_level{ "carol"_n, config::active_name })
    );
-   // execute by alice to replace the eosio system contract
-   transaction_trace_ptr trx_trace;
-   control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      if (!trx_trace)
-         trx_trace = std::get<0>(p);
-   } );
 
-   push_action( "alice"_n, "exec"_n, mvo()
-                  ("proposer",      "alice")
-                  ("proposal_name", "first")
-                  ("executer",      "alice")
+   // execute by alice to replace the eosio system contract
+   transaction_trace_ptr trx_trace = push_action( "alice"_n, "exec"_n, mvo()
+                                                ("proposer",      "alice")
+                                                ("proposal_name", "first")
+                                                ("executer",      "alice")
    );
 
    BOOST_REQUIRE( bool(trx_trace) );
    BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trx_trace->receipt->status );
    BOOST_REQUIRE_EQUAL( 2, trx_trace->action_traces.size() );
 
-   BOOST_REQUIRE_EQUAL( fc::unsigned_int{1}, trx_trace->action_traces.at(0).action_ordinal );
-   BOOST_REQUIRE_EQUAL( fc::unsigned_int{0}, trx_trace->action_traces.at(0).creator_action_ordinal );
-   BOOST_REQUIRE_EQUAL( fc::unsigned_int{0}, trx_trace->action_traces.at(0).closest_unnotified_ancestor_action_ordinal );
+   auto exec_trace = trx_trace->action_traces.at(0);
+   BOOST_REQUIRE_EQUAL( 1, exec_trace.action_ordinal );
+   BOOST_REQUIRE_EQUAL( 0, exec_trace.creator_action_ordinal );
+   BOOST_REQUIRE_EQUAL( 0, exec_trace.closest_unnotified_ancestor_action_ordinal );
    
-   BOOST_REQUIRE_EQUAL( "eosio.msig"_n, action_name{trx_trace->action_traces.at(0).receiver} );
-   BOOST_REQUIRE_EQUAL( "eosio.msig"_n, name{trx_trace->action_traces.at(0).act.account} );
-   BOOST_REQUIRE_EQUAL( "exec"_n, name{trx_trace->action_traces.at(0).act.name} );
-   BOOST_REQUIRE_EQUAL( "alice"_n, name{trx_trace->action_traces.at(0).act.authorization[0].actor} );
-   BOOST_REQUIRE_EQUAL( "active"_n, name{trx_trace->action_traces.at(0).act.authorization[0].permission} );
+   BOOST_REQUIRE_EQUAL( "eosio.msig"_n, exec_trace.receiver );
+   BOOST_REQUIRE_EQUAL( "eosio.msig"_n, exec_trace.act.account );
+   BOOST_REQUIRE_EQUAL( "exec"_n, exec_trace.act.name );
+   BOOST_REQUIRE_EQUAL( 1, exec_trace.act.authorization.size() );
+   BOOST_REQUIRE_EQUAL( "alice"_n, exec_trace.act.authorization.at(0).actor );
+   BOOST_REQUIRE_EQUAL( "active"_n, exec_trace.act.authorization.at(0).permission );
 
-   BOOST_REQUIRE_EQUAL( fc::unsigned_int{2}, trx_trace->action_traces.at(1).action_ordinal );
-   BOOST_REQUIRE_EQUAL( fc::unsigned_int{1}, trx_trace->action_traces.at(1).creator_action_ordinal );
-   BOOST_REQUIRE_EQUAL( fc::unsigned_int{1}, trx_trace->action_traces.at(1).closest_unnotified_ancestor_action_ordinal );
-   BOOST_REQUIRE_EQUAL( "eosio"_n, action_name{trx_trace->action_traces.at(1).receiver} );
-   BOOST_REQUIRE_EQUAL( "eosio"_n, name{trx_trace->action_traces.at(1).act.account} );
-   BOOST_REQUIRE_EQUAL( "setcode"_n, name{trx_trace->action_traces.at(1).act.name} );
-   BOOST_REQUIRE_EQUAL( "eosio"_n, name{trx_trace->action_traces.at(1).act.authorization[0].actor} );
-   BOOST_REQUIRE_EQUAL( "active"_n, name{trx_trace->action_traces.at(1).act.authorization[0].permission} );
+   auto setcode_trace = trx_trace->action_traces.at(1);
+   BOOST_REQUIRE_EQUAL( 2, setcode_trace.action_ordinal );
+   BOOST_REQUIRE_EQUAL( 1, setcode_trace.creator_action_ordinal );
+   BOOST_REQUIRE_EQUAL( 1, setcode_trace.closest_unnotified_ancestor_action_ordinal );
+   BOOST_REQUIRE_EQUAL( "eosio"_n, setcode_trace.receiver );
+   BOOST_REQUIRE_EQUAL( "eosio"_n, setcode_trace.act.account );
+   BOOST_REQUIRE_EQUAL( "setcode"_n, setcode_trace.act.name );
+   BOOST_REQUIRE_EQUAL( 1, setcode_trace.act.authorization.size() );
+   BOOST_REQUIRE_EQUAL( "eosio"_n, setcode_trace.act.authorization.at(0).actor );
+   BOOST_REQUIRE_EQUAL( "active"_n, setcode_trace.act.authorization.at(0).permission );
 
    // can't create account because system contract was replaced by the reject_all contract
 
@@ -667,43 +700,39 @@ BOOST_FIXTURE_TEST_CASE( update_system_contract_major_approve, eosio_msig_tester
                   ("proposal_name", "first")
                   ("level",         permission_level{ "apple"_n, config::active_name })
    );
-   // execute by alice to replace the eosio system contract
-   transaction_trace_ptr trx_trace;
-   control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      if (!trx_trace)
-         trx_trace = std::get<0>(p);
-   } );
-
    // execute by another producer different from proposer
-   push_action( "apple"_n, "exec"_n, mvo()
-                  ("proposer",      "alice")
-                  ("proposal_name", "first")
-                  ("executer",      "apple")
+   transaction_trace_ptr trx_trace = push_action( "apple"_n, "exec"_n, mvo()
+                                                ("proposer",      "alice")
+                                                ("proposal_name", "first")
+                                                ("executer",      "apple")
    );
 
    BOOST_REQUIRE( bool(trx_trace) );
    BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trx_trace->receipt->status );
    BOOST_REQUIRE_EQUAL( 2, trx_trace->action_traces.size() );
 
-   BOOST_REQUIRE_EQUAL( fc::unsigned_int{1}, trx_trace->action_traces.at(0).action_ordinal );
-   BOOST_REQUIRE_EQUAL( fc::unsigned_int{0}, trx_trace->action_traces.at(0).creator_action_ordinal );
-   BOOST_REQUIRE_EQUAL( fc::unsigned_int{0}, trx_trace->action_traces.at(0).closest_unnotified_ancestor_action_ordinal );
+   auto exec_trace = trx_trace->action_traces.at(0);
+   BOOST_REQUIRE_EQUAL( 1, exec_trace.action_ordinal );
+   BOOST_REQUIRE_EQUAL( 0, exec_trace.creator_action_ordinal );
+   BOOST_REQUIRE_EQUAL( 0, exec_trace.closest_unnotified_ancestor_action_ordinal );
    
-   BOOST_REQUIRE_EQUAL( "eosio.msig"_n, action_name{trx_trace->action_traces.at(0).receiver} );
-   BOOST_REQUIRE_EQUAL( "eosio.msig"_n, name{trx_trace->action_traces.at(0).act.account} );
-   BOOST_REQUIRE_EQUAL( "exec"_n, name{trx_trace->action_traces.at(0).act.name} );
-   BOOST_REQUIRE_EQUAL( "apple"_n, name{trx_trace->action_traces.at(0).act.authorization[0].actor} );
-   BOOST_REQUIRE_EQUAL( "active"_n, name{trx_trace->action_traces.at(0).act.authorization[0].permission} );
+   BOOST_REQUIRE_EQUAL( "eosio.msig"_n, exec_trace.receiver );
+   BOOST_REQUIRE_EQUAL( "eosio.msig"_n, exec_trace.act.account );
+   BOOST_REQUIRE_EQUAL( "exec"_n, exec_trace.act.name );
+   BOOST_REQUIRE_EQUAL( 1, exec_trace.act.authorization.size() );
+   BOOST_REQUIRE_EQUAL( "apple"_n, exec_trace.act.authorization.at(0).actor );
+   BOOST_REQUIRE_EQUAL( "active"_n, exec_trace.act.authorization.at(0).permission );
 
-   BOOST_REQUIRE_EQUAL( fc::unsigned_int{2}, trx_trace->action_traces.at(1).action_ordinal );
-   BOOST_REQUIRE_EQUAL( fc::unsigned_int{1}, trx_trace->action_traces.at(1).creator_action_ordinal );
-   BOOST_REQUIRE_EQUAL( fc::unsigned_int{1}, trx_trace->action_traces.at(1).closest_unnotified_ancestor_action_ordinal );
-   BOOST_REQUIRE_EQUAL( "eosio"_n, action_name{trx_trace->action_traces.at(1).receiver} );
-   BOOST_REQUIRE_EQUAL( "eosio"_n, name{trx_trace->action_traces.at(1).act.account} );
-   BOOST_REQUIRE_EQUAL( "setcode"_n, name{trx_trace->action_traces.at(1).act.name} );
-   BOOST_REQUIRE_EQUAL( "eosio"_n, name{trx_trace->action_traces.at(1).act.authorization[0].actor} );
-   BOOST_REQUIRE_EQUAL( "active"_n, name{trx_trace->action_traces.at(1).act.authorization[0].permission} );
+   auto setcode_trace = trx_trace->action_traces.at(1);
+   BOOST_REQUIRE_EQUAL( 2, setcode_trace.action_ordinal );
+   BOOST_REQUIRE_EQUAL( 1, setcode_trace.creator_action_ordinal );
+   BOOST_REQUIRE_EQUAL( 1, setcode_trace.closest_unnotified_ancestor_action_ordinal );
+   BOOST_REQUIRE_EQUAL( "eosio"_n, setcode_trace.receiver );
+   BOOST_REQUIRE_EQUAL( "eosio"_n, setcode_trace.act.account );
+   BOOST_REQUIRE_EQUAL( "setcode"_n, setcode_trace.act.name );
+   BOOST_REQUIRE_EQUAL( 1, setcode_trace.act.authorization.size() );
+   BOOST_REQUIRE_EQUAL( "eosio"_n, setcode_trace.act.authorization.at(0).actor );
+   BOOST_REQUIRE_EQUAL( "active"_n, setcode_trace.act.authorization.at(0).permission );
 
    // can't create account because system contract was replaced by the reject_all contract
 
@@ -788,22 +817,31 @@ BOOST_FIXTURE_TEST_CASE( propose_invalidate_approve, eosio_msig_tester ) try {
                   ("level",         permission_level{ "alice"_n, config::active_name })
    );
 
-   //successfully execute
-   transaction_trace_ptr trace;
-   control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      trace = std::get<0>(p);
-   } );
-
-   push_action( "bob"_n, "exec"_n, mvo()
-                  ("proposer",      "alice")
-                  ("proposal_name", "first")
-                  ("executer",      "bob")
+   transaction_trace_ptr trace = push_action( "bob"_n, "exec"_n, mvo()
+                                            ("proposer",      "alice")
+                                            ("proposal_name", "first")
+                                            ("executer",      "bob")
    );
 
    BOOST_REQUIRE( bool(trace) );
-   BOOST_REQUIRE_EQUAL( 1, trace->action_traces.size() );
    BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
+   BOOST_REQUIRE_EQUAL( 2, trace->action_traces.size() );
+
+   auto exec_trace = trace->action_traces.at(0);
+   BOOST_REQUIRE_EQUAL( "eosio.msig"_n, exec_trace.receiver );
+   BOOST_REQUIRE_EQUAL( "eosio.msig"_n, exec_trace.act.account );
+   BOOST_REQUIRE_EQUAL( "exec"_n, exec_trace.act.name );
+   BOOST_REQUIRE_EQUAL( 1, exec_trace.act.authorization.size() );
+   BOOST_REQUIRE_EQUAL( "bob"_n, exec_trace.act.authorization.at(0).actor );
+   BOOST_REQUIRE_EQUAL( "active"_n, exec_trace.act.authorization.at(0).permission );
+
+   auto reqauth_trace = trace->action_traces.at(1);
+   BOOST_REQUIRE_EQUAL( "eosio"_n, reqauth_trace.receiver );
+   BOOST_REQUIRE_EQUAL( "eosio"_n, reqauth_trace.act.account );
+   BOOST_REQUIRE_EQUAL( "reqauth"_n, reqauth_trace.act.name );
+   BOOST_REQUIRE_EQUAL( 1, reqauth_trace.act.authorization.size() );
+   BOOST_REQUIRE_EQUAL( "alice"_n, reqauth_trace.act.authorization.at(0).actor );
+   BOOST_REQUIRE_EQUAL( "active"_n, reqauth_trace.act.authorization.at(0).permission );
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE( approve_execute_old, eosio_msig_tester ) try {
@@ -831,21 +869,31 @@ BOOST_FIXTURE_TEST_CASE( approve_execute_old, eosio_msig_tester ) try {
                   ("level",         permission_level{ "alice"_n, config::active_name })
    );
 
-   transaction_trace_ptr trace;
-   control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      trace = std::get<0>(p);
-   } );
-
-   push_action( "alice"_n, "exec"_n, mvo()
-                  ("proposer",      "alice")
-                  ("proposal_name", "first")
-                  ("executer",      "alice")
+   transaction_trace_ptr trace = push_action( "alice"_n, "exec"_n, mvo()
+                                            ("proposer",      "alice")
+                                            ("proposal_name", "first")
+                                            ("executer",      "alice")
    );
 
    BOOST_REQUIRE( bool(trace) );
-   BOOST_REQUIRE_EQUAL( 1, trace->action_traces.size() );
    BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
+   BOOST_REQUIRE_EQUAL( 2, trace->action_traces.size() );
+
+   auto exec_trace = trace->action_traces.at(0);
+   BOOST_REQUIRE_EQUAL( "eosio.msig"_n, exec_trace.receiver );
+   BOOST_REQUIRE_EQUAL( "eosio.msig"_n, exec_trace.act.account );
+   BOOST_REQUIRE_EQUAL( "exec"_n, exec_trace.act.name );
+   BOOST_REQUIRE_EQUAL( 1, exec_trace.act.authorization.size() );
+   BOOST_REQUIRE_EQUAL( "alice"_n, exec_trace.act.authorization.at(0).actor );
+   BOOST_REQUIRE_EQUAL( "active"_n, exec_trace.act.authorization.at(0).permission );
+
+   auto reqauth_trace = trace->action_traces.at(1);
+   BOOST_REQUIRE_EQUAL( "eosio"_n, reqauth_trace.receiver );
+   BOOST_REQUIRE_EQUAL( "eosio"_n, reqauth_trace.act.account );
+   BOOST_REQUIRE_EQUAL( "reqauth"_n, reqauth_trace.act.name );
+   BOOST_REQUIRE_EQUAL( 1, reqauth_trace.act.authorization.size() );
+   BOOST_REQUIRE_EQUAL( "alice"_n, reqauth_trace.act.authorization.at(0).actor );
+   BOOST_REQUIRE_EQUAL( "active"_n, reqauth_trace.act.authorization.at(0).permission );
 
 } FC_LOG_AND_RETHROW()
 
@@ -934,21 +982,33 @@ BOOST_FIXTURE_TEST_CASE( approve_by_two_old, eosio_msig_tester ) try {
                   ("level",         permission_level{ "bob"_n, config::active_name })
    );
 
-   transaction_trace_ptr trace;
-   control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      trace = std::get<0>(p);
-   } );
-
-   push_action( "alice"_n, "exec"_n, mvo()
-                  ("proposer",      "alice")
-                  ("proposal_name", "first")
-                  ("executer",      "alice")
+   transaction_trace_ptr trace = push_action( "alice"_n, "exec"_n, mvo()
+                                            ("proposer",      "alice")
+                                            ("proposal_name", "first")
+                                            ("executer",      "alice")
    );
 
    BOOST_REQUIRE( bool(trace) );
-   BOOST_REQUIRE_EQUAL( 1, trace->action_traces.size() );
    BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
+   BOOST_REQUIRE_EQUAL( 2, trace->action_traces.size() );
+
+   auto exec_trace = trace->action_traces.at(0);
+   BOOST_REQUIRE_EQUAL( "eosio.msig"_n, exec_trace.receiver );
+   BOOST_REQUIRE_EQUAL( "eosio.msig"_n, exec_trace.act.account );
+   BOOST_REQUIRE_EQUAL( "exec"_n, exec_trace.act.name );
+   BOOST_REQUIRE_EQUAL( 1, exec_trace.act.authorization.size() );
+   BOOST_REQUIRE_EQUAL( "alice"_n, exec_trace.act.authorization.at(0).actor );
+   BOOST_REQUIRE_EQUAL( "active"_n, exec_trace.act.authorization.at(0).permission );
+
+   auto reqauth_trace = trace->action_traces.at(1);
+   BOOST_REQUIRE_EQUAL( "eosio"_n, reqauth_trace.receiver );
+   BOOST_REQUIRE_EQUAL( "eosio"_n, reqauth_trace.act.account );
+   BOOST_REQUIRE_EQUAL( "reqauth"_n, reqauth_trace.act.name );
+   BOOST_REQUIRE_EQUAL( 2, reqauth_trace.act.authorization.size() );
+   BOOST_REQUIRE_EQUAL( "alice"_n, reqauth_trace.act.authorization.at(0).actor );
+   BOOST_REQUIRE_EQUAL( "active"_n, reqauth_trace.act.authorization.at(0).permission );
+   BOOST_REQUIRE_EQUAL( "bob"_n, reqauth_trace.act.authorization.at(1).actor );
+   BOOST_REQUIRE_EQUAL( "active"_n, reqauth_trace.act.authorization.at(1).permission );
 
 } FC_LOG_AND_RETHROW()
 
@@ -982,22 +1042,32 @@ BOOST_FIXTURE_TEST_CASE( approve_with_hash, eosio_msig_tester ) try {
                   ("level",         permission_level{ "alice"_n, config::active_name })
                   ("proposal_hash", trx_hash)
    );
-
-   transaction_trace_ptr trace;
-   control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      trace = std::get<0>(p);
-   } );
-
-   push_action( "alice"_n, "exec"_n, mvo()
-                  ("proposer",      "alice")
-                  ("proposal_name", "first")
-                  ("executer",      "alice")
+   
+   transaction_trace_ptr trace = push_action( "alice"_n, "exec"_n, mvo()
+                                            ("proposer",      "alice")
+                                            ("proposal_name", "first")
+                                            ("executer",      "alice")
    );
 
    BOOST_REQUIRE( bool(trace) );
-   BOOST_REQUIRE_EQUAL( 1, trace->action_traces.size() );
    BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
+   BOOST_REQUIRE_EQUAL( 2, trace->action_traces.size() );
+
+   auto exec_trace = trace->action_traces.at(0);
+   BOOST_REQUIRE_EQUAL( "eosio.msig"_n, exec_trace.receiver );
+   BOOST_REQUIRE_EQUAL( "eosio.msig"_n, exec_trace.act.account );
+   BOOST_REQUIRE_EQUAL( "exec"_n, exec_trace.act.name );
+   BOOST_REQUIRE_EQUAL( 1, exec_trace.act.authorization.size() );
+   BOOST_REQUIRE_EQUAL( "alice"_n, exec_trace.act.authorization.at(0).actor );
+   BOOST_REQUIRE_EQUAL( "active"_n, exec_trace.act.authorization.at(0).permission );
+
+   auto reqauth_trace = trace->action_traces.at(1);
+   BOOST_REQUIRE_EQUAL( "eosio"_n, reqauth_trace.receiver );
+   BOOST_REQUIRE_EQUAL( "eosio"_n, reqauth_trace.act.account );
+   BOOST_REQUIRE_EQUAL( "reqauth"_n, reqauth_trace.act.name );
+   BOOST_REQUIRE_EQUAL( 1, reqauth_trace.act.authorization.size() );
+   BOOST_REQUIRE_EQUAL( "alice"_n, reqauth_trace.act.authorization.at(0).actor );
+   BOOST_REQUIRE_EQUAL( "active"_n, reqauth_trace.act.authorization.at(0).permission );
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE( switch_proposal_and_fail_approve_with_hash, eosio_msig_tester ) try {
