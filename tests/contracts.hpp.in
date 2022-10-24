@@ -36,5 +36,16 @@ static std::vector<uint8_t> blockinfo_tester_wasm()
    return eosio::testing::read_wasm(
       "${CMAKE_BINARY_DIR}/contracts/test_contracts/blockinfo_tester/blockinfo_tester.wasm");
 }
+static std::vector<uint8_t> sendinline_wasm() 
+{
+   return eosio::testing::read_wasm(
+      "${CMAKE_BINARY_DIR}/contracts/test_contracts/sendinline/sendinline.wasm"); 
+}
+static std::vector<char>    sendinline_abi() 
+{
+   return eosio::testing::read_abi(
+      "${CMAKE_BINARY_DIR}/contracts/test_contracts/sendinline/sendinline.abi"); 
+}
+
 
 } // namespace system_contracts::testing::test_contracts
