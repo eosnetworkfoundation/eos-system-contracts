@@ -73,12 +73,7 @@ public:
       set_producers( {"prod1"_n, "prod2"_n, "prod3"_n, "prod4"_n, "prod5"_n} );
 
       produce_blocks();
-
-      const auto& accnt = control->db().get<account_object,by_name>( "eosio.wrap"_n );
-      abi_def abi;
-      BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt.abi, abi), true);
-      abi_ser.set_abi(abi, abi_serializer::create_yield_function(abi_serializer_max_time));
-
+      
       while( control->pending_block_producer().to_string() == "eosio" ) {
          produce_block();
       }
@@ -113,7 +108,7 @@ public:
 
    transaction reqauth( account_name from, const vector<permission_level>& auths, uint32_t expiration = base_tester::DEFAULT_EXPIRATION_DELTA );
 
-   abi_serializer abi_ser;
+   void check_traces(transaction_trace_ptr trace, std::vector<std::map<std::string, name>> res);
 };
 
 transaction eosio_wrap_tester::wrap_exec( account_name executer, const transaction& trx, uint32_t expiration ) {
@@ -160,44 +155,35 @@ transaction eosio_wrap_tester::reqauth( account_name from, const vector<permissi
    return trx;
 }
 
+void eosio_wrap_tester::check_traces(transaction_trace_ptr trace, std::vector<std::map<std::string, name>> res) {
+   
+   BOOST_REQUIRE( bool(trace) );
+   BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
+   BOOST_REQUIRE_EQUAL( res.size(), trace->action_traces.size() );
+
+   for (size_t i = 0; i < res.size(); i++) {
+      auto cur_action = trace->action_traces.at(i);
+      BOOST_REQUIRE_EQUAL( res[i]["receiver"], cur_action.receiver );
+      BOOST_REQUIRE_EQUAL( res[i]["act_name"], cur_action.act.name );
+   }
+}
+
 BOOST_AUTO_TEST_SUITE(eosio_wrap_tests)
 
 BOOST_FIXTURE_TEST_CASE( wrap_exec_direct, eosio_wrap_tester ) try {
    auto trx = reqauth( "bob"_n, {permission_level{"bob"_n, config::active_name}} );
 
-   transaction_trace_ptr trace;
-   control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      const auto& t = std::get<0>(p);
-      if( t->scheduled ) { trace = t; }
-   } );
-
-   {
-      signed_transaction wrap_trx( wrap_exec( "alice"_n, trx ), {}, {} );
-      /*
-      set_transaction_headers( wrap_trx );
-      wrap_trx.actions.emplace_back( get_action( "eosio.wrap"_n, "exec"_n,
-                                                 {{"alice"_n, config::active_name}, {"eosio.wrap"_n, config::active_name}},
-                                                 mvo()
-                                                   ("executer", "alice")
-                                                   ("trx", trx)
-      ) );
-      */
-      wrap_trx.sign( get_private_key( "alice"_n, "active" ), control->get_chain_id() );
-      for( const auto& actor : {"prod1"_n, "prod2"_n, "prod3"_n, "prod4"_n} ) {
-         wrap_trx.sign( get_private_key( actor, "active" ), control->get_chain_id() );
-      }
-      push_transaction( wrap_trx );
+   signed_transaction wrap_trx( wrap_exec( "alice"_n, trx ), {}, {} );
+   wrap_trx.sign( get_private_key( "alice"_n, "active" ), control->get_chain_id() );
+   for( const auto& actor : {"prod1"_n, "prod2"_n, "prod3"_n, "prod4"_n} ) {
+      wrap_trx.sign( get_private_key( actor, "active" ), control->get_chain_id() );
    }
+   transaction_trace_ptr trace = push_transaction( wrap_trx );
 
-   produce_block();
-
-   BOOST_REQUIRE( bool(trace) );
-   BOOST_REQUIRE_EQUAL( 1, trace->action_traces.size() );
-   BOOST_REQUIRE_EQUAL( config::system_account_name, name{trace->action_traces[0].act.account} );
-   BOOST_REQUIRE_EQUAL( "reqauth"_n, name{trace->action_traces[0].act.name} );
-   BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
-
+   check_traces( trace, {
+                           {{"receiver", "eosio.wrap"_n}, {"act_name", "exec"_n}}, 
+                           {{"receiver", config::system_account_name}, {"act_name", "reqauth"_n}}
+                         } );
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE( wrap_with_msig, eosio_wrap_tester ) try {
@@ -217,35 +203,18 @@ BOOST_FIXTURE_TEST_CASE( wrap_with_msig, eosio_wrap_tester ) try {
    approve( "carol"_n, "first"_n, "prod3"_n );
    approve( "carol"_n, "first"_n, "prod4"_n );
 
-   vector<transaction_trace_ptr> traces;
-   control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      const auto& t = std::get<0>(p);
-      if( t->scheduled ) {
-         traces.push_back( t );
-      }
-   } );
-
    // Now the proposal should be ready to execute
-   push_action( "eosio.msig"_n, "exec"_n, "alice"_n, mvo()
-                  ("proposer",      "carol")
-                  ("proposal_name", "first")
-                  ("executer",      "alice")
+   transaction_trace_ptr trace = push_action( "eosio.msig"_n, "exec"_n, "alice"_n, mvo()
+                                                ("proposer",      "carol")
+                                                ("proposal_name", "first")
+                                                ("executer",      "alice")
    );
 
-   produce_block();
-
-   BOOST_REQUIRE_EQUAL( 2, traces.size() );
-
-   BOOST_REQUIRE_EQUAL( 1, traces[0]->action_traces.size() );
-   BOOST_REQUIRE_EQUAL( "eosio.wrap"_n, name{traces[0]->action_traces[0].act.account} );
-   BOOST_REQUIRE_EQUAL( "exec"_n, name{traces[0]->action_traces[0].act.name} );
-   BOOST_REQUIRE_EQUAL( transaction_receipt::executed, traces[0]->receipt->status );
-
-   BOOST_REQUIRE_EQUAL( 1, traces[1]->action_traces.size() );
-   BOOST_REQUIRE_EQUAL( config::system_account_name, name{traces[1]->action_traces[0].act.account} );
-   BOOST_REQUIRE_EQUAL( "reqauth"_n, name{traces[1]->action_traces[0].act.name} );
-   BOOST_REQUIRE_EQUAL( transaction_receipt::executed, traces[1]->receipt->status );
+   check_traces( trace, {
+                        {{"receiver", "eosio.msig"_n}, {"act_name", "exec"_n}}, 
+                        {{"receiver", "eosio.wrap"_n}, {"act_name", "exec"_n}},
+                        {{"receiver", config::system_account_name}, {"act_name", "reqauth"_n}}
+                        } );
 
 } FC_LOG_AND_RETHROW()
 
@@ -287,7 +256,7 @@ BOOST_FIXTURE_TEST_CASE( wrap_with_msig_unapprove, eosio_wrap_tester ) try {
 BOOST_FIXTURE_TEST_CASE( wrap_with_msig_producers_change, eosio_wrap_tester ) try {
    create_accounts( { "newprod1"_n } );
 
-   auto trx = reqauth( "bob"_n, {permission_level{"bob"_n, config::active_name}} );
+   auto trx = reqauth( "bob"_n, {permission_level{"bob"_n, config::active_name}}, 120 );
    auto wrap_trx = wrap_exec( "alice"_n, trx, 36000 );
 
    propose( "carol"_n, "first"_n,
@@ -333,35 +302,19 @@ BOOST_FIXTURE_TEST_CASE( wrap_with_msig_producers_change, eosio_wrap_tester ) tr
    // But prod5 still can provide the fifth approval necessary to satisfy the 2/3+1 threshold of the new producer set
    approve( "carol"_n, "first"_n, "prod5"_n );
 
-   vector<transaction_trace_ptr> traces;
-   control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      const auto& t = std::get<0>(p);
-      if( t->scheduled ) {
-         traces.push_back( t );
-      }
-   } );
-
    // Now the proposal should be ready to execute
-   push_action( "eosio.msig"_n, "exec"_n, "alice"_n, mvo()
-                  ("proposer",      "carol")
-                  ("proposal_name", "first")
-                  ("executer",      "alice")
+   transaction_trace_ptr trace = push_action( "eosio.msig"_n, "exec"_n, "alice"_n, mvo()
+                                             ("proposal_name", "first")
+                                             ("proposer",      "carol")
+                                             ("executer",      "alice")
    );
 
-   produce_block();
 
-   BOOST_REQUIRE_EQUAL( 2, traces.size() );
-
-   BOOST_REQUIRE_EQUAL( 1, traces[0]->action_traces.size() );
-   BOOST_REQUIRE_EQUAL( "eosio.wrap"_n, name{traces[0]->action_traces[0].act.account} );
-   BOOST_REQUIRE_EQUAL( "exec"_n, name{traces[0]->action_traces[0].act.name} );
-   BOOST_REQUIRE_EQUAL( transaction_receipt::executed, traces[0]->receipt->status );
-
-   BOOST_REQUIRE_EQUAL( 1, traces[1]->action_traces.size() );
-   BOOST_REQUIRE_EQUAL( config::system_account_name, name{traces[1]->action_traces[0].act.account} );
-   BOOST_REQUIRE_EQUAL( "reqauth"_n, name{traces[1]->action_traces[0].act.name} );
-   BOOST_REQUIRE_EQUAL( transaction_receipt::executed, traces[1]->receipt->status );
+   check_traces( trace, {
+                     {{"receiver", "eosio.msig"_n}, {"act_name", "exec"_n}}, 
+                     {{"receiver", "eosio.wrap"_n}, {"act_name", "exec"_n}},
+                     {{"receiver", config::system_account_name}, {"act_name", "reqauth"_n}}
+                     } );
 
 } FC_LOG_AND_RETHROW()
 
