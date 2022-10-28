@@ -1,0 +1,10 @@
+{
+   "leap-dev":{
+      "target":"*",
+      "prerelease":true
+   },
+   "cdt":{
+      "target":"*",
+      "prerelease":true
+   }
+}
