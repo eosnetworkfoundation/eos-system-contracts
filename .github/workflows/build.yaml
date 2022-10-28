@@ -52,7 +52,7 @@ jobs:
         with:
           owner: AntelopeIO
           repo: leap
-          file: 'leap-dev.*x86_64.deb'
+          file: 'leap-dev.*(x86_64|amd64).deb'
           ref: '${{steps.versions.outputs.leap-dev-ref}}'
           prereleases: true
           artifact-name: leap-dev-ubuntu20-amd64
