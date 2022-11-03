@@ -95,7 +95,7 @@ jobs:
           cmake -S src -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=On
           cmake --build build -- -j $(nproc)
           tar zcf build.tar.gz build
-          cd build/tests; ctest --output-on-failure -j $(nproc)
+          ctest --test-dir build/tests --output-on-failure -j $(nproc)
       - name: Upload builddir
         uses: actions/upload-artifact@v3
         with:
