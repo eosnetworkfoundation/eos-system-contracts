@@ -43,7 +43,7 @@ jobs:
         env:
           GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
         run: |
-          DEFAULTS_JSON=$(curl -s -f $(gh api https://api.github.com/repos/${{github.repository}}/contents/.cicd/defaults.json?ref=${{github.sha}} --jq .download_url))
+          DEFAULTS_JSON=$(curl -sSfL $(gh api https://api.github.com/repos/${{github.repository}}/contents/.cicd/defaults.json?ref=${{github.sha}} --jq .download_url))
           echo leap-dev-target=$(echo "$DEFAULTS_JSON" | jq -r '."leap-dev".target') >> $GITHUB_OUTPUT
           echo leap-dev-prerelease=$(echo "$DEFAULTS_JSON" | jq -r '."leap-dev".prerelease') >> $GITHUB_OUTPUT
           echo cdt-target=$(echo "$DEFAULTS_JSON" | jq -r '.cdt.target') >> $GITHUB_OUTPUT
