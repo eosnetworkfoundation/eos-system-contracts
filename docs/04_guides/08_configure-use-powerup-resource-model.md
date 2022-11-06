@@ -1,6 +1,5 @@
 ---
 content_title: How to configure PowerUp resource model
-link_text: How to configure PowerUp resource model
 ---
 # Configure and Use the PowerUp Resource Model
 

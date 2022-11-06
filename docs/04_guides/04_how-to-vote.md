@@ -1,6 +1,5 @@
 ---
 content_title: How to vote
-link_text: How to vote
 ---
 
 # Goal

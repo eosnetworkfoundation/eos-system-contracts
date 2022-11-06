@@ -1,6 +1,5 @@
 ---
 content_title: Staking on Antelope-based blockchains
-link_text: Staking on Antelope-based blockchains
 ---
 
 ## System Resources

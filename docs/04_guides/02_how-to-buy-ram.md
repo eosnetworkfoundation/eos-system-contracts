@@ -1,6 +1,5 @@
 ---
 content_title: How to buy RAM
-link_text: How to buy RAM
 ---
 
 # Goal

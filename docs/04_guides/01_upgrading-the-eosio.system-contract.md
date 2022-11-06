@@ -1,6 +1,5 @@
 ---
 content_title: Upgrading the system contract
-link_text: Upgrading the system contract
 ---
 
 # Indirect method using eosio.msig contract

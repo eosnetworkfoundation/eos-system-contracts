@@ -1,6 +1,5 @@
 ---
 content_title: How to stake
-link_text: How to stake
 ---
 
 # Goal

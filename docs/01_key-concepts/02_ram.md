@@ -1,6 +1,5 @@
 ---
 content_title: RAM as system resource
-link_text: RAM as system resource
 ---
 
 ## What is RAM

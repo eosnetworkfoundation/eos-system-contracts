@@ -1,6 +1,5 @@
 ---
 content_title: How to use eosio.wrap
-link_text: How to use eosio.wrap
 ---
 
 # 1. Installing the eosio.wrap contract

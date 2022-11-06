@@ -1,6 +1,5 @@
 ---
 content_title: How to build eosio.contracts
-link_text: How to build eosio.contracts
 ---
 
 ## Preconditions
