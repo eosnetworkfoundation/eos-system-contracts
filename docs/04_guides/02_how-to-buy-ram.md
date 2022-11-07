@@ -10,7 +10,7 @@ Setup an account that require multiple signatures for signing a transaction
 
 * You have an account
 
-* Ensure the reference system contracts from `eosio.contracts` repository is deployed and used to manage system resources
+* Ensure the reference system contracts from `reference-contracts` repository is deployed and used to manage system resources
 
 * You have sufficient token allocated to your account
 

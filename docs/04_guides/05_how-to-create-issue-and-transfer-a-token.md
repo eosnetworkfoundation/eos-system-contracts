@@ -16,7 +16,7 @@ git clone https://github.com/AntelopeIO/reference-contracts --branch main --sing
 ```
 
 ```sh
-cd eosio.contracts/contracts/eosio.token
+cd reference-contracts/contracts/eosio.token
 ```
 
 ## Step 2: Create Account for Contract
@@ -36,7 +36,7 @@ eosio-cpp -I include -o eosio.token.wasm src/eosio.token.cpp --abigen
 ## Step 4: Deploy the Token Contract
 
 ```shell
-cleos set contract eosio.token CONTRACTS_DIR/eosio.contracts/contracts/eosio.token --abi eosio.token.abi -p eosio.token@active
+cleos set contract eosio.token CONTRACTS_DIR/reference-contracts/contracts/eosio.token --abi eosio.token.abi -p eosio.token@active
 ```
 
 Result should look similar to the one below:

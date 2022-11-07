@@ -1,5 +1,5 @@
 ---
-content_title: How to build eosio.contracts
+content_title: How to build reference-contracts
 ---
 
 ## Preconditions
@@ -20,11 +20,11 @@ Run the `build.sh` script in the top directory to build all the contracts.
 
 ### Build contracts manually
 
-To build the `eosio.contracts` execute the following commands.
+To build the `reference-contracts` execute the following commands.
 
 On all platforms except macOS:
 ```sh
-cd you_local_path_to/eosio.contracts/
+cd you_local_path_to/reference-contracts/
 rm -fr build
 mkdir build
 cd build
@@ -35,7 +35,7 @@ cd ..
 
 For macOS:
 ```sh
-cd you_local_path_to/eosio.contracts/
+cd you_local_path_to/reference-contracts/
 rm -fr build
 mkdir build
 cd build
@@ -49,34 +49,34 @@ cd ..
 * The contracts (both `.wasm` and `.abi` files) are built into their corresponding _build/contracts/\<contract name\>_ folder.
 * Finally, simply use __cleos__ to _set contract_ by pointing to the previously mentioned directory for the specific contract.
 
-# How to deploy the eosio.contracts
+# How to deploy the reference-contracts
 
 ## To deploy eosio.bios contract execute the following command:
 Let's assume your account name to which you want to deploy the contract is `testerbios`
 ```
-cleos set contract testerbios you_local_path_to/eosio.contracts/build/contracts/eosio.bios/ -p testerbios
+cleos set contract testerbios you_local_path_to/reference-contracts/build/contracts/eosio.bios/ -p testerbios
 ```
 
 ## To deploy eosio.msig contract execute the following command:
 Let's assume your account name to which you want to deploy the contract is `testermsig`
 ```
-cleos set contract testermsig you_local_path_to/eosio.contracts/build/contracts/eosio.msig/ -p testermsig
+cleos set contract testermsig you_local_path_to/reference-contracts/build/contracts/eosio.msig/ -p testermsig
 ```
 
 ## To deploy eosio.system contract execute the following command:
 Let's assume your account name to which you want to deploy the contract is `testersystem`
 ```
-cleos set contract testersystem you_local_path_to/eosio.contracts/build/contracts/eosio.system/ -p testersystem
+cleos set contract testersystem you_local_path_to/reference-contracts/build/contracts/eosio.system/ -p testersystem
 ```
 
 ## To deploy eosio.token contract execute the following command:
 Let's assume your account name to which you want to deploy the contract is `testertoken`
 ```
-cleos set contract testertoken you_local_path_to/eosio.contracts/build/contracts/eosio.token/ -p testertoken
+cleos set contract testertoken you_local_path_to/reference-contracts/build/contracts/eosio.token/ -p testertoken
 ```
 
 ## To deploy eosio.wrap contract execute the following command:
 Let's assume your account name to which you want to deploy the contract is `testerwrap`
 ```
-cleos set contract testerwrap you_local_path_to/eosio.contracts/build/contracts/eosio.wrap/ -p testerwrap
+cleos set contract testerwrap you_local_path_to/reference-contracts/build/contracts/eosio.wrap/ -p testerwrap
 ```
