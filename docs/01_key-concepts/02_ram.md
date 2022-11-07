@@ -8,13 +8,13 @@ RAM is the memory, the storage space, where the blockchain stores data. If your 
 
 ### Related documentation articles
 
-- Multi-index table [explainer documentation page](https://developers.eos.io/manuals/eosio.cdt/latest/group__multiindex)
+- Multi-index table [explainer documentation page](https://github.com/AntelopeIO/cdt/blob/main/libraries/eosiolib/contracts/eosio/multi_index.hpp)
 
-- Multi-index table [how to documentation page](https://developers.eos.io/manuals/eosio.cdt/latest/how-to-guides/multi-index)
+- Multi-index table [how to documentation page](https://github.com/AntelopeIO/cdt/tree/main/docs/06_how-to-guides/40_multi-index)
 
-- Singleton [reference documentation page](https://developers.eos.io/manuals/eosio.cdt/latest/group__singleton/#singleton-table) 
+- Singleton [reference documentation page](https://github.com/AntelopeIO/cdt/blob/main/libraries/eosiolib/contracts/eosio/singleton.hpp) 
 
-- Singleton [how to documentation page](https://developers.eos.io/manuals/eosio.cdt/latest/how-to-guides/multi-index/how-to-define-a-singleton)
+- Singleton [how to documentation page](https://github.com/AntelopeIO/cdt/blob/main/docs/06_how-to-guides/40_multi-index/how-to-define-a-singleton.md)
 
 ## RAM High Performance
 
@@ -35,4 +35,4 @@ RAM is a very important system resource because of the following reasons:
 
 RAM is a scarce resource priced according to the unique Bancor liquidity algorithm which is implemented in the system contract [here](https://github.com/AntelopeIO/reference-contracts/blob/main/contracts/eosio.system/include/eosio.system/exchange_state.hpp).
 
-The RAM system resource must be purchased using the system token. Refer to the [cleos manual](https://developers.eos.io/manuals/eos/v2.0/cleos/how-to-guides/how-to-buy-ram) to learn how to buy RAM via the command line interface.
+The RAM system resource must be purchased using the system token. Refer to the [cleos manual](https://github.com/AntelopeIO/leap/blob/main/docs/02_cleos/02_how-to-guides/how-to-buy-ram.md) to learn how to buy RAM via the command line interface.
