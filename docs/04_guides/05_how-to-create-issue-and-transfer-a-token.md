@@ -1,6 +1,5 @@
 ---
 content_title: How to create, issue and transfer a token
-link_text: How to create, issue and transfer a token
 ---
 
 ## Step 1: Obtain Contract Source
@@ -13,11 +12,11 @@ cd CONTRACTS_DIR
 
 Pull the source
 ```sh
-git clone https://github.com/EOSIO/eosio.contracts --branch master --single-branch
+git clone https://github.com/AntelopeIO/reference-contracts --branch main --single-branch
 ```
 
 ```sh
-cd eosio.contracts/contracts/eosio.token
+cd reference-contracts/contracts/eosio.token
 ```
 
 ## Step 2: Create Account for Contract
@@ -37,7 +36,7 @@ eosio-cpp -I include -o eosio.token.wasm src/eosio.token.cpp --abigen
 ## Step 4: Deploy the Token Contract
 
 ```shell
-cleos set contract eosio.token CONTRACTS_DIR/eosio.contracts/contracts/eosio.token --abi eosio.token.abi -p eosio.token@active
+cleos set contract eosio.token CONTRACTS_DIR/reference-contracts/contracts/eosio.token --abi eosio.token.abi -p eosio.token@active
 ```
 
 Result should look similar to the one below:
@@ -106,7 +105,7 @@ executed transaction: 60d334850151cb95c35fe31ce2e8b536b51441c5fd4c3f2fea98edcc6d
 #           bob <= eosio.token::transfer        {"from":"eosio","to":"bob","quantity":"25.0000 SYS","memo":"m"}
 warning: transaction executed locally, but may not be confirmed by the network yet         ]
 ```
-Now check if "bob" got the tokens using [cleos get currency balance](https://developers.eos.io/manuals/eos/latest/cleos/command-reference/get/currency-balance)
+Now check if "bob" got the tokens using [cleos get currency balance](https://github.com/AntelopeIO/leap/blob/main/docs/02_cleos/03_command-reference/get/currency-balance.md)
 
 ```shell
 cleos get currency balance eosio.token bob SYS

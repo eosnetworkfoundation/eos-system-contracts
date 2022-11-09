@@ -13,7 +13,7 @@ else()
   set(VERSION_FULL "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 endif()
 
-message(STATUS "Building eosio.contracts v${VERSION_FULL}")
+message(STATUS "Building reference-contracts v${VERSION_FULL}")
 
 include(ExternalProject)
 
