@@ -46,13 +46,6 @@ elseif(UNIX)
 endif()
 set(SECP256K1_ROOT "/usr/local")
 
-if(APPLE)
-  set(OPENSSL_ROOT "/usr/local/opt/openssl")
-elseif(UNIX)
-  set(OPENSSL_ROOT "/usr/include/openssl")
-endif()
-set(SECP256K1_ROOT "/usr/local")
-
 option(BUILD_TESTS "Build unit tests" OFF)
 
 if(BUILD_TESTS)
