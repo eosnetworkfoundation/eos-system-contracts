@@ -1,5 +1,5 @@
 {
-  "name": "eosio.contracts",
+  "name": "eos-system-contracts",
   "generators": [
     {
       "name": "collate_markdown",
