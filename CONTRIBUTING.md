@@ -35,7 +35,7 @@ Guidelines for bug reports:
 
 1. **Check if the issue has been fixed** &mdash; look for [closed issues in the
    current milestone](https://github.com/eosnetworkfoundation/eos-system-contracts/issues?q=is%3Aissue+is%3Aclosed) or try to reproduce it
-   using the latest `develop` branch.
+   using the latest `main` branch.
 
 A good bug report shouldn't leave others needing to chase you up for more information. Be sure to include the details of your environment and relevant tests that demonstrate the failure.
 
@@ -67,8 +67,8 @@ Also, please follow these guidelines when submitting code:
 
 To get it out of the way:
 
-- **[develop](https://github.com/eosnetworkfoundation/eos-system-contracts/tree/develop)** is the development branch. All work on the next release happens here so you should generally branch off `develop`. Do **NOT** use this branch for a production site.
-- **[master](https://github.com/eosnetworkfoundation/eos-system-contracts/tree/master)** contains the latest release of eos-system-contracts. This branch may be used in production. Do **NOT** use this branch to work on eos-system-contracts's source.
+- **[main](https://github.com/eosnetworkfoundation/eos-system-contracts/tree/main)** is the development branch. All work on the next release happens here so you should generally branch off `main`. Do **NOT** use this branch for a production site.
+- **release/** branches contain stable releases of eos-system-contracts. Some of these branches may be obsolete, a prerelease (release candidate), or designated as stable and ready for use in production. Generally do **NOT** use these branches to work on eos-system-contracts' source unless you are working on a defect or change that would apply to a current stable release or release candidate. If in doubt, branch off of `main` and an eos-system-contracts maintainer will chime in if you should switch to a release branch.
 
 ### Submitting Pull Requests
 
@@ -78,7 +78,7 @@ Pull requests are awesome. If you're looking to raise a PR for something which d
 
 Never underestimate just how useful quality assurance is. If you're looking to get involved with the code base and don't know where to start, checking out and testing a pull request is one of the most useful things you could do.
 
-Essentially, [check out the latest develop branch](#working-on-eos-system-contracts), take it for a spin, and if you find anything odd, please follow the [bug report guidelines](#bug-reports) and let us know!
+Essentially, [check out the main branch](#working-on-eos-system-contracts), take it for a spin, and if you find anything odd, please follow the [bug report guidelines](#bug-reports) and let us know!
 
 ## Conduct
 
