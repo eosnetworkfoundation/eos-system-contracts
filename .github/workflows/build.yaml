@@ -92,7 +92,7 @@ jobs:
           path: src
       - name: Build & Test
         run: |
-          cmake -S src -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=On
+          cmake -S src -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=On -DSYSTEM_ENABLE_LEAP_VERSION_CHECK=Off
           cmake --build build -- -j $(nproc)
           tar zcf build.tar.gz build
           ctest --test-dir build/tests --output-on-failure -j $(nproc)
