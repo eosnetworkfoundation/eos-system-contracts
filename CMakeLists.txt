@@ -25,6 +25,9 @@ option(SYSTEM_CONFIGURABLE_WASM_LIMITS
 option(SYSTEM_BLOCKCHAIN_PARAMETERS
        "Enables use of the host functions activated by the BLOCKCHAIN_PARAMETERS protocol feature" ON)
 
+option(SYSTEM_ENABLE_LEAP_VERSION_CHECK
+      "Enables a configure-time check that the version of Leap's tester library is compatible with this project's unit tests" ON)
+
 ExternalProject_Add(
   contracts_project
   SOURCE_DIR ${CMAKE_SOURCE_DIR}/contracts
@@ -38,13 +41,6 @@ ExternalProject_Add(
   TEST_COMMAND ""
   INSTALL_COMMAND ""
   BUILD_ALWAYS 1)
-
-if(APPLE)
-  set(OPENSSL_ROOT "/usr/local/opt/openssl")
-elseif(UNIX)
-  set(OPENSSL_ROOT "/usr/include/openssl")
-endif()
-set(SECP256K1_ROOT "/usr/local")
 
 if(APPLE)
   set(OPENSSL_ROOT "/usr/local/opt/openssl")
