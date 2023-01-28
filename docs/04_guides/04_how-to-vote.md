@@ -3,13 +3,13 @@ content_title: How to vote
 link_text: How to vote
 ---
 
-# Goal
+## Goal
 
 Vote for a block producer
 
-# Before you begin
+## Before you begin
 
-* Install the current supported version of cleos
+* Install the current supported version of dune
 
 * Ensure the reference system contracts from `eos-system-contracts` repository is deployed and used to manage system resources
 
@@ -19,12 +19,12 @@ Vote for a block producer
 
 * Unlock your wallet
 
-# Steps
+## Steps
 
 Assume you are going to vote for blockproducer1 and blockproducer2 from an account called `eosiotestts2`, execute the following:
 
 ```bash
-cleos system voteproducer prods eosiotestts2 blockproducer1 blockproducer2
+dune -- cleos system voteproducer prods eosiotestts2 blockproducer1 blockproducer2
 ```
 
 You should see something like below:

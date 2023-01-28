@@ -3,13 +3,13 @@ content_title: How to stake
 link_text: How to stake
 ---
 
-# Goal
+## Goal
 
-Stake resource for your account
+Stake resources for your account to participate in the on-chain voting and governance.
 
-# Before you begin
+## Before you begin
 
-* Install the currently supported version of cleos
+* Install the currently supported version of dune
 
 * Ensure the reference system contracts from `eos-system-contracts` repository is deployed and used to manage system resources
 
@@ -18,16 +18,16 @@ Stake resource for your account
   * What is network bandwidth
   * What is CPU bandwidth
 
-# Steps
+## Steps
 
-Stake 0.01 SYS network bandwidth for `alice`
+Stake 10 SYS network bandwidth for `alice`
 
 ```shell
-cleos system delegatebw alice alice "0 SYS" "0.01 SYS"
+dune -- cleos system delegatebw alice alice "0 SYS" "10 SYS"
 ```
 
-Stake 0.01 SYS CPU bandwidth for `alice`:
+Stake 10 SYS CPU bandwidth for `alice`:
 
 ```shell
-cleos system delegatebw alice alice "0.01 SYS" "0 SYS"
+dune -- cleos system delegatebw alice alice "10 SYS" "0 SYS"
 ```

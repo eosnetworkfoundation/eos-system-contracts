@@ -18,6 +18,6 @@ As you just learned the relation between a `system account` and a `system contra
 |eosio.ram|No|No|The account that keeps track of the SYS balances based on users actions of buying or selling RAM.|
 |eosio.ramfee|No|No|The account that keeps track of the fees collected from users RAM trading actions: 0.5% from the value of each trade goes into this account.|
 |eosio.saving|No|No|The account which holds the 4% of network inflation.|
-|eosio.stake|No|No|The account that keeps track of all SYS tokens which have been staked for NET or CPU bandwidth.|
+|eosio.stake|No|No|The account that keeps track of all SYS tokens which have been staked for voting.|
 |eosio.vpay|No|No|The account that pays the block producers accordingly with the votes won. It assigns 0.75% of inflation based on the amount of votes a block producer won in the last 24 hours.|
 |eosio.rex|No|No|The account that keeps track of fees and balances resulted from REX related actions execution.|
