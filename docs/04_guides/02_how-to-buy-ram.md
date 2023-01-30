@@ -15,14 +15,14 @@ Setup an account that require multiple signatures for signing a transaction
 
 * You have sufficient token allocated to your account
 
-* Install the currently supported version of dune
+* Install the currently supported version of cleos
 
 * Unlock your wallet
 
 ## Steps
 
-Buys RAM in value of 10 SYS tokens for account `alice`:
+Buys RAM in value of 10 EOS tokens for account `alice`:
 
 ```shell
-dune -- cleos system buyram alice alice "10 SYS" -p alice@active
+cleos system buyram alice alice "10 EOS" -p alice@active
 ```

@@ -89,7 +89,7 @@ struct powerup_state_resource {
     uint8_t        version                 = 0;
     int64_t        weight                  = 0;                  // resource market weight. calculated; varies over time.
                                                                  //    1 represents the same amount of resources as 1
-                                                                 //    satoshi of SYS staked.
+                                                                 //    satoshi of EOS staked.
     int64_t        weight_ratio            = 0;                  // resource market weight ratio:
                                                                  //    assumed_stake_weight / (assumed_stake_weight + weight).
                                                                  //    calculated; varies over time. 1x = 10^15. 0.01x = 10^13.
@@ -171,13 +171,13 @@ struct powerup_state {
 
 ```sh
 # call to `cfgpowerup`
-dune -- cleos push action eosio cfgpowerup "[`cat ./config.json`]" -p eosio
+cleos push action eosio cfgpowerup "[`cat ./config.json`]" -p eosio
 ```
 
 ##### Check state
 
 ```sh
-dune -- cleos get table eosio 0 powup.state
+cleos get table eosio 0 powup.state
 ```
 
 ```json
@@ -234,7 +234,7 @@ dune -- cleos get table eosio 0 powup.state
 The action to power up an account is `powerup`. It takes a `payer` of the fee and a `receiver` of the resources. The `days` must always match `state.powerup_days`. `net_frac` and `cpu_frac` are the percentage of the resources that you need. The easiest way to caclulate the percentage is to multiple 10^15 (100%) by the desired percentage. For example: 10^15 * 0.01 = 10^13.
 
 ```sh
-dune -- cleos push action eosio powerup '[user, user, 1, 10000000000000, 10000000000000, "1000.0000 TST"]' -p user
+cleos push action eosio powerup '[user, user, 1, 10000000000000, 10000000000000, "1000.0000 TST"]' -p user
 ```
 
 ```console
@@ -257,7 +257,7 @@ The resources in loans that expire do not automatically get reclaimed by the sys
 The orders table `powup.order` can be viewed by calling:
 
 ```sh
-dune -- cleos get table eosio 0 powup.order
+cleos get table eosio 0 powup.order
 ```
 
 ```json
@@ -279,7 +279,7 @@ dune -- cleos get table eosio 0 powup.order
 Example `powerupexec` call:
 
 ```sh
-dune -- cleos push action eosio powerupexec '[user, 2]' -p user
+cleos push action eosio powerupexec '[user, 2]' -p user
 ```
 
 ```console

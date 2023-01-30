@@ -12,6 +12,7 @@ cd CONTRACTS_DIR
 ```
 
 Pull the source
+
 ```sh
 git clone https://github.com/eosnetworkfoundation/eos-system-contracts --branch release/3.1 --single-branch
 ```
@@ -21,6 +22,7 @@ cd eos-system-contracts/contracts/eosio.token
 ```
 
 ## Step 2: Create Account for Contract
+
 [[info]]
 | You may have to unlock your wallet first!
 
@@ -37,10 +39,12 @@ eosio-cpp -I include -o eosio.token.wasm src/eosio.token.cpp --abigen
 ## Step 4: Deploy the Token Contract
 
 ```shell
+
 cleos set contract eosio.token CONTRACTS_DIR/eos-system-contracts/contracts/eosio.token --abi eosio.token.abi -p eosio.token@active
 ```
 
 Result should look similar to the one below:
+
 ```console
 Reading WASM from ...
 Publishing contract...
@@ -53,40 +57,44 @@ warning: transaction executed locally, but may not be confirmed by the network y
 ## Step 5: Create the Token
 
 ```shell
-cleos push action eosio.token create '[ "eosio", "1000000000.0000 SYS"]' -p eosio.token@active
+cleos push action eosio.token create '[ "eosio", "1000000000.0000 NEWT"]' -p eosio.token@active
 ```
 
 Result should look similar to the one below:
+
 ```console
 executed transaction: 0e49a421f6e75f4c5e09dd738a02d3f51bd18a0cf31894f68d335cd70d9c0e12  120 bytes  1000 cycles
-#   eosio.token <= eosio.token::create          {"issuer":"eosio","maximum_supply":"1000000000.0000 SYS"}
+#   eosio.token <= eosio.token::create          {"issuer":"eosio","maximum_supply":"1000000000.0000 NEWT"}
 ```
 
 An alternate approach uses named arguments:
 
 ```shell
-cleos push action eosio.token create '{"issuer":"eosio", "maximum_supply":"1000000000.0000 SYS"}' -p eosio.token@active
+cleos push action eosio.token create '{"issuer":"eosio", "maximum_supply":"1000000000.0000 NEWT"}' -p eosio.token@active
 ```
 
 Result should look similar to the one below:
+
 ```console
 executed transaction: 0e49a421f6e75f4c5e09dd738a02d3f51bd18a0cf31894f68d335cd70d9c0e12  120 bytes  1000 cycles
-#   eosio.token <= eosio.token::create          {"issuer":"eosio","maximum_supply":"1000000000.0000 SYS"}
+#   eosio.token <= eosio.token::create          {"issuer":"eosio","maximum_supply":"1000000000.0000 NEWT"}
 ```
-This command created a new token `SYS` with a precision of 4 decimals and a maximum supply of 1000000000.0000 SYS.  To create this token requires the permission of the `eosio.token` contract. For this reason, `-p eosio.token@active` was passed to authorize the request.
+
+This command created a new token `NEWT` with a precision of 4 decimals and a maximum supply of 1000000000.0000 NEWT.  To create this token requires the permission of the `eosio.token` contract. For this reason, `-p eosio.token@active` was passed to authorize the request.
 
 ## Step 6: Issue Tokens
 
 The issuer can issue new tokens to the issuer account in our case `eosio`.
 
 ```sh
-cleos push action eosio.token issue '[ "eosio", "100.0000 SYS", "memo" ]' -p eosio@active
+cleos push action eosio.token issue '[ "eosio", "100.0000 NEWT", "memo" ]' -p eosio@active
 ```
 
 Result should look similar to the one below:
+
 ```console
 executed transaction: a26b29d66044ad95edf0fc04bad3073e99718bc26d27f3c006589adedb717936  128 bytes  337 us
-#   eosio.token <= eosio.token::issue           {"to":"eosio","quantity":"100.0000 SYS","memo":"memo"}
+#   eosio.token <= eosio.token::issue           {"to":"eosio","quantity":"100.0000 NEWT","memo":"memo"}
 warning: transaction executed locally, but may not be confirmed by the network yet         ]
 ```
 
@@ -95,35 +103,39 @@ warning: transaction executed locally, but may not be confirmed by the network y
 Now that account `eosio` has been issued tokens, transfer some of them to account `bob`.
 
 ```shell
-cleos push action eosio.token transfer '[ "eosio", "bob", "25.0000 SYS", "m" ]' -p eosio@active
+cleos push action eosio.token transfer '[ "eosio", "bob", "25.0000 NEWT", "m" ]' -p eosio@active
 ```
 
 Result should look similar to the one below:
+
 ```console
 executed transaction: 60d334850151cb95c35fe31ce2e8b536b51441c5fd4c3f2fea98edcc6d69f39d  128 bytes  497 us
-#   eosio.token <= eosio.token::transfer        {"from":"eosio","to":"bob","quantity":"25.0000 SYS","memo":"m"}
-#         eosio <= eosio.token::transfer        {"from":"eosio","to":"bob","quantity":"25.0000 SYS","memo":"m"}
-#           bob <= eosio.token::transfer        {"from":"eosio","to":"bob","quantity":"25.0000 SYS","memo":"m"}
+#   eosio.token <= eosio.token::transfer        {"from":"eosio","to":"bob","quantity":"25.0000 NEWT","memo":"m"}
+#         eosio <= eosio.token::transfer        {"from":"eosio","to":"bob","quantity":"25.0000 NEWT","memo":"m"}
+#           bob <= eosio.token::transfer        {"from":"eosio","to":"bob","quantity":"25.0000 NEWT","memo":"m"}
 warning: transaction executed locally, but may not be confirmed by the network yet         ]
 ```
+
 Now check if "bob" got the tokens using [cleos get currency balance](https://docs.eosnetwork.com/leap/latest/cleos/command-reference/get/currency-balance)
 
 ```shell
-cleos get currency balance eosio.token bob SYS
+cleos get currency balance eosio.token bob NEWT
 ```
 
 Result:
+
 ```console
-25.00 SYS
+25.00 NEWT
 ```
 
 Check "eosio's" balance, notice that tokens were deducted from the account
 
 ```shell
-cleos get currency balance eosio.token eosio SYS
+cleos get currency balance eosio.token eosio NEWT
 ```
 
 Result:
+
 ```console
-75.00 SYS
+75.00 NEWT
 ```

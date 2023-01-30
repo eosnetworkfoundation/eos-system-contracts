@@ -9,7 +9,7 @@ Vote for a block producer
 
 ## Before you begin
 
-* Install the current supported version of dune
+* Install the current supported version of cleos
 
 * Ensure the reference system contracts from `eos-system-contracts` repository is deployed and used to manage system resources
 
@@ -24,7 +24,7 @@ Vote for a block producer
 Assume you are going to vote for blockproducer1 and blockproducer2 from an account called `eosiotestts2`, execute the following:
 
 ```bash
-dune -- cleos system voteproducer prods eosiotestts2 blockproducer1 blockproducer2
+cleos system voteproducer prods eosiotestts2 blockproducer1 blockproducer2
 ```
 
 You should see something like below:

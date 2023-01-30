@@ -9,7 +9,7 @@ Stake resources for your account to participate in the on-chain voting and gover
 
 ## Before you begin
 
-* Install the currently supported version of dune
+* Install the currently supported version of cleos
 
 * Ensure the reference system contracts from `eos-system-contracts` repository is deployed and used to manage system resources
 
@@ -20,14 +20,14 @@ Stake resources for your account to participate in the on-chain voting and gover
 
 ## Steps
 
-Stake 10 SYS network bandwidth for `alice`
+Stake 10 EOS network bandwidth for `alice`
 
 ```shell
-dune -- cleos system delegatebw alice alice "0 SYS" "10 SYS"
+cleos system delegatebw alice alice "0 EOS" "10 EOS"
 ```
 
-Stake 10 SYS CPU bandwidth for `alice`:
+Stake 10 EOS CPU bandwidth for `alice`:
 
 ```shell
-dune -- cleos system delegatebw alice alice "10 SYS" "0 SYS"
+cleos system delegatebw alice alice "10 EOS" "0 EOS"
 ```

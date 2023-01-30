@@ -9,7 +9,7 @@ The eosio.wrap contract needs to be installed on a privileged account to functio
 
 First, the account `eosio.wrap` needs to be created. Since it has the restricted `eosio.` prefix, only a privileged account can create this account. So this guide will use the `eosio` account to create the `eosio.wrap` account. On typical live blockchain configurations, the `eosio` account can only be controlled by a supermajority of the current active block producers. So, this guide will use the `eosio.msig` contract to help coordinate the approvals of the proposed transaction that creates the `eosio.wrap` account.
 
-The `eosio.wrap` account also needs to have sufficient RAM to host the contract and sufficient CPU and network bandwidth to deploy the contract. This means that the creator of the account (`eosio`) needs to gift sufficient RAM to the new account and delegate (preferably with transfer) sufficient bandwidth to the new account. To pull this off the `eosio` account needs to have enough of the core system token (the `SYS` token will be used within this guide) in its liquid balance. So prior to continuing with the next steps of this guide, the active block producers of the chain who are coordinating this process need to ensure that a sufficient amount of core system tokens that they are authorized to spend is placed in the liquid balance of the `eosio` account.
+The `eosio.wrap` account also needs to have sufficient RAM to host the contract and sufficient CPU and network bandwidth to deploy the contract. This means that the creator of the account (`eosio`) needs to gift sufficient RAM to the new account and delegate (preferably with transfer) sufficient bandwidth to the new account. To pull this off the `eosio` account needs to have enough of the core system token (the `EOS` token will be used within this guide) in its liquid balance. So prior to continuing with the next steps of this guide, the active block producers of the chain who are coordinating this process need to ensure that a sufficient amount of core system tokens that they are authorized to spend is placed in the liquid balance of the `eosio` account.
 
 This guide will be using cleos to carry out the process.
 
@@ -25,11 +25,11 @@ Three unsigned transactions will be generated using cleos and then the actions w
 
 First, generate a transaction to capture the necessary actions involved in creating a new account:
 ```sh
-cleos system newaccount -s -j -d --transfer --stake-net "1.000 SYS" --stake-cpu "1.000 SYS" --buy-ram-kbytes 50 eosio eosio.wrap EOS8MMUW11TAdTDxqdSwSqJodefSoZbFhcprndomgLi9MeR2o8MT4 > generated_account_creation_trx.json
+cleos system newaccount -s -j -d --transfer --stake-net "1.000 EOS" --stake-cpu "1.000 EOS" --buy-ram-kbytes 50 eosio eosio.wrap EOS8MMUW11TAdTDxqdSwSqJodefSoZbFhcprndomgLi9MeR2o8MT4 > generated_account_creation_trx.json
 ```
 ```console
 726964ms thread-0   main.cpp:429                  create_action        ] result: {"binargs":"0000000000ea305500004d1a03ea305500c80000"} arg: {"code":"eosio","action":"buyrambytes","args":{"payer":"eosio","receiver":"eosio.wrap","bytes":51200}}
-726967ms thread-0   main.cpp:429                  create_action        ] result: {"binargs":"0000000000ea305500004d1a03ea3055102700000000000004535953000000001027000000000000045359530000000001"} arg: {"code":"eosio","action":"delegatebw","args":{"from":"eosio","receiver":"eosio.wrap","stake_net_quantity":"1.0000 SYS","stake_cpu_quantity":"1.0000 SYS","transfer":true}}
+726967ms thread-0   main.cpp:429                  create_action        ] result: {"binargs":"0000000000ea305500004d1a03ea3055102700000000000004535953000000001027000000000000045359530000000001"} arg: {"code":"eosio","action":"delegatebw","args":{"from":"eosio","receiver":"eosio.wrap","stake_net_quantity":"1.0000 EOS","stake_cpu_quantity":"1.0000 EOS","transfer":true}}
 ```
 ```sh
 cat generated_account_creation_trx.json
@@ -412,15 +412,15 @@ memory:
      quota:     49.74 KiB    used:     3.33 KiB  
 
 net bandwidth:
-     staked:          1.0000 SYS           (total stake delegated from account to self)
-     delegated:       0.0000 SYS           (total staked delegated to account from others)
+     staked:          1.0000 EOS           (total stake delegated from account to self)
+     delegated:       0.0000 EOS           (total staked delegated to account from others)
      used:                 0 bytes
      available:        2.304 MiB  
      limit:            2.304 MiB  
 
 cpu bandwidth:
-     staked:          1.0000 SYS           (total stake delegated from account to self)
-     delegated:       0.0000 SYS           (total staked delegated to account from others)
+     staked:          1.0000 EOS           (total stake delegated from account to self)
+     delegated:       0.0000 EOS           (total staked delegated to account from others)
      used:                 0 us   
      available:        460.8 ms   
      limit:            460.8 ms   
@@ -685,15 +685,15 @@ memory:
      quota:     49.74 KiB    used:     3.365 KiB  
 
 net bandwidth:
-     staked:          1.0000 SYS           (total stake delegated from account to self)
-     delegated:       0.0000 SYS           (total staked delegated to account from others)
+     staked:          1.0000 EOS           (total stake delegated from account to self)
+     delegated:       0.0000 EOS           (total staked delegated to account from others)
      used:                 0 bytes
      available:        2.304 MiB  
      limit:            2.304 MiB  
 
 cpu bandwidth:
-     staked:          1.0000 SYS           (total stake delegated from account to self)
-     delegated:       0.0000 SYS           (total staked delegated to account from others)
+     staked:          1.0000 EOS           (total stake delegated from account to self)
+     delegated:       0.0000 EOS           (total staked delegated to account from others)
      used:                 0 us   
      available:        460.8 ms   
      limit:            460.8 ms   
@@ -953,15 +953,15 @@ memory:
      quota:     49.74 KiB    used:     3.348 KiB  
 
 net bandwidth:
-     staked:          1.0000 SYS           (total stake delegated from account to self)
-     delegated:       0.0000 SYS           (total staked delegated to account from others)
+     staked:          1.0000 EOS           (total stake delegated from account to self)
+     delegated:       0.0000 EOS           (total staked delegated to account from others)
      used:                 0 bytes
      available:        2.304 MiB  
      limit:            2.304 MiB  
 
 cpu bandwidth:
-     staked:          1.0000 SYS           (total stake delegated from account to self)
-     delegated:       0.0000 SYS           (total staked delegated to account from others)
+     staked:          1.0000 EOS           (total stake delegated from account to self)
+     delegated:       0.0000 EOS           (total staked delegated to account from others)
      used:               413 us   
      available:        460.4 ms   
      limit:            460.8 ms   
