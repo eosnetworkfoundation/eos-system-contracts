@@ -1,5 +1,5 @@
 ---
-content_title: How to configure PowerUp resource model
+title: How to configure PowerUp resource model
 link_text: How to configure PowerUp resource model
 ---
 

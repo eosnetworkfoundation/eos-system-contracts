@@ -1,5 +1,5 @@
 ---
-content_title: How to create, issue and transfer a token
+title: How to create, issue and transfer a token
 link_text: How to create, issue and transfer a token
 ---
 

@@ -1,5 +1,5 @@
 ---
-content_title: System contracts, system accounts, privileged accounts
+title: System contracts, system accounts, privileged accounts
 ---
 
 At the genesis of the EOS blockchain, there was only one account present, `eosio` account, which was and still is the main `system account`. During the EOS blockchain bootstrap process other `system account`s, were created by `eosio` account, which control specific actions of the `system contract`s. You can see them listed in the [About System Contract](../index.md#system-contracts-defined-in-eos-system-contracts) section.

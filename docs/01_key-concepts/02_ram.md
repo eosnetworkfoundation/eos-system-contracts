@@ -1,5 +1,5 @@
 ---
-content_title: RAM as system resource
+title: RAM as system resource
 ---
 
 ## What is RAM

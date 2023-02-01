@@ -1,5 +1,5 @@
 ---
-content_title: PowerUp Model
+title: PowerUp Model
 ---
 
 ## What Is PowerUp Model

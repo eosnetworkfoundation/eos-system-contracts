@@ -1,5 +1,5 @@
 ---
-content_title: How to use eosio.wrap
+title: How to use eosio.wrap
 link_text: How to use eosio.wrap
 ---
 

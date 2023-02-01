@@ -1,5 +1,5 @@
 ---
-content_title: System Resource Allocation
+title: System Resource Allocation
 ---
 
 ## System Resources

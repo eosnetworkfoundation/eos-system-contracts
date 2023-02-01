@@ -1,5 +1,5 @@
 ---
-content_title: How to sign a multisig transaction with eosio.msig
+title: How to sign a multisig transaction with eosio.msig
 link_text: How to sign a multisig transaction with eosio.msig
 ---
 
