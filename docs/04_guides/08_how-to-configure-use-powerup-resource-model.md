@@ -1,25 +1,14 @@
 ---
-title: How to configure PowerUp resource model
-link_text: How to configure PowerUp resource model
+title: How To Configure And Use PowerUp Resource Model
 ---
 
 ## Configure and Use the PowerUp Resource Model
 
 ### Overview
 
-This new system will create a new optional NET and CPU marketplace which displaces (over time)
-the existing staking system and REX market. Under the old model, system token holders
-own NET and CPU and may choose to use it themselves, delegate it to others, or make
-it available for others to rent using the REX market. Under this new model, the chain
-owns almost all NET and CPU resources and the only way to access these resources is
-through the new `powerup` action. It channels fees to the REX pool to enable token holders
-to profit off the new market.
+The PowerUp Resource Model creates a new NET and CPU marketplace which renders obsolete the existing staking mechanism and REX market. Under the old model, EOS token holders own NET and CPU and may choose to use it themselves, delegate it to others, or make it available for others to rent using the REX market. With the new model, the chain owns almost all NET and CPU resources and the only way to access these resources is through the new `powerup` action. Equally important, the PowerUp Resource Model channels fees to the REX pool to enable token holders to profit off the new market.
 
 ### Configuration
-
-#### Definitions
-
-##### Configuration
 
 ```c++
 // configure the `powerup` market. The market becomes available the first time this action is invoked
@@ -70,9 +59,10 @@ struct powerup_config {
 };
 ```
 
-#### State
+#### Definitions
 
 Definitions useful to help understand the configuration, including defaults:
+
 ```c++
 inline constexpr int64_t powerup_frac = 1'000'000'000'000'000ll;  // 1.0 = 10^15
 
@@ -126,7 +116,7 @@ struct powerup_state {
 };
 ```
 
-#### Preparation for Upgrade
+### Preparation for Upgrade
 
 1. Build [eos-system-contracts](https://github.com/eosnetworkfoundation/eos-system-contracts) with `powerup` code.
 2. Deploy eosio.system contract to `eosio`.
@@ -136,7 +126,7 @@ struct powerup_state {
 
 #### Configure PowerUp
 
-##### Config file
+##### Config File
 
 **config.json**
 
@@ -174,7 +164,7 @@ struct powerup_state {
 cleos push action eosio cfgpowerup "[`cat ./config.json`]" -p eosio
 ```
 
-##### Check state
+#### Check state
 
 ```sh
 cleos get table eosio 0 powup.state
@@ -227,9 +217,9 @@ cleos get table eosio 0 powup.state
 }
 ```
 
-#### Using PowerUp
+### Use PowerUp
 
-##### Execute An Order
+#### Execute An Order
 
 The action to power up an account is `powerup`. It takes a `payer` of the fee and a `receiver` of the resources. The `days` must always match `state.powerup_days`. `net_frac` and `cpu_frac` are the percentage of the resources that you need. The easiest way to caclulate the percentage is to multiple 10^15 (100%) by the desired percentage. For example: 10^15 * 0.01 = 10^13.
 
@@ -250,7 +240,7 @@ You can see how much NET and CPU weight was received as well as the fee by looki
 
 *It is worth mentioning that the network being used for the example has not fully transitioned so the available resources are minimal therefore 1% of the resources are quite expensive. As the system continues the transition more resources are available to the `PowerUp` resource model and will become more affordable.*
 
-##### Process Expired Orders
+#### Process Expired Orders
 
 The resources in loans that expire do not automatically get reclaimed by the system. The expired loans sit in a queue that must be processed. Anyone calling the `powerup` action will help with processing this queue (limited to processing at most two expired loans at a time) so that normally the expired loans will be automatically processed in a timely manner. However, in some cases it may be necessary to manual process expired loans in the queue to make resources available to the system again and thus make prices cheaper. In such a scenario, any account may process up to an arbitrary number of expired loans by calling the `powerupexec` action.
 
