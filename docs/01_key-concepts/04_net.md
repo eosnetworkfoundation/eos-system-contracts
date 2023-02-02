@@ -2,6 +2,17 @@
 title: NET as system resource
 ---
 
-NET, as CPU and RAM, is a very important system resource in the EOS blockchain. NET is measured by the byte size of the transactions saved in the blockchain database and it is referred to as `net bandwidth` on the `cleos get account` command output. When a transaction is executed by the blockchain it consumes CPU and NET, therefore sufficient NET must be allocated to the account in order for transactions to complete.
+NET, as CPU and RAM, is a very important system resource in the EOS blockchain. When the blockchain executes a transaction it consumes CPU and NET, therefore sufficient NET must be allocated to the payer account for transactions to complete. NET is referred to as `net bandwidth` on the `cleos get account` command output.
 
-For more details about resource allocation on the EOS blockchain refer to the [Resource Allocation](./05_system_resource_allocation.md) documentation.
+## How Is NET Calculated
+
+Before a transaction is prepared for execution, the blockchain makes sure the payer account has enough NET to cover for the transaction execution. The necessary NET is calculated based on the transaction size, that is, the size of the packed transaction as it is stored in the blockchain. If the account has enough NET resources the transaction can be executed otherwise it is rejected. For technical details please refer to the following sources:
+
+- [The defined NET configuration variables](https://github.com/AntelopeIO/leap/blob/a4c29608472dd195d36d732052784aadc3a779cb/libraries/chain/include/eosio/chain/config.hpp#L57)
+- [The transaction initialization](https://github.com/AntelopeIO/leap/blob/e55669c42dfe4ac112e3072186f3a449936c0c61/libraries/chain/controller.cpp#L1559)
+- [The transaction NET billing](https://github.com/AntelopeIO/leap/blob/e55669c42dfe4ac112e3072186f3a449936c0c61/libraries/chain/controller.cpp#L1577)
+- [The check of NET usage for a transaction](https://github.com/AntelopeIO/leap/blob/a4c29608472dd195d36d732052784aadc3a779cb/libraries/chain/transaction_context.cpp#L376)
+
+## How To Allocated NET
+
+For details on how to allocated NET resources refer to the [Resource Allocation](./05_system_resource_allocation.md) documentation.
