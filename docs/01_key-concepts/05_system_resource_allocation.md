@@ -4,7 +4,7 @@ title: System Resource Allocation
 
 ## System Resources
 
-Antelope-based blockchains work with three system resources:
+EOS Blockchain work with three system resources:
 
 * [RAM](02_ram.md)
 * [CPU](03_cpu.md)
@@ -25,4 +25,8 @@ When an account uses the rented resources, the amount that can be used in one tr
 
 ### Buy RAM
 
-The RAM resource must be bought using the system token. Refer to the [cleos manual](https://docs.eosnetwork.com/leap/latest/cleos/how-to-guides/how-to-buy-ram) to learn how to do it via the command line interface. When an account consumes all its allocated RAM can not store any additional information on the blockchain database until it frees some of the occupied RAM or more RAM is allocated to the account through the RAM buying process.
+The RAM resource must be bought using the system token.
+
+Refer to the [cleos manual](https://docs.eosnetwork.com/leap/latest/cleos/how-to-guides/how-to-buy-ram) to learn how to do it via the command line interface. When an account consumes all its allocated RAM can not store any additional information on the blockchain database until it frees some of the occupied RAM or more RAM is allocated to the account through the RAM buying process.
+
+Another way to buy RAM is through an EOS wallet that supports this feature.
