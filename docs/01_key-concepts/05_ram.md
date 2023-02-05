@@ -81,10 +81,13 @@ Another way to buy RAM is through an EOS wallet that supports this feature.
 
 ## How Is RAM Calculated
 
-The necessary RAM needed for a smart contract to store its data is calculated from the used blockchain state. There are also extra amounts added in for various things so it is not an exact bill of used computer RAM. For more details consult the following pointers in the source code:
+The necessary RAM needed for a smart contract to store its data is calculated from the used blockchain state.
 
-- [Fixed overhead shared vector RAM bytes](https://github.com/AntelopeIO/leap/blob/a4c29608472dd195d36d732052784aadc3a779cb/libraries/chain/include/eosio/chain/config.hpp#L108)
+As a developer when you attempt to understand the amount of RAM your smart contract needs you have to pay attention to the data structure underlying the multi-index tables your smart contract instantiates and uses. The data structure underlying one multi-index table defines a row in the table. Each data member of the data structure corresponds with a row cell of the table. Summing the type size of each data member and adding to it the overheads, defined by EOS code, will give you an approximate amount of RAM one multi-index row needs to be stored on the blockchain. On top of this, you will have to also take in consideration if there are any indexes defined on your multi-index table. The overheads defined by the EOS code for multi-index tables, indexes and data structures can be consulted below:
+
+- [Multi-index RAM bytes overhead](https://github.com/AntelopeIO/leap/blob/f6643e434e8dc304bba742422dd036a6fbc1f039/libraries/chain/include/eosio/chain/contract_table_objects.hpp#L240)
 - [Overhead per row per index RAM bytes](https://github.com/AntelopeIO/leap/blob/a4c29608472dd195d36d732052784aadc3a779cb/libraries/chain/include/eosio/chain/config.hpp#L109)
+- [Fixed overhead shared vector RAM bytes](https://github.com/AntelopeIO/leap/blob/a4c29608472dd195d36d732052784aadc3a779cb/libraries/chain/include/eosio/chain/config.hpp#L108)
 - [Overhead per account RAM bytes](https://github.com/AntelopeIO/leap/blob/a4c29608472dd195d36d732052784aadc3a779cb/libraries/chain/include/eosio/chain/config.hpp#L110)
 - [Setcode RAM bytes multiplier](https://github.com/AntelopeIO/leap/blob/a4c29608472dd195d36d732052784aadc3a779cb/libraries/chain/include/eosio/chain/config.hpp#L111)
 - [RAM usage update function](https://github.com/AntelopeIO/leap/blob/9f0679bd0a42d6c24a966bb79de6d8c0591872a5/libraries/chain/apply_context.cpp#L725)
@@ -92,6 +95,6 @@ The necessary RAM needed for a smart contract to store its data is calculated fr
 ## Related documentation articles
 
 - Multi-index table [reference documentation page](http://docs.eosnetwork.com/cdt/latest/reference/Modules/group__multiindex)
-- Multi-index table [how to documentation page](https://docs.eosnetwork.com/cdt/latest/how-to-guides/multi-index)
+- Multi-index table [how to documentation page](https://docs.eosnetwork.com/cdt/latest/how-to-guides/multi-index/how-to-define-a-primary-index/)
 - Singleton [reference documentation page](https://docs.eosnetwork.com/cdt/latest/reference/Classes/classeosio_1_1singleton)
 - Singleton [how to documentation page](https://docs.eosnetwork.com/cdt/latest/how-to-guides/multi-index/how-to-define-a-singleton)
