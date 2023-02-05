@@ -4,11 +4,19 @@ title: How To Use The PowerUp Model
 
 ## Power Up Your Account
 
-To rent CPU and NET you have to power up your account. The action to power up an account is `powerup`. It takes a `payer` of the fee and a `receiver` of the resources. The `days` must always match `state.powerup_days`. The `net_frac` and `cpu_frac` are the percentage of the resources that you need. The easiest way to calculate the percentage is to multiple 10^15 (100%) by the desired percentage. For example: 10^15 * 0.01 = 10^13.
+To power up your account means to rent CPU and NET from the PowerUp resource model which is implemented as a smart contract on the blockchain. The action to power up an account is `powerup`. It takes as parameters:
+
+- The `payer` of the fee, must be a valid EOS account.
+- The `receiver` of the resources, must be a valid EOS account.
+- The `days` which must always match `state.powerup_days` specified in the [PowerUp configuration settings](https://github.com/eosnetworkfoundation/eos-system-contracts/blob/7cec470b17bd53b8c78465d4cbd889dbaf1baffb/contracts/eosio.system/include/eosio.system/eosio.system.hpp#L588).
+- The `net_frac`, and the `cpu_frac` are the percentage of the resources that you need. The easiest way to calculate the percentage is to multiple 10^15 (100%) by the desired percentage. For example: 10^15 * 0.01 = 10^13.
+- The `max_payment`, must be expressed in EOS and is the maximum amount the `payer` is willing to pay.
 
 ```sh
 cleos push action eosio powerup '[user, user, 1, 10000000000000, 10000000000000, "1000.0000 EOS"]' -p user
 ```
+
+You can see how much NET and CPU weight was received as well as the fee by looking at the `eosio.reserv::powupresult` informational action.
 
 ```console
 executed transaction: 82b7124601612b371b812e3bf65cf63bb44616802d3cd33a2c0422b58399f54f  144 bytes  521 us
@@ -19,7 +27,7 @@ executed transaction: 82b7124601612b371b812e3bf65cf63bb44616802d3cd33a2c0422b583
 #     eosio.rex <= eosio.token::transfer        {"from":"user","to":"eosio.rex","quantity":"999.9901 EOS","memo":"transfer from user to eosio.rex"}
 ```
 
-You can see how much NET and CPU weight was received as well as the fee by looking at the `eosio.reserv::powupresult` informational action.
+The PowerUp resource model on EOS blockchain is initialized with `"powerup_days": 1,` which means the maximum period you can rent CPU and NET is 24 hours. If you do not use them in the 24 hours interval the rented CPU and NET will expire.
 
 ## Process Expired Orders
 
@@ -61,4 +69,4 @@ warning: transaction executed locally, but may not be confirmed by the network y
 
 ## Alternative Ways To Use The PowerUp Model
 
-You can also use the PowerUp model to power your account with CPU and NET, using an EOS wallet that supports the PowerUp function.
+You can also use the PowerUp model to power your account with CPU and NET, using an EOS wallet that supports the PowerUp resource model.

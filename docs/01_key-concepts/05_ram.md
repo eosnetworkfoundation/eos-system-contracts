@@ -25,19 +25,61 @@ RAM is a very important system resource because of the following reasons:
 
 ## How To Purchase RAM
 
-The RAM resource must be bought using the system token.
+The RAM resource must be bought using the system token. The price of RAM is calculated according to the unique Bancor liquidity algorithm which is implemented in the system contract [here](https://docs.eosnetwork.com/system-contracts/latest/reference/Classes/structeosiosystem_1_1exchange__state).
+
+The quickest way to calculate the price of RAM is the following:
+
+1. Run the following cleos command, make sure you run it against the mainnet or the testnet of your choice:
+
+  ```shell
+  cleos get table eosio eosio rammarket
+  ```
+
+2. Observe the output which should look like the following:
+
+  ```text
+  {
+    "supply": "10000000000.0000 RAMCORE",
+    "base": {
+      "balance": "35044821247 RAM",
+      "weight": "0.50000000000000000"
+    },
+    "quote": {
+      "balance": "3158350.8754 EOS",
+      "weight": "0.50000000000000000"
+    }
+  }
+  ```
+
+3. Make note of the `base balance`, in this case is 35044821247
+4. Make note of the `quote balance`, in this case is 3158350.8754
+5. Calculate the price of 1Kib of RAM as `quote balance` * 1024 / `base balance` = 0.0922 EOS
 
 ### Buy RAM With Command Line Interface
 
-Refer to the [cleos manual](https://docs.eosnetwork.com/leap/latest/cleos/how-to-guides/how-to-buy-ram) to learn how to do it via the command line interface.
+You can buy RAM through cleos command line interface tool. And you can buy either an explicit amount of RAM expressed in bytes or an amount of RAM worth of an explicit amount of EOS.
+
+### Buy RAM In EOS
+
+For example the below command buys for account `bob` 0.1 EOS worth of RAM at the current market RAM price. The cost for the RAM and the execution of this transaction is covered by the `alice` account and the transaction is authorized by the `active` key of the `alice` account.
+
+```shell
+cleos system buyram alice bob "0.1 EOS" -p alice@active
+```
+
+### Buy RAM In Bytes
+
+For example the below command buys for account `bob` 1000 RAM bytes at the current market RAM price. The cost for the RAM and the execution of this transaction is covered by the `alice` account and the transaction is authorized by the `active` key of the `alice` account.
+
+```shell
+cleos system buyrambytes alice bob "1000" -p alice@active
+```
 
 ### Buy RAM With EOS Wallet
 
 Another way to buy RAM is through an EOS wallet that supports this feature.
 
 ## How Is RAM Calculated
-
-The price o RAM is calculated according to the unique Bancor liquidity algorithm which is implemented in the system contract [here](https://docs.eosnetwork.com/system-contracts/latest/reference/Classes/structeosiosystem_1_1exchange__state).
 
 The necessary RAM needed for a smart contract to store its data is calculated from the used blockchain state. There are also extra amounts added in for various things so it is not an exact bill of used computer RAM. For more details consult the following pointers in the source code:
 

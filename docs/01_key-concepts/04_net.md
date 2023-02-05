@@ -15,6 +15,6 @@ The blockchain calculates and updates the remaining resources, for the accounts 
 - [The transaction NET billing](https://github.com/AntelopeIO/leap/blob/e55669c42dfe4ac112e3072186f3a449936c0c61/libraries/chain/controller.cpp#L1577)
 - [The check of NET usage for a transaction](https://github.com/AntelopeIO/leap/blob/a4c29608472dd195d36d732052784aadc3a779cb/libraries/chain/transaction_context.cpp#L376)
 
-## How To Allocated NET
+## How To Rent NET
 
-For details on how to allocated NET resources refer to the [PowerUp Model](./07_powerup_model.md) documentation.
+For details on how to rent NET resources refer to the [PowerUp Model](./07_powerup_model.md) documentation.
