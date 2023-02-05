@@ -21,13 +21,23 @@ RAM is a very important system resource because of the following reasons:
 - The smart contract can not store any additional information if it consumes all its allocated RAM. To continue to save data in the blockchain database, one, or both of the following conditions must be met:
 
   - A portion of the occupied RAM is freed by the smart contract.
-  - More RAM is allocated to the smart contract account through the RAM buying process.
+  - More RAM is allocated to the smart contract account through the RAM purchase process.
 
-The price o RAM is calculated according to the unique Bancor liquidity algorithm which is implemented in the system contract [here](https://docs.eosnetwork.com/system-contracts/latest/reference/Classes/structeosiosystem_1_1exchange__state).
+## How To Purchase RAM
 
-The RAM system resource must be purchased using the system token. Refer to the [cleos manual](https://docs.eosnetwork.com/leap/latest/cleos/how-to-guides/how-to-buy-ram) to learn how to buy RAM via the command line interface.
+The RAM resource must be bought using the system token.
+
+### Buy RAM With Command Line Interface
+
+Refer to the [cleos manual](https://docs.eosnetwork.com/leap/latest/cleos/how-to-guides/how-to-buy-ram) to learn how to do it via the command line interface.
+
+### Buy RAM With EOS Wallet
+
+Another way to buy RAM is through an EOS wallet that supports this feature.
 
 ## How Is RAM Calculated
+
+The price o RAM is calculated according to the unique Bancor liquidity algorithm which is implemented in the system contract [here](https://docs.eosnetwork.com/system-contracts/latest/reference/Classes/structeosiosystem_1_1exchange__state).
 
 The necessary RAM needed for a smart contract to store its data is calculated from the used blockchain state. There are also extra amounts added in for various things so it is not an exact bill of used computer RAM. For more details consult the following pointers in the source code:
 

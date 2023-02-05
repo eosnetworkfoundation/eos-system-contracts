@@ -17,10 +17,10 @@ The `eos-system-contracts` repository contains the system contracts encapsulatin
 ## Key Concepts Implemented by eosio.system
 
 1. [System](01_key-concepts/01_system.md)
-2. [RAM](01_key-concepts/02_ram.md)
+2. [System Resources](01_key-concepts/02_system_resources.md)
 3. [CPU](01_key-concepts/03_cpu.md)
 4. [NET](01_key-concepts/04_net.md)
-5. [Resource Allocation](01_key-concepts/05_system_resource_allocation.md)
+5. [RAM](01_key-concepts/05_ram.md)
 6. [Vote](01_key-concepts/06_vote.md)
 
 ## Build and deploy

@@ -6,7 +6,9 @@ CPU, as NET and RAM, is a very important system resource in the EOS blockchain. 
 
 ## How Is CPU Calculated
 
-When a transaction is prepared for execution, the blockchain makes sure the payer account has enough CPU to cover for the transaction execution. The necessary CPU is calculated by measuring the time for executing it on the node that is actively building the current block. If the account has enough CPU resources the transaction can be executed otherwise it is rejected. For technical details please refer to the following sources:
+When an account uses the rented CPU, the amount that can be used in one transaction is limited by predefine [maximum CPU](https://docs.eosnetwork.com/cdt/latest/reference/Classes/structeosio_1_1blockchain__parameters#variable-max-transaction-cpu-usage) and [minimum CPU](https://docs.eosnetwork.com/cdt/latest/reference/Classes/structeosio_1_1blockchain__parameters#variable-min-transaction-cpu-usage) limits. Transactions executed by the blockchain contain one or more actions, and each transaction must consume an amount of CPU which is in the limits defined by the aforementioned blockchain settings.
+
+The blockchain calculates and updates the remaining resources, for the accounts which execute transactions, with each block, before each transaction is executed. When a transaction is prepared for execution, the blockchain makes sure the payer account has enough CPU to cover for the transaction execution. The necessary CPU is calculated by measuring the time for executing the transaction on the node that is actively building the current block. If the account has enough CPU the transaction can be executed otherwise it is rejected. For technical details please refer to the following pointers:
 
 - [The CPU configuration variables](https://github.com/AntelopeIO/leap/blob/a4c29608472dd195d36d732052784aadc3a779cb/libraries/chain/include/eosio/chain/config.hpp#L66)
 - [The transaction initialization](https://github.com/AntelopeIO/leap/blob/e55669c42dfe4ac112e3072186f3a449936c0c61/libraries/chain/controller.cpp#L1559)
@@ -19,6 +21,6 @@ Subjective billing is an optional feature of the EOS blockchain that lets nodes 
 
 More details about subjective billing can be found in [Introduction to subjective billing and lost transactions](https://eosnetwork.com/blog/api-plus-an-introduction-to-subjective-billing-and-lost-transactions/) article.
 
-## How To Allocated CPU
+## How To Rent CPU
 
-For details on how to allocated CPU resources refer to the [Resource Allocation](./05_system_resource_allocation.md) documentation.
+For details on how to rent CPU resources refer to the [PowerUp Model](./07_powerup_model.md) documentation.
