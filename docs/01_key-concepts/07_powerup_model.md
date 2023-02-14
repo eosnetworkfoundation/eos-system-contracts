@@ -4,19 +4,19 @@ title: How To Use The PowerUp Model
 
 ## Power Up Your Account
 
-To power up your account means to rent CPU and NET from the PowerUp resource model which is implemented as a smart contract on the blockchain. The action to power up an account is `powerup`. It takes as parameters:
+To power up an account is a technique to rent CPU and NET resources from the PowerUp resource model. A smart contract implements this model on the blockchain and allocates these resources to the account of your choice. The action to power up an account is `powerup`. It takes as parameters:
 
-- The `payer` of the fee, must be a valid EOS account.
-- The `receiver` of the resources, must be a valid EOS account.
-- The `days` which must always match `state.powerup_days` specified in the [PowerUp configuration settings](https://github.com/eosnetworkfoundation/eos-system-contracts/blob/7cec470b17bd53b8c78465d4cbd889dbaf1baffb/contracts/eosio.system/include/eosio.system/eosio.system.hpp#L588).
-- The `net_frac`, and the `cpu_frac` are the percentage of the resources that you need. The easiest way to calculate the percentage is to multiple 10^15 (100%) by the desired percentage. For example: 10^15 * 0.01 = 10^13.
-- The `max_payment`, must be expressed in EOS and is the maximum amount the `payer` is willing to pay.
+* The `payer` of the fee, must be a valid EOS account.
+* The `receiver` of the resources, must be a valid EOS account.
+* The `days` which must always match `state.powerup_days` specified in the [PowerUp configuration settings](https://github.com/eosnetworkfoundation/eos-system-contracts/blob/7cec470b17bd53b8c78465d4cbd889dbaf1baffb/contracts/eosio.system/include/eosio.system/eosio.system.hpp#L588).
+* The `net_frac`, and the `cpu_frac` are the percentage of the resources that you need. The easiest way to calculate the percentage is to multiple 10^15 (100%) by the desired percentage. For example: 10^15 * 0.01 = 10^13.
+* The `max_payment`, must be expressed in EOS and is the maximum amount the `payer` is willing to pay.
 
 ```sh
-cleos push action eosio powerup '[user, user, 1, 10000000000000, 10000000000000, "1000.0000 EOS"]' -p user
+dune -- cleos push action eosio powerup '[user, user, 1, 10000000000000, 10000000000000, "1000.0000 EOS"]' -p user
 ```
 
-You can see how much NET and CPU weight was received as well as the fee by looking at the `eosio.reserv::powupresult` informational action.
+To view the received NET and CPU weight as well as the amount of the fee, check the `eosio.reserv::powupresult` returned by the action, which should look similar to the one below:
 
 ```console
 executed transaction: 82b7124601612b371b812e3bf65cf63bb44616802d3cd33a2c0422b58399f54f  144 bytes  521 us
@@ -27,16 +27,18 @@ executed transaction: 82b7124601612b371b812e3bf65cf63bb44616802d3cd33a2c0422b583
 #     eosio.rex <= eosio.token::transfer        {"from":"user","to":"eosio.rex","quantity":"999.9901 EOS","memo":"transfer from user to eosio.rex"}
 ```
 
-The PowerUp resource model on EOS blockchain is initialized with `"powerup_days": 1,` which means the maximum period you can rent CPU and NET is 24 hours. If you do not use them in the 24 hours interval the rented CPU and NET will expire.
+The PowerUp resource model on the EOS blockchain is initialized with `"powerup_days": 1,`. This setting permits the maximum period to rent CPU and NET for 24 hours. If you do not use the resources within the 24 hour interval, the rented CPU and NET expires.
 
-## Process Expired Orders
+### Process Expired Orders
 
-The resources in loans that expire do not automatically get reclaimed by the system. The expired loans sit in a queue that must be processed. Anyone calling the `powerup` action will help with processing this queue (limited to processing at most two expired loans at a time) so that normally the expired loans will be automatically processed in a timely manner. However, in some cases it may be necessary to manual process expired loans in the queue to make resources available to the system again and thus make prices cheaper. In such a scenario, any account may process up to an arbitrary number of expired loans by calling the `powerupexec` action.
+The resources in loans that expire are not automatically reclaimed by the system. The expired loans remain in a queue that must be processed.
 
-The orders table `powup.order` can be viewed by calling:
+Any calls to the `powerup` action does process also this queue (limited to two expired loans at a time). Therefore, the expired loans are automatically processed in a timely manner. Sometimes, it may be necessary to manually process expired loans in the queue to release resources back to the system, which reduces prices. Therefore, any account may process up to an arbitrary number of expired loans if it calls the `powerupexec` action.
+
+To view the orders table `powup.order` execute the following command:
 
 ```sh
-cleos get table eosio 0 powup.order
+dune -- cleos get table eosio 0 powup.order
 ```
 
 ```json
@@ -58,7 +60,7 @@ cleos get table eosio 0 powup.order
 Example `powerupexec` call:
 
 ```sh
-cleos push action eosio powerupexec '[user, 2]' -p user
+dune -- cleos push action eosio powerupexec '[user, 2]' -p user
 ```
 
 ```console
@@ -66,7 +68,3 @@ executed transaction: 93ab4ac900a7902e4e59e5e925e8b54622715328965150db10774aa098
 #         eosio <= eosio::powerupexec           {"user":"user","max":2}
 warning: transaction executed locally, but may not be confirmed by the network yet         ]
 ```
-
-## Alternative Ways To Use The PowerUp Model
-
-You can also use the PowerUp model to power your account with CPU and NET, using an EOS wallet that supports the PowerUp resource model.
