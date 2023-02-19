@@ -1,13 +1,13 @@
 ---
-content_title: How to vote
+title: How to vote
 link_text: How to vote
 ---
 
-# Goal
+## Goal
 
 Vote for a block producer
 
-# Before you begin
+## Before you begin
 
 * Install the current supported version of cleos
 
@@ -19,7 +19,7 @@ Vote for a block producer
 
 * Unlock your wallet
 
-# Steps
+## Steps
 
 Assume you are going to vote for blockproducer1 and blockproducer2 from an account called `eosiotestts2`, execute the following:
 

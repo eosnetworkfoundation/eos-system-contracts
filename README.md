@@ -1,13 +1,15 @@
 # EOS system contracts
 
-EOS system contracts are a collection of contracts deployable to an [Antelope](https://github.com/AntelopeIO) blockchain, but specifically designed for the EOS blockchain, which implements a lot of critical functionality that goes beyond what is provided by the base Antelope protocol.
+EOS system contracts are a collection of contracts specifically designed for the EOS blockchain, which implements a lot of critical functionality that goes beyond what is provided by the base Antelope protocol, the protocol on which EOS blockchain is built on.
 
 The Antelope protocol includes capabilities such as:
+
 * an accounts and permissions system which enables a flexible permission system that allows authorization authority over specific actions in a transaction to be satisfied by the appropriate combination of signatures;
 * a consensus algorithm to propose and finalize blocks by a set of active block producers that can be arbitrarily selected by privileged smart contracts running on the blockchain;
 * a basic resource management system that tracks usage of CPU/NET and RAM per account and enforces limits based on per-account quotas that can be adjusted by privileged smart contracts.
 
 However, the Antelope protocol itself does not immediately provide:
+
 * a mechanism for multiple accounts to reach consensus on authorization of a proposed transaction on-chain before executing it;
 * a consensus mechanism that goes beyond the consensus algorithm to determine how block producers are selected and to align incentives by providing appropriate rewards and punishments to block producers or the entities that get them into that position;
 * more sophisticated resource management systems that create markets for users to acquire resource rights;
@@ -36,6 +38,7 @@ The `main` branch contains the latest state of development; do not use this for 
 [CDT](https://github.com/AntelopeIO/cdt) is required to build contracts. Any operating systems supported by CDT is sufficient to build the system contracts.
 
 To build and run the tests as well, [Leap](https://github.com/AntelopeIO/leap) is also required as a dependency, which may have its further restrictions on supported operating systems.
+
 ## Building
 
 The build guide below will assume you are running Ubuntu 20.04. However, as mentioned above, other operating systems may also be supported.
@@ -66,7 +69,7 @@ For all configurations, you should first `cd` into the directory containing clon
 
 Build system contracts with tests using Leap built from source and with installed CDT package:
 
-```
+```shell
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -Dleap_DIR="${LEAP_BUILD_PATH}/lib/cmake/leap" ..
@@ -78,18 +81,19 @@ make -j $(nproc)
 <details>
 <summary>Build system contracts with tests using Leap and CDT both built from source</summary>
 
-```
+```shell
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -Dcdt_DIR="${CDT_BUILD_PATH}/lib/cmake/cdt" -Dleap_DIR="${LEAP_BUILD_PATH}/lib/cmake/leap" ..
 make -j $(nproc)
 ```
+
 </details>
 
 <details>
 <summary>Build system contracts without tests and with CDT build from source</summary>
 
-```
+```shell
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -Dcdt_DIR="${CDT_BUILD_PATH}/lib/cmake/cdt" ..
@@ -102,7 +106,7 @@ make -j $(nproc)
 
 The following is a list of custom CMake options supported in building the system contracts (default values are shown below):
 
-```
+```text
 -DBUILD_TESTS=OFF                       Do not build the tests
 
 -DSYSTEM_CONFIGURABLE_WASM_LIMITS=ON    Enable use of the CONFIGURABLE_WASM_LIMITS
@@ -116,7 +120,7 @@ The following is a list of custom CMake options supported in building the system
 
 Assuming you built with `BUILD_TESTS=ON`, you can run the tests.
 
-```
+```shell
 cd build/tests
 ctest -j $(nproc)
 ```
