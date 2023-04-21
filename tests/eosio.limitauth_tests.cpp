@@ -1,4 +1,3 @@
-#include <Runtime/Runtime.h>
 #include <boost/test/unit_test.hpp>
 #include <cstdlib>
 #include <eosio/chain/contract_table_objects.hpp>

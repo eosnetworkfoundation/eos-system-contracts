@@ -8,7 +8,6 @@
 #include <boost/test/included/unit_test.hpp>
 #include <fc/log/logger.hpp>
 #include <eosio/chain/exceptions.hpp>
-#include <Runtime/Runtime.h>
 
 #include "eosio.system_tester.hpp"
 
