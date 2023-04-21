@@ -3,8 +3,6 @@
 #include <eosio/chain/abi_serializer.hpp>
 #include "eosio.system_tester.hpp"
 
-#include "Runtime/Runtime.h"
-
 #include <fc/variant_object.hpp>
 
 using namespace eosio::testing;
