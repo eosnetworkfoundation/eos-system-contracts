@@ -260,14 +260,14 @@ BOOST_FIXTURE_TEST_CASE( stake_unstake_with_transfer, eosio_system_tester ) try 
    //alice stakes for herself
    transfer( "eosio", "alice1111111", core_sym::from_string("1000.0000"), "eosio" );
    BOOST_REQUIRE_EQUAL( success(), stake( "alice1111111", "alice1111111", core_sym::from_string("200.0000"), core_sym::from_string("100.0000") ) );
-   //now alice's stake should be equal to transfered from eosio + own stake
+   //now alice's stake should be equal to transferred from eosio + own stake
    total = get_total_stake("alice1111111");
    BOOST_REQUIRE_EQUAL( core_sym::from_string("700.0000"), get_balance( "alice1111111" ) );
    BOOST_REQUIRE_EQUAL( core_sym::from_string("410.0000"), total["net_weight"].as<asset>());
    BOOST_REQUIRE_EQUAL( core_sym::from_string("210.0000"), total["cpu_weight"].as<asset>());
    REQUIRE_MATCHING_OBJECT( voter( "alice1111111", core_sym::from_string("600.0000")), get_voter_info( "alice1111111" ) );
 
-   //alice can unstake everything (including what was transfered)
+   //alice can unstake everything (including what was transferred)
    BOOST_REQUIRE_EQUAL( success(), unstake( "alice1111111", "alice1111111", core_sym::from_string("400.0000"), core_sym::from_string("200.0000") ) );
    BOOST_REQUIRE_EQUAL( core_sym::from_string("700.0000"), get_balance( "alice1111111" ) );
 
@@ -324,14 +324,14 @@ BOOST_FIXTURE_TEST_CASE( stake_while_pending_refund, eosio_system_tester ) try {
    //alice stakes for herself
    transfer( "eosio", "alice1111111", core_sym::from_string("1000.0000"), "eosio" );
    BOOST_REQUIRE_EQUAL( success(), stake( "alice1111111", "alice1111111", core_sym::from_string("200.0000"), core_sym::from_string("100.0000") ) );
-   //now alice's stake should be equal to transfered from eosio + own stake
+   //now alice's stake should be equal to transferred from eosio + own stake
    total = get_total_stake("alice1111111");
    BOOST_REQUIRE_EQUAL( core_sym::from_string("700.0000"), get_balance( "alice1111111" ) );
    BOOST_REQUIRE_EQUAL( core_sym::from_string("410.0000"), total["net_weight"].as<asset>());
    BOOST_REQUIRE_EQUAL( core_sym::from_string("210.0000"), total["cpu_weight"].as<asset>());
    REQUIRE_MATCHING_OBJECT( voter( "alice1111111", core_sym::from_string("600.0000")), get_voter_info( "alice1111111" ) );
 
-   //alice can unstake everything (including what was transfered)
+   //alice can unstake everything (including what was transferred)
    BOOST_REQUIRE_EQUAL( success(), unstake( "alice1111111", "alice1111111", core_sym::from_string("400.0000"), core_sym::from_string("200.0000") ) );
    BOOST_REQUIRE_EQUAL( core_sym::from_string("700.0000"), get_balance( "alice1111111" ) );
 
@@ -454,13 +454,13 @@ BOOST_FIXTURE_TEST_CASE( unstake_more_than_at_stake, eosio_system_tester ) try {
 
    BOOST_REQUIRE_EQUAL( core_sym::from_string("700.0000"), get_balance( "alice1111111" ) );
 
-   //trying to unstake more net bandwith than at stake
+   //trying to unstake more net bandwidth than at stake
 
    BOOST_REQUIRE_EQUAL( wasm_assert_msg("insufficient staked net bandwidth"),
                         unstake( "alice1111111", core_sym::from_string("200.0001"), core_sym::from_string("0.0000") )
    );
 
-   //trying to unstake more cpu bandwith than at stake
+   //trying to unstake more cpu bandwidth than at stake
    BOOST_REQUIRE_EQUAL( wasm_assert_msg("insufficient staked cpu bandwidth"),
                         unstake( "alice1111111", core_sym::from_string("0.0000"), core_sym::from_string("100.0001") )
 
@@ -521,7 +521,7 @@ BOOST_FIXTURE_TEST_CASE( delegate_to_another_user, eosio_system_tester ) try {
    total = get_total_stake( "bob111111111" );
    BOOST_REQUIRE_EQUAL( core_sym::from_string("230.0000"), total["net_weight"].as<asset>());
    BOOST_REQUIRE_EQUAL( core_sym::from_string("120.0000"), total["cpu_weight"].as<asset>());
-   //balance should not change after unsuccessfull attempts to unstake
+   //balance should not change after unsuccessful attempts to unstake
    BOOST_REQUIRE_EQUAL( core_sym::from_string("700.0000"), get_balance( "alice1111111" ) );
    //voting power too
    REQUIRE_MATCHING_OBJECT( voter( "alice1111111", core_sym::from_string("300.0000") ), get_voter_info( "alice1111111" ) );
@@ -724,7 +724,7 @@ BOOST_FIXTURE_TEST_CASE( stake_to_another_user_not_from_refund, eosio_system_tes
    total = get_total_stake( "bob111111111" );
    BOOST_REQUIRE_EQUAL( core_sym::from_string("210.0000"), total["net_weight"].as<asset>());
    BOOST_REQUIRE_EQUAL( core_sym::from_string("110.0000"), total["cpu_weight"].as<asset>());
-   //stake should be taken from alices' balance, and refund request should stay the same
+   //stake should be taken from alice's balance, and refund request should stay the same
    BOOST_REQUIRE_EQUAL( core_sym::from_string("400.0000"), get_balance( "alice1111111" ) );
    refund = get_refund_request( "alice1111111"_n );
    BOOST_REQUIRE_EQUAL( core_sym::from_string("200.0000"), refund["net_amount"].as<asset>() );
@@ -738,7 +738,7 @@ BOOST_FIXTURE_TEST_CASE( producer_register_unregister, eosio_system_tester ) try
    issue_and_transfer( "alice1111111", core_sym::from_string("1000.0000"),  config::system_account_name );
 
    //fc::variant params = producer_parameters_example(1);
-   auto key =  fc::crypto::public_key( std::string("EOS6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV") );
+   auto key =  fc::crypto::public_key( std::string("EOS6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV") ); // cspell:disable-line
    BOOST_REQUIRE_EQUAL( success(), push_action("alice1111111"_n, "regproducer"_n, mvo()
                                                ("producer",  "alice1111111")
                                                ("producer_key", key )
@@ -767,7 +767,7 @@ BOOST_FIXTURE_TEST_CASE( producer_register_unregister, eosio_system_tester ) try
    BOOST_REQUIRE_EQUAL( "http://block.two", info["url"].as_string() );
    BOOST_REQUIRE_EQUAL( 1, info["location"].as_int64() );
 
-   auto key2 =  fc::crypto::public_key( std::string("EOS5jnmSKrzdBHE9n8hw58y7yxFWBC8SNiG7m8S1crJH3KvAnf9o6") );
+   auto key2 =  fc::crypto::public_key( std::string("EOS5jnmSKrzdBHE9n8hw58y7yxFWBC8SNiG7m8S1crJH3KvAnf9o6") ); // cspell:disable-line
    BOOST_REQUIRE_EQUAL( success(), push_action("alice1111111"_n, "regproducer"_n, mvo()
                                                ("producer",  "alice1111111")
                                                ("producer_key", key2 )
@@ -926,7 +926,11 @@ BOOST_FIXTURE_TEST_CASE( producer_wtmsig_transition, eosio_system_tester ) try {
    produce_blocks(2);
    BOOST_REQUIRE_EQUAL( control->active_producers().version, 1u );
 
-   const auto schedule_update1 = get_global_state()["last_producer_schedule_update"];
+   auto convert_to_block_timestamp = [](const fc::variant& timestamp) -> eosio::chain::block_timestamp_type {
+      return fc::time_point::from_iso_string(timestamp.as_string());
+   };
+
+   const auto schedule_update1 = convert_to_block_timestamp(get_global_state()["last_producer_schedule_update"]);
 
    const auto& rlm = control->get_resource_limits_manager();
 
@@ -941,7 +945,7 @@ BOOST_FIXTURE_TEST_CASE( producer_wtmsig_transition, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL( alice_prod_info2["is_active"], true );
 
    produce_block( fc::minutes(2) );
-   const auto schedule_update2 = get_global_state()["last_producer_schedule_update"];
+   const auto schedule_update2 = convert_to_block_timestamp(get_global_state()["last_producer_schedule_update"]);
    BOOST_REQUIRE( schedule_update1 < schedule_update2 ); // Ensure last_producer_schedule_update is increasing.
 
    // Producing the above block would trigger the bug in v1.9.0 that sets the default block_signing_authority
@@ -960,7 +964,7 @@ BOOST_FIXTURE_TEST_CASE( producer_wtmsig_transition, eosio_system_tester ) try {
    }
 
    produce_block( fc::minutes(2) );
-   const auto schedule_update3 = get_global_state()["last_producer_schedule_update"];
+   const auto schedule_update3 = convert_to_block_timestamp(get_global_state()["last_producer_schedule_update"]);
 
    // The bug in v1.9.0 would cause alice to have an invalid producer authority (the default block_signing_authority).
    // The v1.9.0 system contract would have attempted to set a proposed producer schedule including this invalid
@@ -991,7 +995,7 @@ BOOST_FIXTURE_TEST_CASE( producer_wtmsig_transition, eosio_system_tester ) try {
 
    auto alice_prod_info4 = get_producer_info( "alice1111111"_n );
    BOOST_REQUIRE_EQUAL( alice_prod_info4["is_active"], true );
-   const auto schedule_update4 = get_global_state()["last_producer_schedule_update"];
+   const auto schedule_update4 = convert_to_block_timestamp(get_global_state()["last_producer_schedule_update"]);
    BOOST_REQUIRE( schedule_update2 < schedule_update4 );
 
 } FC_LOG_AND_RETHROW()
@@ -2811,7 +2815,7 @@ BOOST_FIXTURE_TEST_CASE(producers_upgrade_system_contract, eosio_system_tester) 
 
    transaction_trace_ptr trace;
    control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const signed_transaction&> p ) {
+   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
       const auto& t = std::get<0>(p);
       if( t->scheduled ) { trace = t; }
    } );
@@ -3573,7 +3577,7 @@ BOOST_FIXTURE_TEST_CASE( setparams, eosio_system_tester ) try {
 
    transaction_trace_ptr trace;
    control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const signed_transaction&> p ) {
+   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
       const auto& t = std::get<0>(p);
       if( t->scheduled ) { trace = t; }
    } );
@@ -3664,7 +3668,7 @@ BOOST_FIXTURE_TEST_CASE( wasmcfg, eosio_system_tester ) try {
 
    transaction_trace_ptr trace;
    control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const signed_transaction&> p ) {
+   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
       const auto& t = std::get<0>(p);
       if( t->scheduled ) { trace = t; }
    } );

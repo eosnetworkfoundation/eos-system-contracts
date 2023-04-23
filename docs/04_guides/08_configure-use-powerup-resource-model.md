@@ -123,7 +123,7 @@ struct powerup_state {
 ```
 
 ### Preparation for Upgrade
-1. Build [eosio.contracts](https://github.com/EOSIO/eosio.contracts) with `powerup` code. Version **1.9.x** or greater .
+1. Build [eos-system-contracts](https://github.com/eosnetworkfoundation/eos-system-contracts) with `powerup` code.
 2. Deploy eosio.system contract to `eosio`.
 3. Create account `eosio.reserv` and ensure the account has enough RAM, at least 4 KiB.
 4. Deploy `powup.results.abi` to `eosio.reserv` account using `setabi`. The ABI can be found in the `build/contracts/eosio.system/.powerup/` directory.
@@ -232,7 +232,7 @@ executed transaction: 82b7124601612b371b812e3bf65cf63bb44616802d3cd33a2c0422b583
 #          user <= eosio.token::transfer        {"from":"user","to":"eosio.rex","quantity":"999.9901 TST","memo":"transfer from user to eosio.rex"}
 #     eosio.rex <= eosio.token::transfer        {"from":"user","to":"eosio.rex","quantity":"999.9901 TST","memo":"transfer from user to eosio.rex"}
 ```
-You can see how much NET and CPU weight was received as well as the fee by looking at the `eosio.reserv::powupresult` informational action. 
+You can see how much NET and CPU weight was received as well as the fee by looking at the `eosio.reserv::powupresult` informational action.
 
 *It is worth mentioning that the network being used for the example has not fully transitioned so the available resources are minimal therefore 1% of the resources are quite expensive. As the system continues the transition more resources are available to the `PowerUp` resource model and will become more affordable.*
 

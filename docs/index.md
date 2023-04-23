@@ -2,11 +2,11 @@
 content_title: About System Contracts
 ---
 
-The EOSIO blockchain platform is unique in that the features and characteristics of the blockchain built on it are flexible, that is, they can be changed, or modified completely to suit each business case requirement. Core blockchain features such as consensus, fee schedules, account creation and modification, token economics, block producer registration, voting, multi-sig, etc., are implemented inside smart contracts which are deployed on the blockchain built on the EOSIO platform.
+The Antelope blockchain framework is unique in that the features and characteristics of the blockchain built on it are flexible, that is, they can be changed, or modified completely to suit each business case requirement. Core blockchain features such as consensus, fee schedules, account creation and modification, token economics, block producer registration, voting, multi-sig, etc., are implemented inside smart contracts which are deployed on the blockchain built on the Antelope framework.
 
-## System contracts defined in eosio.contracts
+## System contracts defined in eos-system-contracts
 
-Block.one implements and maintains EOSIO open source platform which contains, as an example, the system contracts encapsulating the base functionality for an EOSIO based blockchain.
+The `eos-system-contracts` repository contains the system contracts encapsulating the base functionality for the EOS blockchain.
 
 1. [eosio.bios](action-reference/eosio.bios)
 2. [eosio.system](action-reference/eosio.system)

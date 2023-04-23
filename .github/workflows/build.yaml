@@ -1,0 +1,103 @@
+name: "Build & Test"
+
+on:
+  push:
+    branches:
+      - main
+      - "release/*"
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      override-leap-dev:
+        description: Override leap-dev target
+        type: string
+      override-leap-dev-prerelease:
+        type: choice
+        description: Override leap-dev prelease
+        options:
+        - default
+        - true
+        - false
+      override-cdt:
+        description: 'Override cdt target'
+        type: string
+      override-cdt-prerelease:
+        type: choice
+        description: Override cdt prelease
+        options:
+        - default
+        - true
+        - false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Setup leap-dev & cdt versions
+        id: versions
+        env:
+          GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        run: |
+          DEFAULTS_JSON=$(curl -sSfL $(gh api https://api.github.com/repos/${{github.repository}}/contents/.cicd/defaults.json?ref=${{github.sha}} --jq .download_url))
+          echo leap-dev-target=$(echo "$DEFAULTS_JSON" | jq -r '."leap-dev".target') >> $GITHUB_OUTPUT
+          echo leap-dev-prerelease=$(echo "$DEFAULTS_JSON" | jq -r '."leap-dev".prerelease') >> $GITHUB_OUTPUT
+          echo cdt-target=$(echo "$DEFAULTS_JSON" | jq -r '.cdt.target') >> $GITHUB_OUTPUT
+          echo cdt-prerelease=$(echo "$DEFAULTS_JSON" | jq -r '.cdt.prerelease') >> $GITHUB_OUTPUT
+
+          if [[ "${{inputs.override-leap-dev}}" != "" ]]; then
+            echo leap-dev-target=${{inputs.override-leap-dev}} >> $GITHUB_OUTPUT
+          fi
+          if [[ "${{inputs.override-leap-dev-prerelease}}" == +(true|false) ]]; then
+            echo leap-dev-prerelease=${{inputs.override-leap-dev-prerelease}} >> $GITHUB_OUTPUT
+          fi
+          if [[ "${{inputs.override-cdt}}" != "" ]]; then
+            echo cdt-target=${{inputs.override-cdt}} >> $GITHUB_OUTPUT
+          fi
+          if [[ "${{inputs.override-cdt-prerelease}}" == +(true|false) ]]; then
+            echo cdt-prerelease=${{inputs.override-cdt-prerelease}} >> $GITHUB_OUTPUT
+          fi
+      - name: Download cdt
+        uses: AntelopeIO/asset-artifact-download-action@v2
+        with:
+          owner: AntelopeIO
+          repo: cdt
+          file: 'cdt_.*amd64.deb'
+          target: '${{steps.versions.outputs.cdt-target}}'
+          prereleases: ${{fromJSON(steps.versions.outputs.cdt-prerelease)}}
+          artifact-name: cdt_ubuntu_package_amd64
+          token: ${{github.token}}
+      - name: Download leap-dev
+        uses: AntelopeIO/asset-artifact-download-action@v2
+        with:
+          owner: AntelopeIO
+          repo: leap
+          file: 'leap-dev.*(x86_64|amd64).deb'
+          target: '${{steps.versions.outputs.leap-dev-target}}'
+          prereleases: ${{fromJSON(steps.versions.outputs.leap-dev-prerelease)}}
+          artifact-name: leap-dev-ubuntu20-amd64
+          container-package: experimental-binaries
+          token: ${{github.token}}
+      - name: Install packages
+        run: |
+          sudo apt install ./*.deb
+          sudo apt-get install cmake
+          rm ./*.deb
+      - uses: actions/checkout@v3
+        with:
+          path: src
+      - name: Build & Test
+        run: |
+          cmake -S src -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=On
+          cmake --build build -- -j $(nproc)
+          tar zcf build.tar.gz build
+          ctest --test-dir build/tests --output-on-failure -j $(nproc)
+      - name: Upload builddir
+        uses: actions/upload-artifact@v3
+        with:
+          name: builddir
+          path: build.tar.gz

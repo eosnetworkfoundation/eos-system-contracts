@@ -63,7 +63,7 @@ namespace eosiosystem {
     * Blockchain authority.
     *
     * An authority is defined by:
-    * - a vector of key_weights (a key_weight is a public key plus a wieght),
+    * - a vector of key_weights (a key_weight is a public key plus a weight),
     * - a vector of permission_level_weights, (a permission_level is an account name plus a permission name)
     * - a vector of wait_weights (a wait_weight is defined by a number of seconds to wait and a weight)
     * - a threshold value
@@ -137,17 +137,10 @@ namespace eosiosystem {
           * to this contract, but they have no specific implementation at this contract level,
           * they will execute the implementation at the core layer and nothing else.
           */
+
          /**
           * New account action is called after a new account is created. This code enforces resource-limits rules
           * for new accounts as well as new account naming conventions.
-          *
-          * 1. accounts cannot contain '.' symbols which forces all acccounts to be 12
-          * characters long without '.' until a future account auction process is implemented
-          * which prevents name squatting.
-          *
-          * 2. new accounts must stake a minimal number of tokens (as set in system parameters)
-          * therefore, this method will execute an inline buyram from receiver for newacnt in
-          * an amount equal to the current new account creation fee.
           */
          [[eosio::action]]
          void newaccount( const name&       creator,
@@ -156,7 +149,7 @@ namespace eosiosystem {
                           ignore<authority> active);
 
          /**
-          * Update authorization action updates pemission for an account.
+          * Update authorization action updates permission for an account.
           *
           * This contract enforces additional rules:
           *
@@ -214,7 +207,7 @@ namespace eosiosystem {
           * actions can not be linked `updateauth`, `deleteauth`, `linkauth`, `unlinkauth`, and `canceldelay`.
           * This is useful because when doing authorization checks, the EOSIO based blockchain starts with the
           * action needed to be authorized (and the contract belonging to), and looks up which permission
-          * is needed to pass authorization validation. If a link is set, that permission is used for authoraization
+          * is needed to pass authorization validation. If a link is set, that permission is used for authorization
           * validation otherwise then active is the default, with the exception of `eosio.any`.
           * `eosio.any` is an implicit permission which exists on every account; you can link actions to `eosio.any`
           * and that will make it so linked actions are accessible to any permissions defined for the account.
