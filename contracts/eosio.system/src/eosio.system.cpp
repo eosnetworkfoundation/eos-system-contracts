@@ -223,7 +223,7 @@ namespace eosiosystem {
       }
       else
       {
-         check(false, "Unkown configuration");
+         check(false, "Unknown configuration");
       }
    }
 
