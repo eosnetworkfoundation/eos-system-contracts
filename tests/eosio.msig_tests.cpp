@@ -3,8 +3,6 @@
 #include <eosio/chain/abi_serializer.hpp>
 #include <eosio/chain/wast_to_wasm.hpp>
 
-#include <Runtime/Runtime.h>
-
 #include <fc/variant_object.hpp>
 #include "contracts.hpp"
 #include "test_symbol.hpp"
