@@ -25,6 +25,12 @@ option(SYSTEM_CONFIGURABLE_WASM_LIMITS
 option(SYSTEM_BLOCKCHAIN_PARAMETERS
        "Enables use of the host functions activated by the BLOCKCHAIN_PARAMETERS protocol feature" ON)
 
+option(SYSTEM_ENABLE_LEAP_VERSION_CHECK
+      "Enables a configure-time check that the version of Leap's tester library is compatible with this project's unit tests" ON)
+
+option(SYSTEM_ENABLE_CDT_VERSION_CHECK
+      "Enables a configure-time check that the version of CDT is compatible with this project's contracts" ON)
+
 ExternalProject_Add(
   contracts_project
   SOURCE_DIR ${CMAKE_SOURCE_DIR}/contracts
