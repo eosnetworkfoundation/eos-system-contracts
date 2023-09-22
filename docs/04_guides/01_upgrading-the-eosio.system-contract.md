@@ -217,7 +217,7 @@ diff original_system_contract.abi new_system_contract.abi
 ```json
 584,592d583
 <         },{
-<           "name": "deferred_trx_id",
+<           "name": "trx_id",
 <           "type": "uint32"
 <         },{
 <           "name": "last_unstake_time",
