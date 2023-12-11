@@ -62,7 +62,7 @@ jobs:
             echo cdt-prerelease=${{inputs.override-cdt-prerelease}} >> $GITHUB_OUTPUT
           fi
       - name: Download cdt
-        uses: AntelopeIO/asset-artifact-download-action@v2
+        uses: AntelopeIO/asset-artifact-download-action@v3
         with:
           owner: AntelopeIO
           repo: cdt
