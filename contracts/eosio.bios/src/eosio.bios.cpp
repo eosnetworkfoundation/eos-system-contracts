@@ -1,4 +1,5 @@
 #include <eosio.bios/eosio.bios.hpp>
+#include <eosio/crypto_bls_ext.hpp>
 
 namespace eosiobios {
 
@@ -15,6 +16,34 @@ void bios::setabi( name account, const std::vector<char>& abi ) {
          row.hash = eosio::sha256(const_cast<char*>(abi.data()), abi.size());
       });
    }
+}
+
+void bios::setfinalizer( const finalizer_policy& finalizer_policy ) {
+   require_auth( get_self() );
+   check(finalizer_policy.finalizers.size() > 0, "require at least one finalizer");
+
+   eosio::abi_finalizer_policy abi_finalizer_policy;
+   abi_finalizer_policy.fthreshold = finalizer_policy.threshold;
+   abi_finalizer_policy.finalizers.reserve(finalizer_policy.finalizers.size());
+
+   const std::string pk_prefix = "PUB_BLS";
+   const std::string sig_prefix = "SIG_BLS";
+
+   for (const auto& f: finalizer_policy.finalizers) {
+      // basic key format checks
+      check(f.public_key.substr(0, pk_prefix.length()) == pk_prefix, "public key not started with PUB_BLS");
+      check(f.pop.substr(0, sig_prefix.length()) == sig_prefix, "proof of possession signature not started with SIG_BLS");
+
+      // proof of possession of private key check
+      const auto pk = eosio::decode_bls_public_key_to_g1(f.public_key);
+      const auto signature = eosio::decode_bls_signature_to_g2(f.pop);
+      check(eosio::bls_pop_verify(pk, signature), "proof of possession failed");
+
+      const std::vector<char> pk_vector(pk.begin(), pk.end());
+      abi_finalizer_policy.finalizers.emplace_back(eosio::abi_finalizer_authority{f.description, f.weight, pk_vector});
+   }
+
+   set_finalizers(abi_finalizer_policy);
 }
 
 void bios::onerror( ignore<uint128_t>, ignore<std::vector<char>> ) {
