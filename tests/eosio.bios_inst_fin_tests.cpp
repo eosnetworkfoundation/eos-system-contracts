@@ -22,7 +22,7 @@ public:
       create_accounts( { "iftester"_n } );
       produce_block();
 
-      // instant finality actions are previlidged
+      // instant finality actions are privileged
       base_tester::push_action(config::system_account_name, "setpriv"_n,
                                config::system_account_name,  mutable_variant_object()
                                ("account", "iftester")
