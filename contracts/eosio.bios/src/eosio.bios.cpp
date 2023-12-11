@@ -39,11 +39,11 @@ void bios::setfinalizer( const finalizer_policy& finalizer_policy ) {
       const auto signature = eosio::decode_bls_signature_to_g2(f.pop);
       check(eosio::bls_pop_verify(pk, signature), "proof of possession failed");
 
-      const std::vector<char> pk_vector(pk.begin(), pk.end());
-      abi_finalizer_policy.finalizers.emplace_back(eosio::abi_finalizer_authority{f.description, f.weight, pk_vector});
+      std::vector<char> pk_vector(pk.begin(), pk.end());
+      abi_finalizer_policy.finalizers.emplace_back(eosio::abi_finalizer_authority{f.description, f.weight, std::move(pk_vector)});
    }
 
-   set_finalizers(abi_finalizer_policy);
+   set_finalizers(std::move(abi_finalizer_policy));
 }
 
 void bios::onerror( ignore<uint128_t>, ignore<std::vector<char>> ) {
