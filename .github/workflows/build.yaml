@@ -72,7 +72,7 @@ jobs:
           artifact-name: cdt_ubuntu_package_amd64
           token: ${{github.token}}
       - name: Download leap-dev
-        uses: AntelopeIO/asset-artifact-download-action@v2
+        uses: AntelopeIO/asset-artifact-download-action@v3
         with:
           owner: AntelopeIO
           repo: leap
