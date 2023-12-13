@@ -73,6 +73,9 @@ namespace eosiobios {
     * The public bls key and proof of possession of private key signature,
     * and vote weight of a finalizer.
     */
+   constexpr size_t max_finalizers = 64*1024;
+   constexpr size_t max_finalizer_description_size = 256;
+
    struct finalizer_authority {
       std::string   description;
       uint64_t      weight = 0;  // weight that this finalizer's vote has for meeting threshold
@@ -221,13 +224,10 @@ namespace eosiobios {
          void onerror( ignore<uint128_t> sender_id, ignore<std::vector<char>> sent_trx );
 
          /**
-          * Set a new list of finalizer policy.
+          * Propose new finalizer policy that, unless superseded by a later
+          * finalizer policy, will eventually become the active finalizer policy.
           *
-          * @details Set a new list of active finalizer policy, by proposing a finalizer policy, once the block that
-          * contains the proposal becomes irreversible the new finalizer policy. will be made active according
-          * to Antelope finalizer active policy rules. Replaces existing finalizer policy..
-          *
-          * @param finalizer_policy - New list of active finalizer policy. to set
+          * @param finalizer_policy - proposed finalizer policy
           */
          [[eosio::action]]
          void setfinalizer( const finalizer_policy& finalizer_policy );
