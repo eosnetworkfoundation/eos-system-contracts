@@ -200,11 +200,21 @@ BOOST_FIXTURE_TEST_CASE( long_description, eosio_bios_if_tester ) try {
    BOOST_REQUIRE_THROW(push_action("iftester"_n, "setfinalizer"_n, "iftester"_n, mvo()
       ("finalizer_policy", mvo()("threshold", 2)
          ("finalizers", std::vector<mvo>{mvo()
-            // 257 chars long
-            ("description", "01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456")
+            ("description", std::string(257, 'a'))
             ("weight", 1)
             ("public_key", "PUB_BLS_jpMTmybJZvf4k6fR7Bgu7wrNjwQLK/IBdjhZHWTjoohgdUMi8VpTGsyYpzP1+ekMzUuZ8LqFcnfO0myTwH9Y2YeabhhowSp7nzJJhgO4XWCpcGCLssOjVWh3/D9wMIISVUwfsQ==")
             ("pop", "SIG_BLS_qxozxdQngA4iDidRNJXwKML7VhawRi6XGMXeBc55MzDaAyixR5D3Ys7d72IiwroUkWDqEVQrPq+u/ukICWD9g+LeE9JNxn8IBMLpotXu728ezyal6g5tMoDf8PQuZSEP6yPSMGo7ajbHVe+ehcgWs+/zpxWH1WgCTgU3Bc5Qy32z6L0ztK3WLuW25OmK3EQLbIP5sPMv07gMWP4aDNLAor6IzQYMvxFaibiWsSqMt4YxB6eONetmdftCn5Om3NcHwW7Ueg==")}))), eosio_assert_message_exception);
+} FC_LOG_AND_RETHROW()
+
+// Verifies description equal to maximum allowed size (256 chars)
+BOOST_FIXTURE_TEST_CASE( description_size_equal_to_max, eosio_bios_if_tester ) try {
+   BOOST_REQUIRE_NO_THROW(push_action("iftester"_n, "setfinalizer"_n, "iftester"_n, mvo()
+      ("finalizer_policy", mvo()("threshold", 2)
+         ("finalizers", std::vector<mvo>{mvo()
+            ("description", std::string(256, 'a'))
+            ("weight", 1)
+            ("public_key", "PUB_BLS_jpMTmybJZvf4k6fR7Bgu7wrNjwQLK/IBdjhZHWTjoohgdUMi8VpTGsyYpzP1+ekMzUuZ8LqFcnfO0myTwH9Y2YeabhhowSp7nzJJhgO4XWCpcGCLssOjVWh3/D9wMIISVUwfsQ==")
+            ("pop", "SIG_BLS_qxozxdQngA4iDidRNJXwKML7VhawRi6XGMXeBc55MzDaAyixR5D3Ys7d72IiwroUkWDqEVQrPq+u/ukICWD9g+LeE9JNxn8IBMLpotXu728ezyal6g5tMoDf8PQuZSEP6yPSMGo7ajbHVe+ehcgWs+/zpxWH1WgCTgU3Bc5Qy32z6L0ztK3WLuW25OmK3EQLbIP5sPMv07gMWP4aDNLAor6IzQYMvxFaibiWsSqMt4YxB6eONetmdftCn5Om3NcHwW7Ueg==")}))));
 } FC_LOG_AND_RETHROW()
 
 BOOST_AUTO_TEST_SUITE_END()
