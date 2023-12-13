@@ -20,6 +20,21 @@ void bios::setabi( name account, const std::vector<char>& abi ) {
    }
 }
 
+// helpers for defining std::unordered_set<eosio::bls_g1>
+struct g1_hash {
+   // bls_g1 is defined as std::array<char, 96>
+   std::size_t operator()(const eosio::bls_g1& g1) const {
+      std::hash<std::string> hash_func;
+      return hash_func(g1.data());
+   }
+};
+
+struct g1_equal {
+   bool operator()(const eosio::bls_g1& lhs, const eosio::bls_g1& rhs) const {
+      return std::memcmp(lhs.data(), rhs.data(), 96 * sizeof(char)) == 0;
+   }
+};
+
 void bios::setfinalizer( const finalizer_policy& finalizer_policy ) {
    // exensive checks are performed to make sure setfinalizer host function
    // will never fail
@@ -36,7 +51,8 @@ void bios::setfinalizer( const finalizer_policy& finalizer_policy ) {
    const std::string pk_prefix = "PUB_BLS";
    const std::string sig_prefix = "SIG_BLS";
 
-   std::unordered_set<std::string> unique_finalizer_keys;
+   // use raw affine format for uniqueness check
+   std::unordered_set<eosio::bls_g1, g1_hash, g1_equal> unique_finalizer_keys;
    uint64_t weight_sum = 0;
 
    for (const auto& f: finalizer_policy.finalizers) {
@@ -46,17 +62,18 @@ void bios::setfinalizer( const finalizer_policy& finalizer_policy ) {
       check(f.public_key.substr(0, pk_prefix.length()) == pk_prefix, "public key not started with PUB_BLS");
       check(f.pop.substr(0, sig_prefix.length()) == sig_prefix, "proof of possession signature not started with SIG_BLS");
 
-      // duplicate key check
-      check(unique_finalizer_keys.insert(f.public_key).second, "duplicate public keys");
-
       // check overflow
       check(std::numeric_limits<uint64_t>::max() - weight_sum >= f.weight, "sum of weights causes uint64_t overflow");
       weight_sum += f.weight;
 
-      // decode_bls_public_key_to_g1 and decode_bls_signature_to_g2
-      // will throw ("check" function fails) if keys are not valid
+      // decode_bls_public_key_to_g1 will fail ("check" function fails)
+      // if the key is invalid
       const auto pk = eosio::decode_bls_public_key_to_g1(f.public_key);
+      // duplicate key check
+      check(unique_finalizer_keys.insert(pk).second, "duplicate public key");
+
       const auto signature = eosio::decode_bls_signature_to_g2(f.pop);
+
       // proof of possession of private key check
       check(eosio::bls_pop_verify(pk, signature), "proof of possession failed");
 
