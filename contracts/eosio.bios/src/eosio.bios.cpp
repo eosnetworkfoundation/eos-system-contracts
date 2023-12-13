@@ -1,6 +1,8 @@
 #include <eosio.bios/eosio.bios.hpp>
 #include <eosio/crypto_bls_ext.hpp>
 
+#include <unordered_set>
+
 namespace eosiobios {
 
 void bios::setabi( name account, const std::vector<char>& abi ) {
@@ -19,7 +21,12 @@ void bios::setabi( name account, const std::vector<char>& abi ) {
 }
 
 void bios::setfinalizer( const finalizer_policy& finalizer_policy ) {
+   // exensive checks are performed to make sure setfinalizer host function
+   // will never fail
+
    require_auth( get_self() );
+
+   check(finalizer_policy.finalizers.size() <= max_finalizers, "number of finalizers exceeds the maximum allowed");
    check(finalizer_policy.finalizers.size() > 0, "require at least one finalizer");
 
    eosio::abi_finalizer_policy abi_finalizer_policy;
@@ -29,19 +36,35 @@ void bios::setfinalizer( const finalizer_policy& finalizer_policy ) {
    const std::string pk_prefix = "PUB_BLS";
    const std::string sig_prefix = "SIG_BLS";
 
+   std::unordered_set<std::string> unique_finalizer_keys;
+   uint64_t weight_sum = 0;
+
    for (const auto& f: finalizer_policy.finalizers) {
+      check(f.description.size() <= max_finalizer_description_size, "Finalizer description greater than max allowed size");
+
       // basic key format checks
       check(f.public_key.substr(0, pk_prefix.length()) == pk_prefix, "public key not started with PUB_BLS");
       check(f.pop.substr(0, sig_prefix.length()) == sig_prefix, "proof of possession signature not started with SIG_BLS");
 
-      // proof of possession of private key check
+      // duplicate key check
+      check(unique_finalizer_keys.insert(f.public_key).second, "duplicate public keys");
+
+      // check overflow
+      check(std::numeric_limits<uint64_t>::max() - weight_sum >= f.weight, "sum of weights causes uint64_t overflow");
+      weight_sum += f.weight;
+
+      // decode_bls_public_key_to_g1 and decode_bls_signature_to_g2
+      // will throw ("check" function fails) if keys are not valid
       const auto pk = eosio::decode_bls_public_key_to_g1(f.public_key);
       const auto signature = eosio::decode_bls_signature_to_g2(f.pop);
+      // proof of possession of private key check
       check(eosio::bls_pop_verify(pk, signature), "proof of possession failed");
 
       std::vector<char> pk_vector(pk.begin(), pk.end());
       abi_finalizer_policy.finalizers.emplace_back(eosio::abi_finalizer_authority{f.description, f.weight, std::move(pk_vector)});
    }
+
+   check(finalizer_policy.threshold > weight_sum / 2, "finalizer policy threshold cannot be met by finalizer weights");
 
    set_finalizers(std::move(abi_finalizer_policy));
 }
