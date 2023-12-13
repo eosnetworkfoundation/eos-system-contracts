@@ -138,4 +138,73 @@ BOOST_FIXTURE_TEST_CASE( pop_failed, eosio_bios_if_tester ) try {
             ("pop", "SIG_BLS_jxozxdQngA4iDidRNJXwKML7VhawRi6XGMXeBc55MzDaAyixR5D3Ys7d72IiwroUkWDqEVQrPq+u/ukICWD9g+LeE9JNxn8IBMLpotXu728ezyal6g5tMoDf8PQuZSEP6yPSMGo7ajbHVe+ehcgWs+/zpxWH1WgCTgU3Bc5Qy32z6L0ztK3WLuW25OmK3EQLbIP5sPMv07gMWP4aDNLAor6IzQYMvxFaibiWsSqMt4YxB6eONetmdftCn5Om3NcHwW7Ueg==")}))), eosio_assert_message_exception);
 } FC_LOG_AND_RETHROW()
 
+// Verifies threshold must be greater than half the sum of the weights
+BOOST_FIXTURE_TEST_CASE( threshold_equal_to_half_weights, eosio_bios_if_tester ) try {
+   BOOST_REQUIRE_THROW(push_action("iftester"_n, "setfinalizer"_n, "iftester"_n, mvo()
+      ("finalizer_policy", mvo()
+         ("threshold", 5)
+         ("finalizers", std::vector<mvo>{
+            mvo()
+               ("description", "set_2_finalizer_1")
+               ("weight", 5)
+               ("public_key", "PUB_BLS_jpMTmybJZvf4k6fR7Bgu7wrNjwQLK/IBdjhZHWTjoohgdUMi8VpTGsyYpzP1+ekMzUuZ8LqFcnfO0myTwH9Y2YeabhhowSp7nzJJhgO4XWCpcGCLssOjVWh3/D9wMIISVUwfsQ==")
+               ("pop", "SIG_BLS_qxozxdQngA4iDidRNJXwKML7VhawRi6XGMXeBc55MzDaAyixR5D3Ys7d72IiwroUkWDqEVQrPq+u/ukICWD9g+LeE9JNxn8IBMLpotXu728ezyal6g5tMoDf8PQuZSEP6yPSMGo7ajbHVe+ehcgWs+/zpxWH1WgCTgU3Bc5Qy32z6L0ztK3WLuW25OmK3EQLbIP5sPMv07gMWP4aDNLAor6IzQYMvxFaibiWsSqMt4YxB6eONetmdftCn5Om3NcHwW7Ueg=="),
+            mvo()
+               ("description", "set_2_finalizer_2")
+               ("weight", 5)
+               ("public_key", "PUB_BLS_UGcXVpLNrhdODrbI9Geaswu8wFnL+WMnphfTaCgehRxol5wI1qiU5zq6qHp9+CkFnmm2XWCcM/YEtqZYL6uTM1TXTpTm3LODI0s/ULO4iKSNYclsmDdh5cFSMmKKnloHudh3Zw==")
+               ("pop", "SIG_BLS_bFLCSmXqVrFqWo2mqxCeuLO5iAevMu/8qxpS7HkXSMmXuVLEytt+shDHn8FpcrUMlMHjxEAHOyRVi0ckvXYrCpHMx6floRvljJ1vV2FphGqgm24DxuB1BE3E21Okc0QS3GH6UCISfVBXuqoK+EfmoSGz3ssi0kzevE8MQitzGgK9EW3zTlZtvdRryI1OTUoUXkjTo1Q2VQIbqJZ55W7SNHUcIBZO5Ih4AXc7usjWUBXv1BK0NNcort4EAfOXnkIN47iRLQ==")
+            }))), eosio_assert_message_exception);
+} FC_LOG_AND_RETHROW()
+
+// Verifies threshold greater by one than half of the sum of the weights works
+BOOST_FIXTURE_TEST_CASE( threshold_greater_than_by_one_half_weights, eosio_bios_if_tester ) try {
+   BOOST_REQUIRE_NO_THROW(push_action("iftester"_n, "setfinalizer"_n, "iftester"_n, mvo()
+      ("finalizer_policy", mvo()
+         ("threshold", 6)
+         ("finalizers", std::vector<mvo>{
+            mvo()
+               ("description", "set_2_finalizer_1")
+               ("weight", 5)
+               ("public_key", "PUB_BLS_jpMTmybJZvf4k6fR7Bgu7wrNjwQLK/IBdjhZHWTjoohgdUMi8VpTGsyYpzP1+ekMzUuZ8LqFcnfO0myTwH9Y2YeabhhowSp7nzJJhgO4XWCpcGCLssOjVWh3/D9wMIISVUwfsQ==")
+               ("pop", "SIG_BLS_qxozxdQngA4iDidRNJXwKML7VhawRi6XGMXeBc55MzDaAyixR5D3Ys7d72IiwroUkWDqEVQrPq+u/ukICWD9g+LeE9JNxn8IBMLpotXu728ezyal6g5tMoDf8PQuZSEP6yPSMGo7ajbHVe+ehcgWs+/zpxWH1WgCTgU3Bc5Qy32z6L0ztK3WLuW25OmK3EQLbIP5sPMv07gMWP4aDNLAor6IzQYMvxFaibiWsSqMt4YxB6eONetmdftCn5Om3NcHwW7Ueg=="),
+            mvo()
+               ("description", "set_2_finalizer_2")
+               ("weight", 5)
+               ("public_key", "PUB_BLS_UGcXVpLNrhdODrbI9Geaswu8wFnL+WMnphfTaCgehRxol5wI1qiU5zq6qHp9+CkFnmm2XWCcM/YEtqZYL6uTM1TXTpTm3LODI0s/ULO4iKSNYclsmDdh5cFSMmKKnloHudh3Zw==")
+               ("pop", "SIG_BLS_bFLCSmXqVrFqWo2mqxCeuLO5iAevMu/8qxpS7HkXSMmXuVLEytt+shDHn8FpcrUMlMHjxEAHOyRVi0ckvXYrCpHMx6floRvljJ1vV2FphGqgm24DxuB1BE3E21Okc0QS3GH6UCISfVBXuqoK+EfmoSGz3ssi0kzevE8MQitzGgK9EW3zTlZtvdRryI1OTUoUXkjTo1Q2VQIbqJZ55W7SNHUcIBZO5Ih4AXc7usjWUBXv1BK0NNcort4EAfOXnkIN47iRLQ==")
+            }))));
+} FC_LOG_AND_RETHROW()
+
+// Verifies no duplicate keys are allowed
+BOOST_FIXTURE_TEST_CASE( duplicate_pub_keys, eosio_bios_if_tester ) try {
+   BOOST_REQUIRE_THROW(push_action("iftester"_n, "setfinalizer"_n, "iftester"_n, mvo()
+      ("finalizer_policy", mvo()
+         ("threshold", 10)
+         ("finalizers", std::vector<mvo>{
+            mvo()
+               ("description", "set_2_finalizer_1")
+               ("weight", 5)
+               ("public_key", "PUB_BLS_jpMTmybJZvf4k6fR7Bgu7wrNjwQLK/IBdjhZHWTjoohgdUMi8VpTGsyYpzP1+ekMzUuZ8LqFcnfO0myTwH9Y2YeabhhowSp7nzJJhgO4XWCpcGCLssOjVWh3/D9wMIISVUwfsQ==")
+               ("pop", "SIG_BLS_qxozxdQngA4iDidRNJXwKML7VhawRi6XGMXeBc55MzDaAyixR5D3Ys7d72IiwroUkWDqEVQrPq+u/ukICWD9g+LeE9JNxn8IBMLpotXu728ezyal6g5tMoDf8PQuZSEP6yPSMGo7ajbHVe+ehcgWs+/zpxWH1WgCTgU3Bc5Qy32z6L0ztK3WLuW25OmK3EQLbIP5sPMv07gMWP4aDNLAor6IzQYMvxFaibiWsSqMt4YxB6eONetmdftCn5Om3NcHwW7Ueg=="),
+            mvo()
+               ("description", "set_2_finalizer_2")
+               ("weight", 5)
+               ("public_key", "PUB_BLS_jpMTmybJZvf4k6fR7Bgu7wrNjwQLK/IBdjhZHWTjoohgdUMi8VpTGsyYpzP1+ekMzUuZ8LqFcnfO0myTwH9Y2YeabhhowSp7nzJJhgO4XWCpcGCLssOjVWh3/D9wMIISVUwfsQ==")
+               ("pop", "SIG_BLS_qxozxdQngA4iDidRNJXwKML7VhawRi6XGMXeBc55MzDaAyixR5D3Ys7d72IiwroUkWDqEVQrPq+u/ukICWD9g+LeE9JNxn8IBMLpotXu728ezyal6g5tMoDf8PQuZSEP6yPSMGo7ajbHVe+ehcgWs+/zpxWH1WgCTgU3Bc5Qy32z6L0ztK3WLuW25OmK3EQLbIP5sPMv07gMWP4aDNLAor6IzQYMvxFaibiWsSqMt4YxB6eONetmdftCn5Om3NcHwW7Ueg=="),
+            }))), eosio_assert_message_exception);
+} FC_LOG_AND_RETHROW()
+
+// Verifies description cannot exceed maximum allowed size (256 chars)
+BOOST_FIXTURE_TEST_CASE( long_description, eosio_bios_if_tester ) try {
+   BOOST_REQUIRE_THROW(push_action("iftester"_n, "setfinalizer"_n, "iftester"_n, mvo()
+      ("finalizer_policy", mvo()("threshold", 2)
+         ("finalizers", std::vector<mvo>{mvo()
+            // 257 chars long
+            ("description", "01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456")
+            ("weight", 1)
+            ("public_key", "PUB_BLS_jpMTmybJZvf4k6fR7Bgu7wrNjwQLK/IBdjhZHWTjoohgdUMi8VpTGsyYpzP1+ekMzUuZ8LqFcnfO0myTwH9Y2YeabhhowSp7nzJJhgO4XWCpcGCLssOjVWh3/D9wMIISVUwfsQ==")
+            ("pop", "SIG_BLS_qxozxdQngA4iDidRNJXwKML7VhawRi6XGMXeBc55MzDaAyixR5D3Ys7d72IiwroUkWDqEVQrPq+u/ukICWD9g+LeE9JNxn8IBMLpotXu728ezyal6g5tMoDf8PQuZSEP6yPSMGo7ajbHVe+ehcgWs+/zpxWH1WgCTgU3Bc5Qy32z6L0ztK3WLuW25OmK3EQLbIP5sPMv07gMWP4aDNLAor6IzQYMvxFaibiWsSqMt4YxB6eONetmdftCn5Om3NcHwW7Ueg==")}))), eosio_assert_message_exception);
+} FC_LOG_AND_RETHROW()
+
 BOOST_AUTO_TEST_SUITE_END()
