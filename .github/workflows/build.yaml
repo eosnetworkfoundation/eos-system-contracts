@@ -62,7 +62,7 @@ jobs:
             echo cdt-prerelease=${{inputs.override-cdt-prerelease}} >> $GITHUB_OUTPUT
           fi
       - name: Download cdt
-        uses: AntelopeIO/asset-artifact-download-action@v2
+        uses: AntelopeIO/asset-artifact-download-action@v3
         with:
           owner: AntelopeIO
           repo: cdt
@@ -70,9 +70,8 @@ jobs:
           target: '${{steps.versions.outputs.cdt-target}}'
           prereleases: ${{fromJSON(steps.versions.outputs.cdt-prerelease)}}
           artifact-name: cdt_ubuntu_package_amd64
-          token: ${{github.token}}
       - name: Download leap-dev
-        uses: AntelopeIO/asset-artifact-download-action@v2
+        uses: AntelopeIO/asset-artifact-download-action@v3
         with:
           owner: AntelopeIO
           repo: leap
@@ -81,9 +80,9 @@ jobs:
           prereleases: ${{fromJSON(steps.versions.outputs.leap-dev-prerelease)}}
           artifact-name: leap-dev-ubuntu20-amd64
           container-package: experimental-binaries
-          token: ${{github.token}}
       - name: Install packages
         run: |
+          sudo apt-get update && sudo apt-get upgrade -y
           sudo apt install ./*.deb
           sudo apt-get install cmake
           rm ./*.deb
