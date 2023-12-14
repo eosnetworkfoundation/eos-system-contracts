@@ -20,21 +20,6 @@ void bios::setabi( name account, const std::vector<char>& abi ) {
    }
 }
 
-// helpers for defining std::unordered_set<eosio::bls_g1>
-struct g1_hash {
-   // bls_g1 is defined as std::array<char, 96>
-   std::size_t operator()(const eosio::bls_g1& g1) const {
-      std::hash<std::string> hash_func;
-      return hash_func(g1.data());
-   }
-};
-
-struct g1_equal {
-   bool operator()(const eosio::bls_g1& lhs, const eosio::bls_g1& rhs) const {
-      return std::memcmp(lhs.data(), rhs.data(), 96 * sizeof(char)) == 0;
-   }
-};
-
 void bios::setfinalizer( const finalizer_policy& finalizer_policy ) {
    // exensive checks are performed to make sure setfinalizer host function
    // will never fail
@@ -51,8 +36,20 @@ void bios::setfinalizer( const finalizer_policy& finalizer_policy ) {
    const std::string pk_prefix = "PUB_BLS";
    const std::string sig_prefix = "SIG_BLS";
 
-   // use raw affine format for uniqueness check
+   // use raw affine format (bls_g1 is std::array<char, 96>) for uniqueness check
+   struct g1_hash {
+      std::size_t operator()(const eosio::bls_g1& g1) const {
+         std::hash<const char*> hash_func;
+         return hash_func(g1.data());
+      }
+   };
+   struct g1_equal {
+      bool operator()(const eosio::bls_g1& lhs, const eosio::bls_g1& rhs) const {
+         return std::memcmp(lhs.data(), rhs.data(), lhs.size()) == 0;
+      }
+   };
    std::unordered_set<eosio::bls_g1, g1_hash, g1_equal> unique_finalizer_keys;
+
    uint64_t weight_sum = 0;
 
    for (const auto& f: finalizer_policy.finalizers) {
