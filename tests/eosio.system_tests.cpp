@@ -3187,9 +3187,9 @@ BOOST_FIXTURE_TEST_CASE( elect_producers /*_and_parameters*/, eosio_system_teste
    //vote for producers
    BOOST_REQUIRE_EQUAL( success(), vote( "alice1111111"_n, { "defproducer1"_n } ) );
    produce_blocks(250);
-   auto producer_keys = control->head_block_state()->active_schedule.producers;
-   BOOST_REQUIRE_EQUAL( 1, producer_keys.size() );
-   BOOST_REQUIRE_EQUAL( name("defproducer1"), producer_keys[0].producer_name );
+   auto producer_keys = control->active_producers();
+   BOOST_REQUIRE_EQUAL( 1, producer_keys.producers.size() );
+   BOOST_REQUIRE_EQUAL( name("defproducer1"), producer_keys.producers[0].producer_name );
 
    //auto config = config_to_variant( control->get_global_properties().configuration );
    //auto prod1_config = testing::filter_fields( config, producer_parameters_example( 1 ) );
@@ -3203,10 +3203,10 @@ BOOST_FIXTURE_TEST_CASE( elect_producers /*_and_parameters*/, eosio_system_teste
    BOOST_REQUIRE_EQUAL( success(), vote( "bob111111111"_n, { "defproducer2"_n } ) );
    ilog(".");
    produce_blocks(250);
-   producer_keys = control->head_block_state()->active_schedule.producers;
-   BOOST_REQUIRE_EQUAL( 2, producer_keys.size() );
-   BOOST_REQUIRE_EQUAL( name("defproducer1"), producer_keys[0].producer_name );
-   BOOST_REQUIRE_EQUAL( name("defproducer2"), producer_keys[1].producer_name );
+   producer_keys = control->active_producers();
+   BOOST_REQUIRE_EQUAL( 2, producer_keys.producers.size() );
+   BOOST_REQUIRE_EQUAL( name("defproducer1"), producer_keys.producers[0].producer_name );
+   BOOST_REQUIRE_EQUAL( name("defproducer2"), producer_keys.producers[1].producer_name );
    //config = config_to_variant( control->get_global_properties().configuration );
    //auto prod2_config = testing::filter_fields( config, producer_parameters_example( 2 ) );
    //REQUIRE_EQUAL_OBJECTS(prod2_config, config);
@@ -3214,19 +3214,19 @@ BOOST_FIXTURE_TEST_CASE( elect_producers /*_and_parameters*/, eosio_system_teste
    // elect 3 producers
    BOOST_REQUIRE_EQUAL( success(), vote( "bob111111111"_n, { "defproducer2"_n, "defproducer3"_n } ) );
    produce_blocks(250);
-   producer_keys = control->head_block_state()->active_schedule.producers;
-   BOOST_REQUIRE_EQUAL( 3, producer_keys.size() );
-   BOOST_REQUIRE_EQUAL( name("defproducer1"), producer_keys[0].producer_name );
-   BOOST_REQUIRE_EQUAL( name("defproducer2"), producer_keys[1].producer_name );
-   BOOST_REQUIRE_EQUAL( name("defproducer3"), producer_keys[2].producer_name );
+   producer_keys = control->active_producers();
+   BOOST_REQUIRE_EQUAL( 3, producer_keys.producers.size() );
+   BOOST_REQUIRE_EQUAL( name("defproducer1"), producer_keys.producers[0].producer_name );
+   BOOST_REQUIRE_EQUAL( name("defproducer2"), producer_keys.producers[1].producer_name );
+   BOOST_REQUIRE_EQUAL( name("defproducer3"), producer_keys.producers[2].producer_name );
    //config = config_to_variant( control->get_global_properties().configuration );
    //REQUIRE_EQUAL_OBJECTS(prod2_config, config);
 
    // try to go back to 2 producers and fail
    BOOST_REQUIRE_EQUAL( success(), vote( "bob111111111"_n, { "defproducer3"_n } ) );
    produce_blocks(250);
-   producer_keys = control->head_block_state()->active_schedule.producers;
-   BOOST_REQUIRE_EQUAL( 3, producer_keys.size() );
+   producer_keys = control->active_producers();
+   BOOST_REQUIRE_EQUAL( 3, producer_keys.producers.size() );
 
    // The test below is invalid now, producer schedule is not updated if there are
    // fewer producers in the new schedule
