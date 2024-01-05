@@ -29,9 +29,9 @@ void bios::setfinalizer( const finalizer_policy& finalizer_policy ) {
    check(finalizer_policy.finalizers.size() <= max_finalizers, "number of finalizers exceeds the maximum allowed");
    check(finalizer_policy.finalizers.size() > 0, "require at least one finalizer");
 
-   eosio::abi_finalizer_policy abi_finalizer_policy;
-   abi_finalizer_policy.fthreshold = finalizer_policy.threshold;
-   abi_finalizer_policy.finalizers.reserve(finalizer_policy.finalizers.size());
+   eosio::finalizer_policy fin_policy;
+   fin_policy.threshold = finalizer_policy.threshold;
+   fin_policy.finalizers.reserve(finalizer_policy.finalizers.size());
 
    const std::string pk_prefix = "PUB_BLS";
    const std::string sig_prefix = "SIG_BLS";
@@ -75,12 +75,12 @@ void bios::setfinalizer( const finalizer_policy& finalizer_policy ) {
       check(eosio::bls_pop_verify(pk, signature), "proof of possession failed");
 
       std::vector<char> pk_vector(pk.begin(), pk.end());
-      abi_finalizer_policy.finalizers.emplace_back(eosio::abi_finalizer_authority{f.description, f.weight, std::move(pk_vector)});
+      fin_policy.finalizers.emplace_back(eosio::finalizer_authority{f.description, f.weight, std::move(pk_vector)});
    }
 
    check(finalizer_policy.threshold > weight_sum / 2, "finalizer policy threshold must be greater than half of the sum of the weights");
 
-   set_finalizers(std::move(abi_finalizer_policy));
+   set_finalizers(std::move(fin_policy));
 }
 
 void bios::onerror( ignore<uint128_t>, ignore<std::vector<char>> ) {
