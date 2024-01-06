@@ -168,7 +168,7 @@ namespace eosiosystem {
    struct [[eosio::table("global2"), eosio::contract("eosio.system")]] eosio_global_state2 {
       eosio_global_state2(){}
 
-      uint16_t          new_ram_per_block = 0;
+      int16_t           new_ram_per_block = 0;
       block_timestamp   last_ram_increase;
       block_timestamp   last_block_num; /* deprecated */
       double            total_producer_votepay_share = 0;
@@ -1180,14 +1180,14 @@ namespace eosiosystem {
          void setram( uint64_t max_ram_size );
 
          /**
-          * Set ram rate action, sets the rate of increase of RAM in bytes per block. It is capped by the uint16_t to
+          * Set ram rate action, sets the rate of increase of RAM in bytes per block. It is capped by the int16_t to
           * a maximum rate of 3 TB per year. If update_ram_supply hasn't been called for the most recent block,
           * then new ram will be allocated at the old rate up to the present block before switching the rate.
           *
           * @param bytes_per_block - the amount of bytes per block increase to set.
           */
          [[eosio::action]]
-         void setramrate( uint16_t bytes_per_block );
+         void setramrate( int16_t bytes_per_block );
 
          /**
           * Vote producer action, votes for a set of producers. This action updates the list of `producers` voted for,

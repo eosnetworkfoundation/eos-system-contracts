@@ -85,12 +85,16 @@ namespace eosiosystem {
    }
 
    void system_contract::update_ram_supply() {
-      auto cbt = eosio::current_block_time();
+      const block_timestamp cbt = eosio::current_block_time();
+      const block_timestamp last_ram_increase = _gstate2.last_ram_increase;
 
-      if( cbt <= _gstate2.last_ram_increase ) return;
+      if( cbt <= last_ram_increase ) return;
+      _gstate2.last_ram_increase = cbt; // set timestamp of last ram increase/decrease or no change
+      if ( _gstate2.new_ram_per_block == 0 ) return; // no new ram is issued
 
       auto itr = _rammarket.find(ramcore_symbol.raw());
-      auto new_ram = (cbt.slot - _gstate2.last_ram_increase.slot)*_gstate2.new_ram_per_block;
+      int64_t new_ram = static_cast<int64_t>(cbt.slot - last_ram_increase.slot) * _gstate2.new_ram_per_block;
+      if ( _gstate.max_ram_size + new_ram < _gstate.total_ram_bytes_reserved ) return; // no ram left to issue
       _gstate.max_ram_size += new_ram;
 
       /**
@@ -99,10 +103,9 @@ namespace eosiosystem {
       _rammarket.modify( itr, same_payer, [&]( auto& m ) {
          m.base.balance.amount += new_ram;
       });
-      _gstate2.last_ram_increase = cbt;
    }
 
-   void system_contract::setramrate( uint16_t bytes_per_block ) {
+   void system_contract::setramrate( int16_t bytes_per_block ) {
       require_auth( get_self() );
 
       update_ram_supply();
