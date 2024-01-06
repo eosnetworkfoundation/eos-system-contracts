@@ -154,6 +154,7 @@ namespace eosiosystem {
    void system_contract::ramtransfer( const name& from, const name& to, int64_t bytes ) {
       require_auth( from );
       update_ram_supply();
+      require_recipient( to );
 
       check( bytes > 0, "cannot sell negative byte" );
       check(is_account(to), "to account does not exist");
@@ -188,7 +189,7 @@ namespace eosiosystem {
       set_resource_ram_bytes_limits( to_itr->owner, to_itr->ram_bytes );
    }
 
-   void set_resource_ram_bytes_limits( const name& owner, int64_t new_ram_bytes ) {
+   void system_contract::set_resource_ram_bytes_limits( const name& owner, int64_t new_ram_bytes ) {
       auto voter_itr = _voters.find( owner.value );
       if ( voter_itr == _voters.end() || !has_field( voter_itr->flags1, voter_info::flags1_fields::ram_managed ) ) {
          int64_t ram_bytes, net, cpu;
