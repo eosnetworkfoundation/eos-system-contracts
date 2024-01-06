@@ -94,12 +94,7 @@ namespace eosiosystem {
             });
       }
 
-      auto voter_itr = _voters.find( res_itr->owner.value );
-      if( voter_itr == _voters.end() || !has_field( voter_itr->flags1, voter_info::flags1_fields::ram_managed ) ) {
-         int64_t ram_bytes, net, cpu;
-         get_resource_limits( res_itr->owner, ram_bytes, net, cpu );
-         set_resource_limits( res_itr->owner, res_itr->ram_bytes + ram_gift_bytes, net, cpu );
-      }
+      set_resource_ram_bytes_limits( res_itr->owner, res_itr->ram_bytes );
    }
 
   /**
@@ -138,12 +133,7 @@ namespace eosiosystem {
           res.ram_bytes -= bytes;
       });
 
-      auto voter_itr = _voters.find( res_itr->owner.value );
-      if( voter_itr == _voters.end() || !has_field( voter_itr->flags1, voter_info::flags1_fields::ram_managed ) ) {
-         int64_t ram_bytes, net, cpu;
-         get_resource_limits( res_itr->owner, ram_bytes, net, cpu );
-         set_resource_limits( res_itr->owner, res_itr->ram_bytes + ram_gift_bytes, net, cpu );
-      }
+      set_resource_ram_bytes_limits( res_itr->owner, res_itr->ram_bytes );
 
       {
          token::transfer_action transfer_act{ token_account, { {ram_account, active_permission}, {account, active_permission} } };
@@ -155,6 +145,55 @@ namespace eosiosystem {
          token::transfer_action transfer_act{ token_account, { {account, active_permission} } };
          transfer_act.send( account, ramfee_account, asset(fee, core_symbol()), "sell ram fee" );
          channel_to_rex( ramfee_account, asset(fee, core_symbol() ));
+      }
+   }
+
+   /**
+    * This action will transfer RAM bytes from one account to another.
+   */
+   void system_contract::ramtransfer( const name& from, const name& to, int64_t bytes ) {
+      require_auth( from );
+      update_ram_supply();
+
+      check( bytes > 0, "cannot sell negative byte" );
+      check(is_account(to), "to account does not exist");
+
+      user_resources_table userres( get_self(), from.value );
+
+      // reduce bytes from sender
+      auto from_itr = userres.find( from.value );
+      check( from_itr != userres.end(), "no resource row" );
+      check( from_itr->ram_bytes >= bytes, "insufficient quota" );
+
+      userres.modify( from_itr, from, [&]( auto& res ) {
+          res.ram_bytes -= bytes;
+      });
+
+      // add bytes to receiver
+      auto to_itr = userres.find( from.value );
+      if ( to_itr == userres.end() ) {
+         to_itr = userres.emplace( from, [&]( auto& res ) {
+            res.owner = to;
+            res.net_weight = asset( 0, core_symbol() );
+            res.cpu_weight = asset( 0, core_symbol() );
+            res.ram_bytes = bytes;
+         });
+      } else {
+         userres.modify( to_itr, from, [&]( auto& res ) {
+            res.ram_bytes += bytes;
+         });
+      }
+
+      set_resource_ram_bytes_limits( from_itr->owner, from_itr->ram_bytes );
+      set_resource_ram_bytes_limits( to_itr->owner, to_itr->ram_bytes );
+   }
+
+   void set_resource_ram_bytes_limits( const name& owner, int64_t new_ram_bytes ) {
+      auto voter_itr = _voters.find( owner.value );
+      if ( voter_itr == _voters.end() || !has_field( voter_itr->flags1, voter_info::flags1_fields::ram_managed ) ) {
+         int64_t ram_bytes, net, cpu;
+         get_resource_limits( owner, ram_bytes, net, cpu );
+         set_resource_limits( owner, new_ram_bytes + ram_gift_bytes, net, cpu );
       }
    }
 

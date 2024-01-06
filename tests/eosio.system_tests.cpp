@@ -4124,6 +4124,27 @@ BOOST_FIXTURE_TEST_CASE( buy_sell_small_rex, eosio_system_tester ) try {
 } FC_LOG_AND_RETHROW()
 
 
+// RAM transfer
+BOOST_FIXTURE_TEST_CASE( ram_transfer, eosio_system_tester ) try {
+   const name alice = "alice1111111"_n;
+   const name bob = "bobbyaccount"_n;
+
+   transfer( config::system_account_name, alice, core_sym::from_string("100.0000"), config::system_account_name );
+   BOOST_REQUIRE_EQUAL( success(), buyrambytes( alice, alice, 1000 ) );
+
+   const uint64_t alice_before = get_total_stake( alice )["ram_bytes"];
+   const uint64_t bob_before = get_total_stake( bob )["ram_bytes"];
+
+   BOOST_REQUIRE_EQUAL( success(), ramtransfer( alice, bob, 1000 ) );
+
+   const uint64_t alice_after = get_total_stake( alice )["ram_bytes"];
+   const uint64_t bob_after = get_total_stake( bob )["ram_bytes"];
+
+   BOOST_REQUIRE_EQUAL( alice_before - 1000, alice_after );
+   BOOST_REQUIRE_EQUAL( bob_before + 1000, bob_after );
+
+} FC_LOG_AND_RETHROW()
+
 BOOST_FIXTURE_TEST_CASE( unstake_buy_rex, eosio_system_tester, * boost::unit_test::tolerance(1e-10) ) try {
 
    const int64_t ratio        = 10000;
