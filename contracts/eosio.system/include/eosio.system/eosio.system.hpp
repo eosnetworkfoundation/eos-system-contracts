@@ -1507,7 +1507,9 @@ namespace eosiosystem {
          void changebw( name from, const name& receiver,
                         const asset& stake_net_quantity, const asset& stake_cpu_quantity, bool transfer );
          void update_voting_power( const name& voter, const asset& total_update );
-         void set_resource_ram_bytes_limits( const name& owner, int64_t new_ram_bytes );
+         void set_resource_ram_bytes_limits( const name& owner );
+         void reduce_ram( const name& owner, int64_t bytes );
+         void add_ram( const name& owner, int64_t bytes );
 
          // defined in voting.cpp
          void register_producer( const name& producer, const eosio::block_signing_authority& producer_authority, const std::string& url, uint16_t location );

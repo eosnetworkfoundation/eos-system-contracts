@@ -79,22 +79,7 @@ namespace eosiosystem {
       _gstate.total_ram_bytes_reserved += uint64_t(bytes_out);
       _gstate.total_ram_stake          += quant_after_fee.amount;
 
-      user_resources_table  userres( get_self(), receiver.value );
-      auto res_itr = userres.find( receiver.value );
-      if( res_itr ==  userres.end() ) {
-         res_itr = userres.emplace( receiver, [&]( auto& res ) {
-               res.owner = receiver;
-               res.net_weight = asset( 0, core_symbol() );
-               res.cpu_weight = asset( 0, core_symbol() );
-               res.ram_bytes = bytes_out;
-            });
-      } else {
-         userres.modify( res_itr, receiver, [&]( auto& res ) {
-               res.ram_bytes += bytes_out;
-            });
-      }
-
-      set_resource_ram_bytes_limits( res_itr->owner, res_itr->ram_bytes );
+      add_ram( receiver, bytes_out );
    }
 
   /**
@@ -106,13 +91,7 @@ namespace eosiosystem {
    void system_contract::sellram( const name& account, int64_t bytes ) {
       require_auth( account );
       update_ram_supply();
-
-      check( bytes > 0, "cannot sell negative byte" );
-
-      user_resources_table  userres( get_self(), account.value );
-      auto res_itr = userres.find( account.value );
-      check( res_itr != userres.end(), "no resource row" );
-      check( res_itr->ram_bytes >= bytes, "insufficient quota" );
+      reduce_ram(account, bytes);
 
       asset tokens_out;
       auto itr = _rammarket.find(ramcore_symbol.raw());
@@ -128,12 +107,6 @@ namespace eosiosystem {
 
       //// this shouldn't happen, but just in case it does we should prevent it
       check( _gstate.total_ram_stake >= 0, "error, attempt to unstake more tokens than previously staked" );
-
-      userres.modify( res_itr, account, [&]( auto& res ) {
-          res.ram_bytes -= bytes;
-      });
-
-      set_resource_ram_bytes_limits( res_itr->owner, res_itr->ram_bytes );
 
       {
          token::transfer_action transfer_act{ token_account, { {ram_account, active_permission}, {account, active_permission} } };
@@ -154,47 +127,53 @@ namespace eosiosystem {
    void system_contract::ramtransfer( const name& from, const name& to, int64_t bytes ) {
       require_auth( from );
       update_ram_supply();
+      reduce_ram( from, bytes );
+      add_ram( to, bytes );
       require_recipient( to );
+   }
 
-      check( bytes > 0, "cannot sell negative byte" );
-      check(is_account(to), "to account does not exist");
+   void system_contract::reduce_ram( const name& owner, int64_t bytes ) {
+      check( bytes > 0, "cannot reduce negative byte" );
+      user_resources_table userres( get_self(), owner.value );
+      auto res_itr = userres.find( owner.value );
+      check( res_itr != userres.end(), "no resource row" );
+      check( res_itr->ram_bytes >= bytes, "insufficient quota" );
 
-      user_resources_table userres( get_self(), from.value );
-
-      // reduce bytes from sender
-      auto from_itr = userres.find( from.value );
-      check( from_itr != userres.end(), "no resource row" );
-      check( from_itr->ram_bytes >= bytes, "insufficient quota" );
-
-      userres.modify( from_itr, from, [&]( auto& res ) {
+      userres.modify( res_itr, same_payer, [&]( auto& res ) {
           res.ram_bytes -= bytes;
       });
+      set_resource_ram_bytes_limits( owner );
+   }
 
-      // add bytes to receiver
-      auto to_itr = userres.find( from.value );
-      if ( to_itr == userres.end() ) {
-         to_itr = userres.emplace( from, [&]( auto& res ) {
-            res.owner = to;
+   void system_contract::add_ram( const name& owner, int64_t bytes ) {
+      check( bytes > 0, "cannot add negative byte" );
+      check( is_account(owner), "owner=" + owner.to_string() + " account does not exist");
+      user_resources_table userres( get_self(), owner.value );
+      auto res_itr = userres.find( owner.value );
+      if ( res_itr == userres.end() ) {
+         userres.emplace( owner, [&]( auto& res ) {
+            res.owner = owner;
             res.net_weight = asset( 0, core_symbol() );
             res.cpu_weight = asset( 0, core_symbol() );
             res.ram_bytes = bytes;
          });
       } else {
-         userres.modify( to_itr, from, [&]( auto& res ) {
+         userres.modify( res_itr, same_payer, [&]( auto& res ) {
             res.ram_bytes += bytes;
          });
       }
-
-      set_resource_ram_bytes_limits( from_itr->owner, from_itr->ram_bytes );
-      set_resource_ram_bytes_limits( to_itr->owner, to_itr->ram_bytes );
+      set_resource_ram_bytes_limits( owner );
    }
 
-   void system_contract::set_resource_ram_bytes_limits( const name& owner, int64_t new_ram_bytes ) {
+   void system_contract::set_resource_ram_bytes_limits( const name& owner ) {
+      user_resources_table userres( get_self(), owner.value );
+      auto res_itr = userres.find( owner.value );
+
       auto voter_itr = _voters.find( owner.value );
       if ( voter_itr == _voters.end() || !has_field( voter_itr->flags1, voter_info::flags1_fields::ram_managed ) ) {
          int64_t ram_bytes, net, cpu;
          get_resource_limits( owner, ram_bytes, net, cpu );
-         set_resource_limits( owner, new_ram_bytes + ram_gift_bytes, net, cpu );
+         set_resource_limits( owner, res_itr->ram_bytes + ram_gift_bytes, net, cpu );
       }
    }
 

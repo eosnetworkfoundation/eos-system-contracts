@@ -3929,7 +3929,7 @@ BOOST_FIXTURE_TEST_CASE( rex_rounding_issue, eosio_system_tester ) try {
    auto rent_and_go = [&] (int cnt) {
       for(auto& rb : rexborrowers) {
          BOOST_REQUIRE_EQUAL( success(),
-                        push_action( rb, "rentcpu"_n, 
+                        push_action( rb, "rentcpu"_n,
                         mvo()
                         ("from", rb)
                         ("receiver", rb)
@@ -4126,11 +4126,15 @@ BOOST_FIXTURE_TEST_CASE( buy_sell_small_rex, eosio_system_tester ) try {
 
 // RAM transfer
 BOOST_FIXTURE_TEST_CASE( ram_transfer, eosio_system_tester ) try {
-   const name alice = "alice1111111"_n;
-   const name bob = "bobbyaccount"_n;
+   const std::vector<account_name> accounts = { "alice"_n, "bob"_n };
+   create_accounts_with_resources( accounts );
+   const account_name alice = accounts[0];
+   const account_name bob = accounts[1];
 
    transfer( config::system_account_name, alice, core_sym::from_string("100.0000"), config::system_account_name );
-   BOOST_REQUIRE_EQUAL( success(), buyrambytes( alice, alice, 1000 ) );
+   transfer( config::system_account_name, bob, core_sym::from_string("100.0000"), config::system_account_name );
+   BOOST_REQUIRE_EQUAL( success(), buyrambytes( alice, alice, 10000 ) );
+   BOOST_REQUIRE_EQUAL( success(), buyrambytes( bob, bob, 10000 ) );
 
    const uint64_t alice_before = get_total_stake( alice )["ram_bytes"].as_uint64();
    const uint64_t bob_before = get_total_stake( bob )["ram_bytes"].as_uint64();
@@ -5553,7 +5557,7 @@ BOOST_FIXTURE_TEST_CASE( b1_vesting, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL( wasm_assert_msg("b1 can only claim their tokens over 10 years"),
                         unstake( b1, b1, final_amount, final_amount ) );
 
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg("must vote for at least 21 producers or for a proxy before buying REX"), 
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg("must vote for at least 21 producers or for a proxy before buying REX"),
                         unstaketorex( b1, b1, final_amount - small_amount, final_amount - small_amount ) );
 
    BOOST_REQUIRE_EQUAL( error("missing authority of eosio"), vote( b1, { }, "proxyaccount"_n ) );
