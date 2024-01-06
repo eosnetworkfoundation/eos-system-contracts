@@ -1428,6 +1428,7 @@ namespace eosiosystem {
          using buyram_action = eosio::action_wrapper<"buyram"_n, &system_contract::buyram>;
          using buyrambytes_action = eosio::action_wrapper<"buyrambytes"_n, &system_contract::buyrambytes>;
          using sellram_action = eosio::action_wrapper<"sellram"_n, &system_contract::sellram>;
+         using ramtransfer_action = eosio::action_wrapper<"ramtransfer"_n, &system_contract::ramtransfer>;
          using refund_action = eosio::action_wrapper<"refund"_n, &system_contract::refund>;
          using regproducer_action = eosio::action_wrapper<"regproducer"_n, &system_contract::regproducer>;
          using regproducer2_action = eosio::action_wrapper<"regproducer2"_n, &system_contract::regproducer2>;

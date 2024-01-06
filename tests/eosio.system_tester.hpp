@@ -253,6 +253,13 @@ public:
       return buyram( account_name(payer), account_name(receiver), eosin );
    }
 
+   action_result ramtransfer( const account_name& from, const account_name& to, uint32_t bytes ) {
+      return push_action( payer, "ramtransfer"_n, mvo()( "from",from)("to",to)("bytes",bytes) );
+   }
+   action_result ramtransfer( std::string_view from, std::string_view to, uint32_t bytes ) {
+      return push_action( payer, "ramtransfer"_n, mvo()( "from",from)("to",to)("bytes",bytes) );
+   }
+
    action_result buyrambytes( const account_name& payer, account_name receiver, uint32_t numbytes ) {
       return push_action( payer, "buyrambytes"_n, mvo()( "payer",payer)("receiver",receiver)("bytes",numbytes) );
    }
@@ -707,7 +714,7 @@ public:
       memcpy( data.data(), itr->value.data(), data.size() );
       return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "rex_return_buckets", data, abi_serializer::create_yield_function(abi_serializer_max_time) );
    }
-      
+
    void setup_rex_accounts( const std::vector<account_name>& accounts,
                             const asset& init_balance,
                             const asset& net = core_sym::from_string("80.0000"),
