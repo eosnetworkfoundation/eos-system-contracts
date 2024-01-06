@@ -4132,13 +4132,13 @@ BOOST_FIXTURE_TEST_CASE( ram_transfer, eosio_system_tester ) try {
    transfer( config::system_account_name, alice, core_sym::from_string("100.0000"), config::system_account_name );
    BOOST_REQUIRE_EQUAL( success(), buyrambytes( alice, alice, 1000 ) );
 
-   const uint64_t alice_before = get_total_stake( alice )["ram_bytes"];
-   const uint64_t bob_before = get_total_stake( bob )["ram_bytes"];
+   const uint64_t alice_before = get_total_stake( alice )["ram_bytes"].as_uint64();
+   const uint64_t bob_before = get_total_stake( bob )["ram_bytes"].as_uint64();
 
    BOOST_REQUIRE_EQUAL( success(), ramtransfer( alice, bob, 1000 ) );
 
-   const uint64_t alice_after = get_total_stake( alice )["ram_bytes"];
-   const uint64_t bob_after = get_total_stake( bob )["ram_bytes"];
+   const uint64_t alice_after = get_total_stake( alice )["ram_bytes"].as_uint64();
+   const uint64_t bob_after = get_total_stake( bob )["ram_bytes"].as_uint64();
 
    BOOST_REQUIRE_EQUAL( alice_before - 1000, alice_after );
    BOOST_REQUIRE_EQUAL( bob_before + 1000, bob_after );
