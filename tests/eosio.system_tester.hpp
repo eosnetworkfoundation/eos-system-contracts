@@ -254,10 +254,10 @@ public:
    }
 
    action_result ramtransfer( const account_name& from, const account_name& to, uint32_t bytes ) {
-      return push_action( payer, "ramtransfer"_n, mvo()( "from",from)("to",to)("bytes",bytes) );
+      return push_action( from, "ramtransfer"_n, mvo()( "from",from)("to",to)("bytes",bytes) );
    }
    action_result ramtransfer( std::string_view from, std::string_view to, uint32_t bytes ) {
-      return ramtransfer( payer, "ramtransfer"_n, mvo()( "from",from)("to",to)("bytes",bytes) );
+      return ramtransfer( account_name(from), account_name(to), bytes );
    }
 
    action_result buyrambytes( const account_name& payer, account_name receiver, uint32_t numbytes ) {
