@@ -1111,6 +1111,17 @@ namespace eosiosystem {
          void buyrambytes( const name& payer, const name& receiver, uint32_t bytes );
 
          /**
+          * Logging for buyram & buyrambytes action
+          *
+          * @param payer - the ram buyer,
+          * @param receiver - the ram receiver,
+          * @param quant - the quantity of tokens to buy ram with.
+          * @param bytes - the quantity of ram to buy specified in bytes.
+          */
+         [[eosio::action]]
+         void logbuyram( const name& payer, const name& receiver, const asset& quant, uint32_t bytes );
+
+         /**
           * Sell ram action, reduces quota by bytes and then performs an inline transfer of tokens
           * to receiver based upon the average purchase price of the original quota.
           *
@@ -1417,6 +1428,7 @@ namespace eosiosystem {
          using undelegatebw_action = eosio::action_wrapper<"undelegatebw"_n, &system_contract::undelegatebw>;
          using buyram_action = eosio::action_wrapper<"buyram"_n, &system_contract::buyram>;
          using buyrambytes_action = eosio::action_wrapper<"buyrambytes"_n, &system_contract::buyrambytes>;
+         using logbuyram_action = eosio::action_wrapper<"logbuyram"_n, &system_contract::logbuyram>;
          using sellram_action = eosio::action_wrapper<"sellram"_n, &system_contract::sellram>;
          using refund_action = eosio::action_wrapper<"refund"_n, &system_contract::refund>;
          using regproducer_action = eosio::action_wrapper<"regproducer"_n, &system_contract::regproducer>;

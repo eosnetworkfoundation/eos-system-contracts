@@ -44,6 +44,7 @@ namespace eosiosystem {
    {
       require_auth( payer );
       update_ram_supply();
+      require_recipient(receiver);
 
       check( quant.symbol == core_symbol(), "must buy ram with core token" );
       check( quant.amount > 0, "must purchase a positive amount" );
@@ -100,6 +101,16 @@ namespace eosiosystem {
          get_resource_limits( res_itr->owner, ram_bytes, net, cpu );
          set_resource_limits( res_itr->owner, res_itr->ram_bytes + ram_gift_bytes, net, cpu );
       }
+
+      // logging
+      system_contract::logbuyram_action logbuyram_act{ get_self(), { {get_self(), active_permission} } };
+      logbuyram_act.send( payer, receiver, quant, bytes_out );
+   }
+
+   void system_contract::logbuyram( const name& payer, const name& receiver, const asset& quant, uint32_t bytes ) {
+      require_auth( get_self() );
+      require_recipient(payer);
+      require_recipient(receiver);
    }
 
   /**
