@@ -253,18 +253,18 @@ public:
       return buyram( account_name(payer), account_name(receiver), eosin );
    }
 
-   action_result ramtransfer( const account_name& from, const account_name& to, uint32_t bytes ) {
-      return push_action( from, "ramtransfer"_n, mvo()( "from",from)("to",to)("bytes",bytes) );
+   action_result ramtransfer( const account_name& from, const account_name& to, uint32_t bytes, const string& memo ) {
+      return push_action( from, "ramtransfer"_n, mvo()( "from",from)("to",to)("bytes",bytes)(("memo",memo)) );
    }
-   action_result ramtransfer( std::string_view from, std::string_view to, uint32_t bytes ) {
-      return ramtransfer( account_name(from), account_name(to), bytes );
+   action_result ramtransfer( std::string_view from, std::string_view to, uint32_t bytes, const string& memo ) {
+      return ramtransfer( account_name(from), account_name(to), bytes, memo );
    }
 
-   action_result ramburn( const account_name& owner, uint32_t bytes ) {
-      return push_action( owner, "ramburn"_n, mvo()( "owner",owner)("bytes",bytes) );
+   action_result ramburn( const account_name& owner, uint32_t bytes, const string& memo ) {
+      return push_action( owner, "ramburn"_n, mvo()( "owner",owner)("bytes",bytes)("memo",memo) );
    }
-   action_result ramburn( std::string_view owner, uint32_t bytes ) {
-      return ramburn( account_name(owner), bytes );
+   action_result ramburn( std::string_view owner, uint32_t bytes, const string& memo ) {
+      return ramburn( account_name(owner), bytes, memo );
    }
 
    action_result buyrambytes( const account_name& payer, account_name receiver, uint32_t numbytes ) {

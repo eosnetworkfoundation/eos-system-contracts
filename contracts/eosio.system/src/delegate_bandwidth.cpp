@@ -123,10 +123,11 @@ namespace eosiosystem {
 
    /**
     * This action will transfer RAM bytes from one account to another.
-   */
-   void system_contract::ramtransfer( const name& from, const name& to, int64_t bytes ) {
+    */
+   void system_contract::ramtransfer( const name& from, const name& to, int64_t bytes, const std::string& memo ) {
       require_auth( from );
       update_ram_supply();
+      check( memo.size() <= 256, "memo has more than 256 bytes" );
       reduce_ram( from, bytes );
       add_ram( to, bytes );
       require_recipient( to );
@@ -135,9 +136,9 @@ namespace eosiosystem {
    /**
     * This action will burn RAM bytes from owner account.
     */
-   void system_contract::ramburn( const name& owner, int64_t bytes ) {
+   void system_contract::ramburn( const name& owner, int64_t bytes, const std::string& memo ) {
       require_auth( owner );
-      ramtransfer( owner, null_account, bytes );
+      ramtransfer( owner, null_account, bytes, memo );
    }
 
    void system_contract::reduce_ram( const name& owner, int64_t bytes ) {

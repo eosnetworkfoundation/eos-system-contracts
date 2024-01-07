@@ -1125,19 +1125,21 @@ namespace eosiosystem {
           *
           * @param from - the ram sender account,
           * @param to - the ram receiver account,
-          * @param bytes - the amount of ram to transfer in bytes.
+          * @param bytes - the amount of ram to transfer in bytes,
+          * @param memo - the memo string to accompany the transaction.
           */
          [[eosio::action]]
-         void ramtransfer( const name& from, const name& to, int64_t bytes );
+         void ramtransfer( const name& from, const name& to, int64_t bytes, const std::string& memo );
 
          /**
           * Burn ram action, reduces owner's quota by bytes.
           *
           * @param owner - the ram owner account,
-          * @param bytes - the amount of ram to be burned in bytes.
+          * @param bytes - the amount of ram to be burned in bytes,
+          * @param memo - the memo string to accompany the transaction.
           */
          [[eosio::action]]
-         void ramburn( const name& owner, int64_t bytes );
+         void ramburn( const name& owner, int64_t bytes, const std::string& memo );
 
          /**
           * Refund action, this action is called after the delegation-period to claim all pending

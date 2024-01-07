@@ -424,6 +424,10 @@ icon: @ICON_BASE_URL@/@RESOURCE_ICON_URI@
 
 Transfer {{bytes}} bytes of unused RAM from account {{from}} to account {{to}}.
 
+{{#if memo}}There is a memo attached to the transfer stating:
+{{memo}}
+{{/if}}
+
 <h1 class="contract">ramburn</h1>
 
 ---
@@ -434,6 +438,10 @@ icon: @ICON_BASE_URL@/@RESOURCE_ICON_URI@
 ---
 
 Burn {{bytes}} bytes of unused RAM from account {{from}}.
+
+{{#if memo}}There is a memo attached to the transfer stating:
+{{memo}}
+{{/if}}
 
 <h1 class="contract">sellrex</h1>
 
