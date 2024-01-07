@@ -260,6 +260,13 @@ public:
       return ramtransfer( account_name(from), account_name(to), bytes );
    }
 
+   action_result ramburn( const account_name& owner, const account_name& to, uint32_t bytes ) {
+      return push_action( owner, "ramburn"_n, mvo()( "owner",owner)("bytes",bytes) );
+   }
+   action_result ramburn( std::string_view owner, uint32_t bytes ) {
+      return ramburn( account_name(owner), bytes );
+   }
+
    action_result buyrambytes( const account_name& payer, account_name receiver, uint32_t numbytes ) {
       return push_action( payer, "buyrambytes"_n, mvo()( "payer",payer)("receiver",receiver)("bytes",numbytes) );
    }

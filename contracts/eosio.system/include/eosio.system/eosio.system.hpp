@@ -1131,6 +1131,15 @@ namespace eosiosystem {
          void ramtransfer( const name& from, const name& to, int64_t bytes );
 
          /**
+          * Burn ram action, reduces owner's quota by bytes.
+          *
+          * @param owner - the ram owner account,
+          * @param bytes - the amount of ram to be burned in bytes.
+          */
+         [[eosio::action]]
+         void ramburn( const name& owner, int64_t bytes );
+
+         /**
           * Refund action, this action is called after the delegation-period to claim all pending
           * unstaked tokens belonging to owner.
           *
@@ -1429,6 +1438,7 @@ namespace eosiosystem {
          using buyrambytes_action = eosio::action_wrapper<"buyrambytes"_n, &system_contract::buyrambytes>;
          using sellram_action = eosio::action_wrapper<"sellram"_n, &system_contract::sellram>;
          using ramtransfer_action = eosio::action_wrapper<"ramtransfer"_n, &system_contract::ramtransfer>;
+         using ramburn_action = eosio::action_wrapper<"ramburn"_n, &system_contract::ramburn>;
          using refund_action = eosio::action_wrapper<"refund"_n, &system_contract::refund>;
          using regproducer_action = eosio::action_wrapper<"regproducer"_n, &system_contract::regproducer>;
          using regproducer2_action = eosio::action_wrapper<"regproducer2"_n, &system_contract::regproducer2>;

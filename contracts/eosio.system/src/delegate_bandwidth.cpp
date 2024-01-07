@@ -132,6 +132,14 @@ namespace eosiosystem {
       require_recipient( to );
    }
 
+   /**
+    * This action will burn RAM bytes from owner account.
+    */
+   void system_contract::ramburn( const name& owner, int64_t bytes ) {
+      require_auth( owner );
+      ramtransfer( owner, null_account, bytes );
+   }
+
    void system_contract::reduce_ram( const name& owner, int64_t bytes ) {
       check( bytes > 0, "cannot reduce negative byte" );
       user_resources_table userres( get_self(), owner.value );
