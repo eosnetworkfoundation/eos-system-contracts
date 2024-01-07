@@ -433,13 +433,13 @@ Transfer {{bytes}} bytes of unused RAM from account {{from}} to account {{to}}.
 ---
 spec_version: "0.2.0"
 title: Burn RAM from Account
-summary: 'Burn unused RAM from {{nowrap from}}'
+summary: 'Burn unused RAM from {{nowrap owner}}'
 icon: @ICON_BASE_URL@/@RESOURCE_ICON_URI@
 ---
 
-Burn {{bytes}} bytes of unused RAM from account {{from}}.
+Burn {{bytes}} bytes of unused RAM from account {{owner}}.
 
-{{#if memo}}There is a memo attached to the transfer stating:
+{{#if memo}}There is a memo attached to the burn stating:
 {{memo}}
 {{/if}}
 
