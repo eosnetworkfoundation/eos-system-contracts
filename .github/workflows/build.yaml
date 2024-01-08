@@ -75,10 +75,10 @@ jobs:
         with:
           owner: AntelopeIO
           repo: leap
-          file: 'leap-dev.*(x86_64|amd64).deb'
+          file: 'leap-dev.*ubuntu22\.04_amd64.deb'
           target: '${{steps.versions.outputs.leap-dev-target}}'
           prereleases: ${{fromJSON(steps.versions.outputs.leap-dev-prerelease)}}
-          artifact-name: leap-dev-ubuntu20-amd64
+          artifact-name: leap-dev-ubuntu22-amd64
           container-package: experimental-binaries
       - name: Install packages
         run: |
@@ -86,7 +86,7 @@ jobs:
           sudo apt install ./*.deb
           sudo apt-get install cmake
           rm ./*.deb
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: src
       - name: Build & Test
