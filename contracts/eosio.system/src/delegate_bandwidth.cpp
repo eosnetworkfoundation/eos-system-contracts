@@ -44,6 +44,7 @@ namespace eosiosystem {
    {
       require_auth( payer );
       update_ram_supply();
+      require_recipient(payer);
       require_recipient(receiver);
 
       check( quant.symbol == core_symbol(), "must buy ram with core token" );
@@ -104,10 +105,10 @@ namespace eosiosystem {
 
       // logging
       system_contract::logbuyram_action logbuyram_act{ get_self(), { {get_self(), active_permission} } };
-      logbuyram_act.send( payer, receiver, quant, bytes_out );
+      logbuyram_act.send( payer, receiver, quant, bytes_out, res_itr->ram_bytes );
    }
 
-   void system_contract::logbuyram( const name& payer, const name& receiver, const asset& quant, uint32_t bytes ) {
+   void system_contract::logbuyram( const name& payer, const name& receiver, const asset& quantity, int64_t bytes, int64_t ram_bytes ) {
       require_auth( get_self() );
       require_recipient(payer);
       require_recipient(receiver);
@@ -122,6 +123,7 @@ namespace eosiosystem {
    void system_contract::sellram( const name& account, int64_t bytes ) {
       require_auth( account );
       update_ram_supply();
+      require_recipient(account);
 
       check( bytes > 0, "cannot sell negative byte" );
 
@@ -167,6 +169,15 @@ namespace eosiosystem {
          transfer_act.send( account, ramfee_account, asset(fee, core_symbol()), "sell ram fee" );
          channel_to_rex( ramfee_account, asset(fee, core_symbol() ));
       }
+
+      // logging
+      system_contract::logsellram_action logsellram_act{ get_self(), { {get_self(), active_permission} } };
+      logsellram_act.send( account, tokens_out, bytes, res_itr->ram_bytes );
+   }
+
+   void system_contract::logsellram( const name& account, const asset& quantity, int64_t bytes, int64_t ram_bytes ) {
+      require_auth( get_self() );
+      require_recipient(account);
    }
 
    void validate_b1_vesting( int64_t stake ) {

@@ -1115,11 +1115,12 @@ namespace eosiosystem {
           *
           * @param payer - the ram buyer,
           * @param receiver - the ram receiver,
-          * @param quant - the quantity of tokens to buy ram with.
+          * @param quantity - the quantity of tokens to buy ram with.
           * @param bytes - the quantity of ram to buy specified in bytes.
+          * @param ram_bytes - the ram bytes held by receiver after the action.
           */
          [[eosio::action]]
-         void logbuyram( const name& payer, const name& receiver, const asset& quant, uint32_t bytes );
+         void logbuyram( const name& payer, const name& receiver, const asset& quantity, int64_t bytes, int64_t ram_bytes );
 
          /**
           * Sell ram action, reduces quota by bytes and then performs an inline transfer of tokens
@@ -1130,6 +1131,17 @@ namespace eosiosystem {
           */
          [[eosio::action]]
          void sellram( const name& account, int64_t bytes );
+
+         /**
+          * Logging for sellram action
+          *
+          * @param account - the ram seller,
+          * @param quantity - the quantity of tokens to sell ram with.
+          * @param bytes - the quantity of ram to sell specified in bytes.
+          * @param ram_bytes - the ram bytes held by account after the action.
+          */
+         [[eosio::action]]
+         void logsellram( const name& account, const asset& quantity, int64_t bytes, int64_t ram_bytes );
 
          /**
           * Refund action, this action is called after the delegation-period to claim all pending
@@ -1430,6 +1442,7 @@ namespace eosiosystem {
          using buyrambytes_action = eosio::action_wrapper<"buyrambytes"_n, &system_contract::buyrambytes>;
          using logbuyram_action = eosio::action_wrapper<"logbuyram"_n, &system_contract::logbuyram>;
          using sellram_action = eosio::action_wrapper<"sellram"_n, &system_contract::sellram>;
+         using logsellram_action = eosio::action_wrapper<"logsellram"_n, &system_contract::logsellram>;
          using refund_action = eosio::action_wrapper<"refund"_n, &system_contract::refund>;
          using regproducer_action = eosio::action_wrapper<"regproducer"_n, &system_contract::regproducer>;
          using regproducer2_action = eosio::action_wrapper<"regproducer2"_n, &system_contract::regproducer2>;
