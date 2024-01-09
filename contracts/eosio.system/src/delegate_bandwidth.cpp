@@ -133,6 +133,13 @@ namespace eosiosystem {
       require_recipient( to );
    }
 
+   [[eosio::action]]
+   void system_contract::logramchange( const name& owner, int64_t bytes, int64_t ram_bytes )
+   {
+      require_auth( get_self() );
+      require_recipient( owner );
+   }
+
    void system_contract::reduce_ram( const name& owner, int64_t bytes ) {
       check( bytes > 0, "cannot reduce negative byte" );
       user_resources_table userres( get_self(), owner.value );
@@ -144,6 +151,10 @@ namespace eosiosystem {
           res.ram_bytes -= bytes;
       });
       set_resource_ram_bytes_limits( owner );
+
+      // logging
+      system_contract::logramchange_action logramchange_act{ get_self(), { {get_self(), active_permission} }};
+      logramchange_act.send( owner, -bytes, res_itr->ram_bytes );
    }
 
    void system_contract::add_ram( const name& owner, int64_t bytes ) {
@@ -164,6 +175,10 @@ namespace eosiosystem {
          });
       }
       set_resource_ram_bytes_limits( owner );
+
+      // logging
+      system_contract::logramchange_action logramchange_act{ get_self(), { {get_self(), active_permission} } };
+      logramchange_act.send( owner, bytes, res_itr->ram_bytes );
    }
 
    void system_contract::set_resource_ram_bytes_limits( const name& owner ) {
