@@ -129,6 +129,7 @@ namespace eosiosystem {
       update_ram_supply();
       reduce_ram( from, bytes );
       add_ram( to, bytes );
+      require_recipient( from );
       require_recipient( to );
    }
 
