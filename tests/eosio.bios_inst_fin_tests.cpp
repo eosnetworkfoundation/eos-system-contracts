@@ -54,13 +54,13 @@ BOOST_FIXTURE_TEST_CASE( set_1_finalizer, eosio_bios_if_tester ) try {
     fc::variant pretty_output;
     abi_serializer::to_variant( *cur_block, pretty_output, get_resolver(), fc::microseconds::maximum() );
 
-    BOOST_REQUIRE(pretty_output.get_object().contains("proposed_finalizer_policy"));
-    BOOST_REQUIRE_EQUAL(pretty_output["proposed_finalizer_policy"]["generation"], 1);
-    BOOST_REQUIRE_EQUAL(pretty_output["proposed_finalizer_policy"]["fthreshold"], 2);
-    BOOST_REQUIRE_EQUAL(pretty_output["proposed_finalizer_policy"]["finalizers"].size(), 1u);
-    BOOST_REQUIRE_EQUAL(pretty_output["proposed_finalizer_policy"]["finalizers"][size_t(0)]["description"], "set_1_finalizer");
-    BOOST_REQUIRE_EQUAL(pretty_output["proposed_finalizer_policy"]["finalizers"][size_t(0)]["fweight"], 1);
-    BOOST_REQUIRE_EQUAL(pretty_output["proposed_finalizer_policy"]["finalizers"][size_t(0)]["public_key"], "PUB_BLS_jpMTmybJZvf4k6fR7Bgu7wrNjwQLK/IBdjhZHWTjoohgdUMi8VpTGsyYpzP1+ekMzUuZ8LqFcnfO0myTwH9Y2YeabhhowSp7nzJJhgO4XWCpcGCLssOjVWh3/D9wMIISVUwfsQ==");
+    BOOST_REQUIRE(pretty_output.get_object().contains("instant_finality_extension"));
+    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["generation"], 1);
+    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["threshold"], 2);
+    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["finalizers"].size(), 1u);
+    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["finalizers"][size_t(0)]["description"], "set_1_finalizer");
+    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["finalizers"][size_t(0)]["weight"], 1);
+    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["finalizers"][size_t(0)]["public_key"], "PUB_BLS_jpMTmybJZvf4k6fR7Bgu7wrNjwQLK/IBdjhZHWTjoohgdUMi8VpTGsyYpzP1+ekMzUuZ8LqFcnfO0myTwH9Y2YeabhhowSp7nzJJhgO4XWCpcGCLssOjVWh3/D9wMIISVUwfsQ==");
 } FC_LOG_AND_RETHROW()
 
 // two finalizers in finalizer policy
@@ -86,13 +86,13 @@ BOOST_FIXTURE_TEST_CASE( set_2_finalizers, eosio_bios_if_tester ) try {
     fc::variant pretty_output;
     abi_serializer::to_variant( *cur_block, pretty_output, get_resolver(), fc::microseconds::maximum() );
 
-    BOOST_REQUIRE(pretty_output.get_object().contains("proposed_finalizer_policy"));
-    BOOST_REQUIRE_EQUAL(pretty_output["proposed_finalizer_policy"]["generation"], 1);
-    BOOST_REQUIRE_EQUAL(pretty_output["proposed_finalizer_policy"]["fthreshold"], 4);
-    BOOST_REQUIRE_EQUAL(pretty_output["proposed_finalizer_policy"]["finalizers"].size(), 2u);
-    BOOST_REQUIRE_EQUAL(pretty_output["proposed_finalizer_policy"]["finalizers"][size_t(1)]["description"], "set_2_finalizer_2");
-    BOOST_REQUIRE_EQUAL(pretty_output["proposed_finalizer_policy"]["finalizers"][size_t(1)]["fweight"], 2);
-    BOOST_REQUIRE_EQUAL(pretty_output["proposed_finalizer_policy"]["finalizers"][size_t(1)]["public_key"], "PUB_BLS_UGcXVpLNrhdODrbI9Geaswu8wFnL+WMnphfTaCgehRxol5wI1qiU5zq6qHp9+CkFnmm2XWCcM/YEtqZYL6uTM1TXTpTm3LODI0s/ULO4iKSNYclsmDdh5cFSMmKKnloHudh3Zw==");
+    BOOST_REQUIRE(pretty_output.get_object().contains("instant_finality_extension"));
+    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["generation"], 1);
+    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["threshold"], 4);
+    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["finalizers"].size(), 2u);
+    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["finalizers"][size_t(1)]["description"], "set_2_finalizer_2");
+    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["finalizers"][size_t(1)]["weight"], 2);
+    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["finalizers"][size_t(1)]["public_key"], "PUB_BLS_UGcXVpLNrhdODrbI9Geaswu8wFnL+WMnphfTaCgehRxol5wI1qiU5zq6qHp9+CkFnmm2XWCcM/YEtqZYL6uTM1TXTpTm3LODI0s/ULO4iKSNYclsmDdh5cFSMmKKnloHudh3Zw==");
 } FC_LOG_AND_RETHROW()
 
 // finalizer cannot be empty
