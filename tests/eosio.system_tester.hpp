@@ -1024,9 +1024,9 @@ public:
       }
       produce_blocks( 250 );
 
-      auto producer_keys = control->head_block_state()->active_schedule.producers;
-      BOOST_REQUIRE_EQUAL( 21, producer_keys.size() );
-      BOOST_REQUIRE_EQUAL( name("defproducera"), producer_keys[0].producer_name );
+      auto producer_schedule = control->active_producers();
+      BOOST_REQUIRE_EQUAL( 21, producer_schedule.producers.size() );
+      BOOST_REQUIRE_EQUAL( name("defproducera"), producer_schedule.producers[0].producer_name );
 
       return producer_names;
    }
