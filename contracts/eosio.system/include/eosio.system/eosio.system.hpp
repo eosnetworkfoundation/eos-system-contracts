@@ -1142,6 +1142,16 @@ namespace eosiosystem {
          void ramburn( const name& owner, int64_t bytes, const std::string& memo );
 
          /**
+          * Logging for ram changes
+          *
+          * @param owner - the ram owner account,
+          * @param bytes - the bytes balance change,
+          * @param ram_bytes - the ram bytes held by owner after the action.
+          */
+         [[eosio::action]]
+         void logramchange( const name& owner, int64_t bytes, int64_t ram_bytes );
+
+         /**
           * Refund action, this action is called after the delegation-period to claim all pending
           * unstaked tokens belonging to owner.
           *
@@ -1441,6 +1451,7 @@ namespace eosiosystem {
          using sellram_action = eosio::action_wrapper<"sellram"_n, &system_contract::sellram>;
          using ramtransfer_action = eosio::action_wrapper<"ramtransfer"_n, &system_contract::ramtransfer>;
          using ramburn_action = eosio::action_wrapper<"ramburn"_n, &system_contract::ramburn>;
+         using logramchange_action = eosio::action_wrapper<"logramchange"_n, &system_contract::logramchange>;
          using refund_action = eosio::action_wrapper<"refund"_n, &system_contract::refund>;
          using regproducer_action = eosio::action_wrapper<"regproducer"_n, &system_contract::regproducer>;
          using regproducer2_action = eosio::action_wrapper<"regproducer2"_n, &system_contract::regproducer2>;

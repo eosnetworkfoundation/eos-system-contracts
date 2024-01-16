@@ -130,6 +130,7 @@ namespace eosiosystem {
       check( memo.size() <= 256, "memo has more than 256 bytes" );
       reduce_ram( from, bytes );
       add_ram( to, bytes );
+      require_recipient( from );
       require_recipient( to );
    }
 
@@ -139,6 +140,13 @@ namespace eosiosystem {
    void system_contract::ramburn( const name& owner, int64_t bytes, const std::string& memo ) {
       require_auth( owner );
       ramtransfer( owner, null_account, bytes, memo );
+   }
+
+   [[eosio::action]]
+   void system_contract::logramchange( const name& owner, int64_t bytes, int64_t ram_bytes )
+   {
+      require_auth( get_self() );
+      require_recipient( owner );
    }
 
    void system_contract::reduce_ram( const name& owner, int64_t bytes ) {
@@ -152,6 +160,10 @@ namespace eosiosystem {
           res.ram_bytes -= bytes;
       });
       set_resource_ram_bytes_limits( owner );
+
+      // logging
+      system_contract::logramchange_action logramchange_act{ get_self(), { {get_self(), active_permission} }};
+      logramchange_act.send( owner, -bytes, res_itr->ram_bytes );
    }
 
    void system_contract::add_ram( const name& owner, int64_t bytes ) {
@@ -172,6 +184,10 @@ namespace eosiosystem {
          });
       }
       set_resource_ram_bytes_limits( owner );
+
+      // logging
+      system_contract::logramchange_action logramchange_act{ get_self(), { {get_self(), active_permission} } };
+      logramchange_act.send( owner, bytes, res_itr->ram_bytes );
    }
 
    void system_contract::set_resource_ram_bytes_limits( const name& owner ) {
