@@ -44,6 +44,8 @@ namespace eosiosystem {
    {
       require_auth( payer );
       update_ram_supply();
+      require_recipient(payer);
+      require_recipient(receiver);
 
       check( quant.symbol == core_symbol(), "must buy ram with core token" );
       check( quant.amount > 0, "must purchase a positive amount" );
@@ -79,7 +81,17 @@ namespace eosiosystem {
       _gstate.total_ram_bytes_reserved += uint64_t(bytes_out);
       _gstate.total_ram_stake          += quant_after_fee.amount;
 
-      add_ram( receiver, bytes_out );
+      const int64_t ram_bytes = add_ram( receiver, bytes_out );
+
+      // logging
+      system_contract::logbuyram_action logbuyram_act{ get_self(), { {get_self(), active_permission} } };
+      logbuyram_act.send( payer, receiver, quant, bytes_out, ram_bytes );
+   }
+
+   void system_contract::logbuyram( const name& payer, const name& receiver, const asset& quantity, int64_t bytes, int64_t ram_bytes ) {
+      require_auth( get_self() );
+      require_recipient(payer);
+      require_recipient(receiver);
    }
 
   /**
@@ -91,7 +103,8 @@ namespace eosiosystem {
    void system_contract::sellram( const name& account, int64_t bytes ) {
       require_auth( account );
       update_ram_supply();
-      reduce_ram(account, bytes);
+      require_recipient(account);
+      const int64_t ram_bytes = reduce_ram(account, bytes);
 
       asset tokens_out;
       auto itr = _rammarket.find(ramcore_symbol.raw());
@@ -119,6 +132,15 @@ namespace eosiosystem {
          transfer_act.send( account, ramfee_account, asset(fee, core_symbol()), "sell ram fee" );
          channel_to_rex( ramfee_account, asset(fee, core_symbol() ));
       }
+
+      // logging
+      system_contract::logsellram_action logsellram_act{ get_self(), { {get_self(), active_permission} } };
+      logsellram_act.send( account, tokens_out, bytes, ram_bytes );
+   }
+
+   void system_contract::logsellram( const name& account, const asset& quantity, int64_t bytes, int64_t ram_bytes ) {
+      require_auth( get_self() );
+      require_recipient(account);
    }
 
    /**
@@ -140,7 +162,7 @@ namespace eosiosystem {
       require_recipient( owner );
    }
 
-   void system_contract::reduce_ram( const name& owner, int64_t bytes ) {
+   int64_t system_contract::reduce_ram( const name& owner, int64_t bytes ) {
       check( bytes > 0, "cannot reduce negative byte" );
       user_resources_table userres( get_self(), owner.value );
       auto res_itr = userres.find( owner.value );
@@ -155,9 +177,10 @@ namespace eosiosystem {
       // logging
       system_contract::logramchange_action logramchange_act{ get_self(), { {get_self(), active_permission} }};
       logramchange_act.send( owner, -bytes, res_itr->ram_bytes );
+      return res_itr->ram_bytes;
    }
 
-   void system_contract::add_ram( const name& owner, int64_t bytes ) {
+   int64_t system_contract::add_ram( const name& owner, int64_t bytes ) {
       check( bytes > 0, "cannot add negative byte" );
       check( is_account(owner), "owner=" + owner.to_string() + " account does not exist");
       user_resources_table userres( get_self(), owner.value );
@@ -179,6 +202,7 @@ namespace eosiosystem {
       // logging
       system_contract::logramchange_action logramchange_act{ get_self(), { {get_self(), active_permission} } };
       logramchange_act.send( owner, bytes, res_itr->ram_bytes );
+      return res_itr->ram_bytes;
    }
 
    void system_contract::set_resource_ram_bytes_limits( const name& owner ) {
