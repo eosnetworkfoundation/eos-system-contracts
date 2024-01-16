@@ -29,13 +29,18 @@ BOOST_FIXTURE_TEST_CASE( ram_transfer, eosio_system_tester ) try {
    const uint64_t alice_before = get_total_stake( alice )["ram_bytes"].as_uint64();
    const uint64_t bob_before = get_total_stake( bob )["ram_bytes"].as_uint64();
 
-   BOOST_REQUIRE_EQUAL( success(), ramtransfer( alice, bob, 1000 ) );
+   BOOST_REQUIRE_EQUAL( success(), ramtransfer( alice, bob, 1000, "" ) );
 
    const uint64_t alice_after = get_total_stake( alice )["ram_bytes"].as_uint64();
    const uint64_t bob_after = get_total_stake( bob )["ram_bytes"].as_uint64();
 
    BOOST_REQUIRE_EQUAL( alice_before - 1000, alice_after );
    BOOST_REQUIRE_EQUAL( bob_before + 1000, bob_after );
+
+   // RAM burn
+   BOOST_REQUIRE_EQUAL( success(), ramburn( alice, 3000, "burn RAM memo" ) );
+   const uint64_t alice_after_burn = get_total_stake( alice )["ram_bytes"].as_uint64();
+   BOOST_REQUIRE_EQUAL( alice_before - 4000, alice_after_burn );
 
 } FC_LOG_AND_RETHROW()
 

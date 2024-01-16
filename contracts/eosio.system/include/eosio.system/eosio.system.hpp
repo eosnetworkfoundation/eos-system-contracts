@@ -1148,10 +1148,21 @@ namespace eosiosystem {
           *
           * @param from - the ram sender account,
           * @param to - the ram receiver account,
-          * @param bytes - the amount of ram to transfer in bytes.
+          * @param bytes - the amount of ram to transfer in bytes,
+          * @param memo - the memo string to accompany the transaction.
           */
          [[eosio::action]]
-         void ramtransfer( const name& from, const name& to, int64_t bytes );
+         void ramtransfer( const name& from, const name& to, int64_t bytes, const std::string& memo );
+
+         /**
+          * Burn ram action, reduces owner's quota by bytes.
+          *
+          * @param owner - the ram owner account,
+          * @param bytes - the amount of ram to be burned in bytes,
+          * @param memo - the memo string to accompany the transaction.
+          */
+         [[eosio::action]]
+         void ramburn( const name& owner, int64_t bytes, const std::string& memo );
 
          /**
           * Logging for ram changes
@@ -1464,6 +1475,7 @@ namespace eosiosystem {
          using sellram_action = eosio::action_wrapper<"sellram"_n, &system_contract::sellram>;
          using logsellram_action = eosio::action_wrapper<"logsellram"_n, &system_contract::logsellram>;
          using ramtransfer_action = eosio::action_wrapper<"ramtransfer"_n, &system_contract::ramtransfer>;
+         using ramburn_action = eosio::action_wrapper<"ramburn"_n, &system_contract::ramburn>;
          using logramchange_action = eosio::action_wrapper<"logramchange"_n, &system_contract::logramchange>;
          using refund_action = eosio::action_wrapper<"refund"_n, &system_contract::refund>;
          using regproducer_action = eosio::action_wrapper<"regproducer"_n, &system_contract::regproducer>;
