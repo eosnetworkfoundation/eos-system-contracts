@@ -1144,6 +1144,26 @@ namespace eosiosystem {
          void logsellram( const name& account, const asset& quantity, int64_t bytes, int64_t ram_bytes );
 
          /**
+          * Transfer ram action, reduces sender's quota by bytes and increase receiver's quota by bytes.
+          *
+          * @param from - the ram sender account,
+          * @param to - the ram receiver account,
+          * @param bytes - the amount of ram to transfer in bytes.
+          */
+         [[eosio::action]]
+         void ramtransfer( const name& from, const name& to, int64_t bytes );
+
+         /**
+          * Logging for ram changes
+          *
+          * @param owner - the ram owner account,
+          * @param bytes - the bytes balance change,
+          * @param ram_bytes - the ram bytes held by owner after the action.
+          */
+         [[eosio::action]]
+         void logramchange( const name& owner, int64_t bytes, int64_t ram_bytes );
+
+         /**
           * Refund action, this action is called after the delegation-period to claim all pending
           * unstaked tokens belonging to owner.
           *
@@ -1443,6 +1463,8 @@ namespace eosiosystem {
          using logbuyram_action = eosio::action_wrapper<"logbuyram"_n, &system_contract::logbuyram>;
          using sellram_action = eosio::action_wrapper<"sellram"_n, &system_contract::sellram>;
          using logsellram_action = eosio::action_wrapper<"logsellram"_n, &system_contract::logsellram>;
+         using ramtransfer_action = eosio::action_wrapper<"ramtransfer"_n, &system_contract::ramtransfer>;
+         using logramchange_action = eosio::action_wrapper<"logramchange"_n, &system_contract::logramchange>;
          using refund_action = eosio::action_wrapper<"refund"_n, &system_contract::refund>;
          using regproducer_action = eosio::action_wrapper<"regproducer"_n, &system_contract::regproducer>;
          using regproducer2_action = eosio::action_wrapper<"regproducer2"_n, &system_contract::regproducer2>;
@@ -1521,6 +1543,9 @@ namespace eosiosystem {
          void changebw( name from, const name& receiver,
                         const asset& stake_net_quantity, const asset& stake_cpu_quantity, bool transfer );
          void update_voting_power( const name& voter, const asset& total_update );
+         void set_resource_ram_bytes_limits( const name& owner );
+         void reduce_ram( const name& owner, int64_t bytes );
+         void add_ram( const name& owner, int64_t bytes );
 
          // defined in voting.cpp
          void register_producer( const name& producer, const eosio::block_signing_authority& producer_authority, const std::string& url, uint16_t location );

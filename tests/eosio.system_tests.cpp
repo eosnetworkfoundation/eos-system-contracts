@@ -3929,7 +3929,7 @@ BOOST_FIXTURE_TEST_CASE( rex_rounding_issue, eosio_system_tester ) try {
    auto rent_and_go = [&] (int cnt) {
       for(auto& rb : rexborrowers) {
          BOOST_REQUIRE_EQUAL( success(),
-                        push_action( rb, "rentcpu"_n, 
+                        push_action( rb, "rentcpu"_n,
                         mvo()
                         ("from", rb)
                         ("receiver", rb)
@@ -4122,7 +4122,6 @@ BOOST_FIXTURE_TEST_CASE( buy_sell_small_rex, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL( wasm_assert_msg("proceeds are negligible"), sellrex( alice, asset::from_string("0.4000 REX") ) );
 
 } FC_LOG_AND_RETHROW()
-
 
 BOOST_FIXTURE_TEST_CASE( unstake_buy_rex, eosio_system_tester, * boost::unit_test::tolerance(1e-10) ) try {
 
@@ -5532,7 +5531,7 @@ BOOST_FIXTURE_TEST_CASE( b1_vesting, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL( wasm_assert_msg("b1 can only claim their tokens over 10 years"),
                         unstake( b1, b1, final_amount, final_amount ) );
 
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg("must vote for at least 21 producers or for a proxy before buying REX"), 
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg("must vote for at least 21 producers or for a proxy before buying REX"),
                         unstaketorex( b1, b1, final_amount - small_amount, final_amount - small_amount ) );
 
    BOOST_REQUIRE_EQUAL( error("missing authority of eosio"), vote( b1, { }, "proxyaccount"_n ) );
