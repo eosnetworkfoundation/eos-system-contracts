@@ -413,6 +413,17 @@ icon: @ICON_BASE_URL@/@RESOURCE_ICON_URI@
 
 Sell {{bytes}} bytes of unused RAM from account {{account}} at market price. This transaction will incur a 0.5% fee on the proceeds which depend on market rates.
 
+<h1 class="contract">ramtransfer</h1>
+
+---
+spec_version: "0.2.0"
+title: Transfer RAM from Account
+summary: 'Transfer unused RAM from {{nowrap from}} to {{nowrap to}}'
+icon: @ICON_BASE_URL@/@RESOURCE_ICON_URI@
+---
+
+Transfer {{bytes}} bytes of unused RAM from account {{from}} to account {{to}}.
+
 <h1 class="contract">sellrex</h1>
 
 ---
