@@ -22,20 +22,20 @@ namespace eosiosystem {
    /**
     *  This action will buy an exact amount of ram and bill the payer the current market price.
     */
-   void system_contract::buyrambytes( const name& payer, const name& receiver, uint32_t bytes ) {
+   action_return_buyram system_contract::buyrambytes( const name& payer, const name& receiver, uint32_t bytes ) {
       auto itr = _rammarket.find(ramcore_symbol.raw());
       const int64_t ram_reserve   = itr->base.balance.amount;
       const int64_t eos_reserve   = itr->quote.balance.amount;
       const int64_t cost          = exchange_state::get_bancor_input( ram_reserve, eos_reserve, bytes );
       const int64_t cost_plus_fee = cost / double(0.995);
-      buyram( payer, receiver, asset{ cost_plus_fee, core_symbol() } );
+      return buyram( payer, receiver, asset{ cost_plus_fee, core_symbol() } );
    }
 
    /**
     * Buy self ram action, ram can only be purchased to itself.
     */
-   void system_contract::buyramself( const name& account, const asset& quant ) {
-      buyram( account, account, quant );
+   action_return_buyram system_contract::buyramself( const name& account, const asset& quant ) {
+      return buyram( account, account, quant );
    }
 
    /**
@@ -46,7 +46,7 @@ namespace eosiosystem {
     *  RAM is a scarce resource whose supply is defined by global properties max_ram_size. RAM is
     *  priced using the bancor algorithm such that price-per-byte with a constant reserve ratio of 100:1.
     */
-   void system_contract::buyram( const name& payer, const name& receiver, const asset& quant )
+   action_return_buyram system_contract::buyram( const name& payer, const name& receiver, const asset& quant )
    {
       require_auth( payer );
       update_ram_supply();
@@ -92,6 +92,9 @@ namespace eosiosystem {
       // logging
       system_contract::logbuyram_action logbuyram_act{ get_self(), { {get_self(), active_permission} } };
       logbuyram_act.send( payer, receiver, quant, bytes_out, ram_bytes );
+
+      // action return value
+      return action_return_buyram{ payer, receiver, quant, bytes_out, ram_bytes };
    }
 
    void system_contract::logbuyram( const name& payer, const name& receiver, const asset& quantity, int64_t bytes, int64_t ram_bytes ) {
@@ -106,7 +109,7 @@ namespace eosiosystem {
     *  tomorrow. Overall this will result in the market balancing the supply and demand
     *  for RAM over time.
     */
-   void system_contract::sellram( const name& account, int64_t bytes ) {
+   action_return_sellram system_contract::sellram( const name& account, int64_t bytes ) {
       require_auth( account );
       update_ram_supply();
       require_recipient(account);
@@ -142,6 +145,9 @@ namespace eosiosystem {
       // logging
       system_contract::logsellram_action logsellram_act{ get_self(), { {get_self(), active_permission} } };
       logsellram_act.send( account, tokens_out, bytes, ram_bytes );
+
+      // action return value
+      return action_return_sellram{ account, tokens_out, bytes, ram_bytes };
    }
 
    void system_contract::logsellram( const name& account, const asset& quantity, int64_t bytes, int64_t ram_bytes ) {
@@ -152,22 +158,25 @@ namespace eosiosystem {
    /**
     * This action will transfer RAM bytes from one account to another.
     */
-   void system_contract::ramtransfer( const name& from, const name& to, int64_t bytes, const std::string& memo ) {
+   action_return_ramtransfer system_contract::ramtransfer( const name& from, const name& to, int64_t bytes, const std::string& memo ) {
       require_auth( from );
       update_ram_supply();
       check( memo.size() <= 256, "memo has more than 256 bytes" );
-      reduce_ram( from, bytes );
-      add_ram( to, bytes );
+      const int64_t from_ram_bytes = reduce_ram( from, bytes );
+      const int64_t to_ram_bytes = add_ram( to, bytes );
       require_recipient( from );
       require_recipient( to );
+
+      // action return value
+      return action_return_ramtransfer{ from, to, bytes, from_ram_bytes, to_ram_bytes };
    }
 
    /**
     * This action will burn RAM bytes from owner account.
     */
-   void system_contract::ramburn( const name& owner, int64_t bytes, const std::string& memo ) {
+   action_return_ramtransfer system_contract::ramburn( const name& owner, int64_t bytes, const std::string& memo ) {
       require_auth( owner );
-      ramtransfer( owner, null_account, bytes, memo );
+      return ramtransfer( owner, null_account, bytes, memo );
    }
 
    [[eosio::action]]
