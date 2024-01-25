@@ -281,6 +281,10 @@ public:
       return sellram( account_name(account), numbytes );
    }
 
+   action_result buyramself( const account_name& account, const asset& quant ) {
+      return push_action( account, "buyramself"_n, mvo()( "account",account)("quant",quant) );
+   }
+
    action_result push_action( const account_name& signer, const action_name &name, const variant_object &data, bool auth = true ) {
          string action_type_name = abi_ser.get_action_type(name);
 

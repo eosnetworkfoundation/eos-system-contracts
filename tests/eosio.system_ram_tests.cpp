@@ -63,4 +63,20 @@ BOOST_FIXTURE_TEST_CASE( ram_burn, eosio_system_tester ) try {
 
 } FC_LOG_AND_RETHROW()
 
+
+// buyramself
+BOOST_FIXTURE_TEST_CASE( buy_ram_self, eosio_system_tester ) try {
+   const std::vector<account_name> accounts = { "alice"_n };
+   create_accounts_with_resources( accounts );
+   const account_name alice = accounts[0];
+
+   transfer( config::system_account_name, alice, core_sym::from_string("100.0000"), config::system_account_name );
+   const uint64_t alice_before = get_total_stake( alice )["ram_bytes"].as_uint64();
+   BOOST_REQUIRE_EQUAL( success(), buyramself( alice, core_sym::from_string("1.0000")) );
+   const uint64_t alice_after = get_total_stake( alice )["ram_bytes"].as_uint64();
+   BOOST_REQUIRE_EQUAL( alice_before + 68375, alice_after );
+
+} FC_LOG_AND_RETHROW()
+
+
 BOOST_AUTO_TEST_SUITE_END()

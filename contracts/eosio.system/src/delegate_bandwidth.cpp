@@ -31,6 +31,12 @@ namespace eosiosystem {
       buyram( payer, receiver, asset{ cost_plus_fee, core_symbol() } );
    }
 
+   /**
+    * Buy self ram action, ram can only be purchased to itself.
+    */
+   void system_contract::buyramself( const name& account, const asset& quant ) {
+      buyram( account, account, quant );
+   }
 
    /**
     *  When buying ram the payer irreversibly transfers quant to system contract and only

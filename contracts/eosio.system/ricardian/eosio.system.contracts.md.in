@@ -59,6 +59,17 @@ icon: @ICON_BASE_URL@/@RESOURCE_ICON_URI@
 
 {{payer}} buys RAM on behalf of {{receiver}} by paying {{quant}}. This transaction will incur a 0.5% fee out of {{quant}} and the amount of RAM delivered will depend on market rates.
 
+<h1 class="contract">buyramself</h1>
+
+---
+spec_version: "0.2.0"
+title: Buy RAM self
+summary: '{{nowrap account}} buys RAM to self by paying {{nowrap quant}}'
+icon: @ICON_BASE_URL@/@RESOURCE_ICON_URI@
+---
+
+{{account}} buys RAM to self by paying {{quant}}. This transaction will incur a 0.5% fee out of {{quant}} and the amount of RAM delivered will depend on market rates.
+
 <h1 class="contract">buyrambytes</h1>
 
 ---
