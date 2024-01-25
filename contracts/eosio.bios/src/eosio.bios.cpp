@@ -78,7 +78,8 @@ void bios::setfinalizer( const finalizer_policy& finalizer_policy ) {
       fin_policy.finalizers.emplace_back(eosio::finalizer_authority{f.description, f.weight, std::move(pk_vector)});
    }
 
-   check(finalizer_policy.threshold > weight_sum / 2, "finalizer policy threshold must be greater than half of the sum of the weights");
+   check( weight_sum >= finalizer_policy.threshold && finalizer_policy.threshold > weight_sum / 2,
+          "Finalizer policy threshold must be greater than half of the sum of the weights, and less than or equal to the sum of the weights");
 
    set_finalizers(std::move(fin_policy));
 }
