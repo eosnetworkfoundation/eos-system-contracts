@@ -91,7 +91,7 @@ BOOST_FIXTURE_TEST_CASE( set_2_finalizers, eosio_bios_if_tester ) try {
     BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["threshold"], 5);
     BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["finalizers"].size(), 2u);
     BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["finalizers"][size_t(1)]["description"], "set_2_finalizer_2");
-    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["finalizers"][size_t(1)]["weight"], 3);
+    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["finalizers"][size_t(1)]["weight"], 5);
     BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["finalizers"][size_t(1)]["public_key"], "PUB_BLS_UGcXVpLNrhdODrbI9Geaswu8wFnL+WMnphfTaCgehRxol5wI1qiU5zq6qHp9+CkFnmm2XWCcM/YEtqZYL6uTM1TXTpTm3LODI0s/ULO4iKSNYclsmDdh5cFSMmKKnloHudh3Zw==");
 } FC_LOG_AND_RETHROW()
 
