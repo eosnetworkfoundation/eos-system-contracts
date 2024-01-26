@@ -13,7 +13,7 @@
 
 using namespace eosio_system;
 
-BOOST_AUTO_TEST_SUITE(eosio_system_ram_tests)
+BOOST_AUTO_TEST_SUITE(eosio_system_ram_tests);
 
 // ramtransfer
 BOOST_FIXTURE_TEST_CASE( ram_transfer, eosio_system_tester ) try {
@@ -30,7 +30,7 @@ BOOST_FIXTURE_TEST_CASE( ram_transfer, eosio_system_tester ) try {
    const uint64_t alice_before = get_total_stake( alice )["ram_bytes"].as_uint64();
    const uint64_t bob_before = get_total_stake( bob )["ram_bytes"].as_uint64();
 
-   BOOST_REQUIRE_EQUAL( success(), ramtransfer( alice, bob, 1000, "" ) );
+   ramtransfer( alice, bob, 1000, "" );
 
    const uint64_t alice_after = get_total_stake( alice )["ram_bytes"].as_uint64();
    const uint64_t bob_after = get_total_stake( bob )["ram_bytes"].as_uint64();

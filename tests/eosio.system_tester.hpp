@@ -253,11 +253,27 @@ public:
       return buyram( account_name(payer), account_name(receiver), eosin );
    }
 
-   action_result ramtransfer( const account_name& from, const account_name& to, uint32_t bytes, const std::string& memo ) {
-      return push_action( from, "ramtransfer"_n, mvo()( "from",from)("to",to)("bytes",bytes)("memo",memo));
-   }
-   action_result ramtransfer( std::string_view from, std::string_view to, uint32_t bytes, const std::string& memo ) {
-      return ramtransfer( account_name(from), account_name(to), bytes, memo );
+   void ramtransfer( const account_name& from, const account_name& to, uint32_t bytes, const std::string& memo ) {
+      struct action_return_ramtransfer {
+         name from;
+         name to;
+         int64_t bytes;
+         int64_t from_ram_bytes;
+         int64_t to_ram_bytes;
+      };
+
+      auto trace = base_tester::push_action( config::system_account_name, "ramtransfer"_n, from, mvo()( "from",from)("to",to)("bytes",bytes)("memo",memo));
+      produce_block();
+      BOOST_REQUIRE_EQUAL( true, chain_has_transaction(trace->id) );
+      int64_t r_bytes = 0;
+      for ( size_t i = 0; i < trace->action_traces.size(); ++i ) {
+         if ( trace->action_traces[i].act.name == "bytes"_n ) {
+            fc::raw::unpack( trace->action_traces[i].act.data.data(),
+                            trace->action_traces[i].act.data.size(),
+                            r_bytes);
+         }
+      }
+      BOOST_REQUIRE_EQUAL(r_bytes, bytes);
    }
 
    action_result ramburn( const account_name& owner, uint32_t bytes, const std::string& memo ) {
