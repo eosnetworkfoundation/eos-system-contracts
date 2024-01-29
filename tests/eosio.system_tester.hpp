@@ -1,10 +1,10 @@
 #pragma once
 
-#include <eosio/testing/tester.hpp>
-#include <eosio/chain/abi_serializer.hpp>
-#include <eosio/chain/resource_limits.hpp>
 #include "contracts.hpp"
 #include "test_symbol.hpp"
+#include <eosio/chain/abi_serializer.hpp>
+#include <eosio/chain/resource_limits.hpp>
+#include <eosio/testing/tester.hpp>
 
 #include <fc/variant_object.hpp>
 #include <fstream>
@@ -24,7 +24,6 @@ using mvo = fc::mutable_variant_object;
 #endif
 
 namespace eosio_system {
-
 
 class eosio_system_tester : public TESTER {
 public:
@@ -202,6 +201,90 @@ public:
       trx.sign( get_private_key( creator, "active" ), control->get_chain_id()  );
       return push_transaction( trx );
    }
+   action_result buyram( const account_name& payer, account_name receiver, const asset& eosin ) {
+      return push_action( payer, "buyram"_n, mvo()( "payer",payer)("receiver",receiver)("quant",eosin) );
+   }
+   action_result buyram( std::string_view payer, std::string_view receiver, const asset& eosin ) {
+      return buyram( account_name(payer), account_name(receiver), eosin );
+   }
+
+   void ramtransfer(const account_name& from, const account_name& to, uint32_t bytes, const std::string& memo)
+   {
+      struct action_return_ramtransfer
+      {
+         name    from;
+         name    to;
+         int64_t bytes;
+         int64_t from_ram_bytes;
+         int64_t to_ram_bytes;
+      };
+      // hold bytes from return data
+      // multiple records with 8 bytes in each record
+      // initialize up front to ensure clean data
+      uint8_t number_of_fields = 5;
+      uint8_t field_size = 8;
+      char ramtransfer_record[number_of_fields][field_size];
+      for (int i = 0; i < number_of_fields; ++i) {
+         memset(ramtransfer_record[i], '\0', field_size);
+      }
+
+      // execute transaction and get traces
+      auto trace = base_tester::push_action(config::system_account_name, "ramtransfer"_n, from,
+                                            mvo()("from", from)("to", to)("bytes", bytes)("memo", memo));
+      produce_block();
+
+      // confirm we have trances and find the right one (should be trace idx == 0)
+      BOOST_REQUIRE_EQUAL(true, chain_has_transaction(trace->id));
+      for (size_t i = 0; i < trace->action_traces.size(); ++i) {
+         if (trace->action_traces[i].act.name == "ramtransfer"_n && trace->action_traces[i].act.account == "eosio"_n) {
+
+            // debugging check return values, will be hex encoded
+            idump((trace->action_traces[i].return_value));
+
+            // pull out bytes from return_value in chunks by field_size, 8 bytes
+            // iterative over each record, then assign char by char for record
+            if ( trace->action_traces[i].return_value.size() >= (number_of_fields * field_size)) {
+               for (int rec_idx = 0; rec_idx < number_of_fields; ++rec_idx) {
+                  std::memcpy(ramtransfer_record[rec_idx],
+                              &trace->action_traces[i].return_value[rec_idx * field_size],
+                              field_size);
+               }
+            }
+            // debugged check expect different values
+            idump((ramtransfer_record[0]));idump((ramtransfer_record[1]));idump((ramtransfer_record[2]));idump((ramtransfer_record[3]));
+            // TODO: convert from hex, populate struct action_return_ramtransfer, and return with function
+         }
+      }
+   }
+
+   action_result ramburn(const account_name& owner, uint32_t bytes, const std::string& memo)
+   {
+      return push_action(owner, "ramburn"_n, mvo()("owner", owner)("bytes", bytes)("memo", memo));
+   }
+   action_result ramburn(std::string_view owner, uint32_t bytes, const std::string& memo)
+   {
+      return ramburn(account_name(owner), bytes, memo);
+   }
+
+   action_result buyrambytes(const account_name& payer, account_name receiver, uint32_t numbytes)
+   {
+      return push_action(payer, "buyrambytes"_n, mvo()("payer", payer)("receiver", receiver)("bytes", numbytes));
+   }
+   action_result buyrambytes(std::string_view payer, std::string_view receiver, uint32_t numbytes)
+   {
+      return buyrambytes(account_name(payer), account_name(receiver), numbytes);
+   }
+
+   action_result sellram(const account_name& account, uint64_t numbytes)
+   {
+      return push_action(account, "sellram"_n, mvo()("account", account)("bytes", numbytes));
+   }
+   action_result sellram(std::string_view account, uint64_t numbytes) { return sellram(account_name(account), numbytes); }
+
+   action_result buyramself(const account_name& account, const asset& quant)
+   {
+      return push_action(account, "buyramself"_n, mvo()("account", account)("quant", quant));
+   }
 
    transaction_trace_ptr setup_producer_accounts( const std::vector<account_name>& accounts,
                                                   asset ram = core_sym::from_string("1.0000"),
@@ -244,63 +327,6 @@ public:
       set_transaction_headers(trx);
       trx.sign( get_private_key( creator, "active" ), control->get_chain_id()  );
       return push_transaction( trx );
-   }
-
-   action_result buyram( const account_name& payer, account_name receiver, const asset& eosin ) {
-      return push_action( payer, "buyram"_n, mvo()( "payer",payer)("receiver",receiver)("quant",eosin) );
-   }
-   action_result buyram( std::string_view payer, std::string_view receiver, const asset& eosin ) {
-      return buyram( account_name(payer), account_name(receiver), eosin );
-   }
-
-   void ramtransfer( const account_name& from, const account_name& to, uint32_t bytes, const std::string& memo ) {
-      struct action_return_ramtransfer {
-         name from;
-         name to;
-         int64_t bytes;
-         int64_t from_ram_bytes;
-         int64_t to_ram_bytes;
-      };
-
-      auto trace = base_tester::push_action( config::system_account_name, "ramtransfer"_n, from, mvo()( "from",from)("to",to)("bytes",bytes)("memo",memo));
-      produce_block();
-      BOOST_REQUIRE_EQUAL( true, chain_has_transaction(trace->id) );
-      int64_t ramtransfer_return;
-      idump((trace->action_traces));
-      for ( size_t i = 0; i < trace->action_traces.size(); ++i ) {
-         if ( trace->action_traces[i].act.name == "ramtransfer"_n &&
-              trace->action_traces[i].act.account == "eosio"_n ) {
-            fc::raw::unpack( trace->action_traces[i].return_value.data(),
-                             trace->action_traces[i].return_value.size(), 
-                             ramtransfer_return);
-         }
-      }
-      //BOOST_REQUIRE_EQUAL(ramtransfer_return.bytes, bytes);
-   }
-
-   action_result ramburn( const account_name& owner, uint32_t bytes, const std::string& memo ) {
-      return push_action( owner, "ramburn"_n, mvo()( "owner",owner)("bytes",bytes)("memo",memo) );
-   }
-   action_result ramburn( std::string_view owner, uint32_t bytes, const std::string& memo ) {
-      return ramburn( account_name(owner), bytes, memo );
-   }
-
-   action_result buyrambytes( const account_name& payer, account_name receiver, uint32_t numbytes ) {
-      return push_action( payer, "buyrambytes"_n, mvo()( "payer",payer)("receiver",receiver)("bytes",numbytes) );
-   }
-   action_result buyrambytes( std::string_view payer, std::string_view receiver, uint32_t numbytes ) {
-      return buyrambytes( account_name(payer), account_name(receiver), numbytes );
-   }
-
-   action_result sellram( const account_name& account, uint64_t numbytes ) {
-      return push_action( account, "sellram"_n, mvo()( "account", account)("bytes",numbytes) );
-   }
-   action_result sellram( std::string_view account, uint64_t numbytes ) {
-      return sellram( account_name(account), numbytes );
-   }
-
-   action_result buyramself( const account_name& account, const asset& quant ) {
-      return push_action( account, "buyramself"_n, mvo()( "account",account)("quant",quant) );
    }
 
    action_result push_action( const account_name& signer, const action_name &name, const variant_object &data, bool auth = true ) {
