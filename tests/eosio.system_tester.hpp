@@ -201,6 +201,7 @@ public:
       trx.sign( get_private_key( creator, "active" ), control->get_chain_id()  );
       return push_transaction( trx );
    }
+
    action_result buyram( const account_name& payer, account_name receiver, const asset& eosin ) {
       return push_action( payer, "buyram"_n, mvo()( "payer",payer)("receiver",receiver)("quant",eosin) );
    }
@@ -208,53 +209,94 @@ public:
       return buyram( account_name(payer), account_name(receiver), eosin );
    }
 
-   void ramtransfer(const account_name& from, const account_name& to, uint32_t bytes, const std::string& memo)
+   std::string convert_json_to_hex(const type_name& type, const std::string& json) {
+      // ABI for our return struct
+      const char* ramtransfer_return_abi = R"=====(
    {
-      struct action_return_ramtransfer
-      {
-         name    from;
-         name    to;
-         int64_t bytes;
-         int64_t from_ram_bytes;
-         int64_t to_ram_bytes;
-      };
-      // hold bytes from return data
-      // multiple records with 8 bytes in each record
-      // initialize up front to ensure clean data
-      uint8_t number_of_fields = 5;
-      uint8_t field_size = 8;
-      char ramtransfer_record[number_of_fields][field_size];
-      for (int i = 0; i < number_of_fields; ++i) {
-         memset(ramtransfer_record[i], '\0', field_size);
-      }
+      "version": "eosio::abi/1.2",
+      "types": [],
+      "structs": [{
+         "name": "action_return_ramtransfer",
+         "base": "",
+         "fields": [
+         {
+            "name": "from",
+            "type": "name"
+         },
+         {
+            "name": "to",
+            "type": "name"
+         },
+         {
+            "name": "bytes",
+            "type": "int64"
+         },
+         {
+            "name": "from_ram_bytes",
+            "type": "int64"
+         },
+         {
+            "name": "to_ram_bytes",
+            "type": "int64"
+         }
+         ]
+      }],
+      "actions": [],
+      "tables": [],
+      "ricardian_clauses": [],
+      "variants": [],
+      "action_results": [
+         {
+            "name": "ramtransfer",
+            "result_type": "action_return_ramtransfer"
+         }
+      ]
+   }
+   )=====";
 
-      // execute transaction and get traces
+      // create abi to parse return values
+      auto abi = fc::json::from_string(ramtransfer_return_abi).as<abi_def>();
+      abi_serializer ramtransfer_return_serializer = abi_serializer{std::move(abi), abi_serializer::create_yield_function( abi_serializer_max_time )};
+
+      auto return_json = fc::json::from_string(json);
+      auto serialized_bytes = ramtransfer_return_serializer.variant_to_binary(type, return_json, abi_serializer::create_yield_function( abi_serializer_max_time ));
+      return fc::to_hex(serialized_bytes);
+   }
+
+   action_result ramtransfer(const account_name& from, const account_name& to, uint32_t bytes, const std::string& memo) {
+      return push_action(from, "ramtransfer"_n,
+                         mvo()("from", from)("to", to)("bytes", bytes)("memo", memo));
+   }
+
+   std::vector<char> validate_ramtransfer_return(const account_name& from, const account_name& to, uint32_t bytes, const std::string& memo,
+                                                 const type_name& type, const std::string& json) {
+      // create hex return from provided json
+      std::string expected_hex = convert_json_to_hex(type, json);
+      // initialize string that will hold actual return
+      std::string actual_hex;
+
+      // execute transaction and get traces must use base_tester
       auto trace = base_tester::push_action(config::system_account_name, "ramtransfer"_n, from,
                                             mvo()("from", from)("to", to)("bytes", bytes)("memo", memo));
       produce_block();
 
       // confirm we have trances and find the right one (should be trace idx == 0)
       BOOST_REQUIRE_EQUAL(true, chain_has_transaction(trace->id));
+
       for (size_t i = 0; i < trace->action_traces.size(); ++i) {
          if (trace->action_traces[i].act.name == "ramtransfer"_n && trace->action_traces[i].act.account == "eosio"_n) {
-
-            // debugging check return values, will be hex encoded
+            /*
+             * This is assignment is giving me grief, value does not survive outside for loop, is empty
+             * Doing an idump((trace->action_traces[i].return_value)) will show the full hex
+             * Things I have tried full mem-copy, mem-copy by 8 bytes segments, iterating and copy char by char
+             * Return from here will return a weird 3 chars (dereference pointer).
+             */
             idump((trace->action_traces[i].return_value));
-
-            // pull out bytes from return_value in chunks by field_size, 8 bytes
-            // iterative over each record, then assign char by char for record
-            if ( trace->action_traces[i].return_value.size() >= (number_of_fields * field_size)) {
-               for (int rec_idx = 0; rec_idx < number_of_fields; ++rec_idx) {
-                  std::memcpy(ramtransfer_record[rec_idx],
-                              &trace->action_traces[i].return_value[rec_idx * field_size],
-                              field_size);
-               }
-            }
-            // debugged check expect different values
-            idump((ramtransfer_record[0]));idump((ramtransfer_record[1]));idump((ramtransfer_record[2]));idump((ramtransfer_record[3]));
-            // TODO: convert from hex, populate struct action_return_ramtransfer, and return with function
+            actual_hex = std::string(trace->action_traces[i].return_value.begin(), trace->action_traces[i].return_value.end());
          }
       }
+      // test fails here actual_hex is empty
+      BOOST_REQUIRE_EQUAL(expected_hex,actual_hex);
    }
 
    action_result ramburn(const account_name& owner, uint32_t bytes, const std::string& memo)

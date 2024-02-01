@@ -38,6 +38,17 @@ BOOST_FIXTURE_TEST_CASE( ram_transfer, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL( alice_before - 1000, alice_after );
    BOOST_REQUIRE_EQUAL( bob_before + 1000, bob_after );
 
+   const char* expected_return_data = R"=====(
+{
+   "from": "alice",
+   "to": "bob",
+   "bytes": 1,
+   "from_ram_bytes": 16982,
+   "to_ram_bytes": 18984
+}
+)=====";
+   validate_ramtransfer_return(alice, bob, 1, "", "action_return_ramtransfer", expected_return_data );
+
 } FC_LOG_AND_RETHROW()
 
 // ramburn
