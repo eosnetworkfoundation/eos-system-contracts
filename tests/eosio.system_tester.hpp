@@ -202,7 +202,13 @@ public:
       return push_transaction( trx );
    }
 
-   std::string convertOrdinalsToHex(const std::string& ordinals) {
+   /*
+    * Doing an idump((trace->action_traces[i].return_value)) will show the full hex
+    * Converting return_value to a string will transform it into a series of ordianl values represented by chars
+    * fc::to_hex() did not work.
+    * Couldn't find a method to convert so wrote my own.
+    */
+   std::string convert_ordinals_to_hex(const std::string& ordinals) {
       // helper to convert to hex, 2 chars for hex, 3 char null terminator
       char hex_temp[3];
       // return string
@@ -378,7 +384,7 @@ public:
       // the first trace always has the return value
       int i = 0;
       std::string copy_trace = std::string(trace->action_traces[i].return_value.begin(), trace->action_traces[i].return_value.end());
-      actual_hex = convertOrdinalsToHex(copy_trace);
+      actual_hex = convert_ordinals_to_hex(copy_trace);
 
       // test fails here actual_hex is
       BOOST_REQUIRE_EQUAL(expected_hex,actual_hex);
@@ -404,16 +410,10 @@ public:
       // confirm we have trances and find the right one (should be trace idx == 0)
       BOOST_REQUIRE_EQUAL(true, chain_has_transaction(trace->id));
 
-      /*
-       * This is assignment is giving me grief
-       * Doing an idump((trace->action_traces[i].return_value)) will show the full hex
-       * Inspecting trace->action_traces[i].return_value shows the hex have been converted to ordinals
-       * Couldn't find a method to convert so wrote my own.
-       */
       // the first trace always has the return value
       int i = 0;
       std::string copy_trace = std::string(trace->action_traces[i].return_value.begin(), trace->action_traces[i].return_value.end());
-      actual_hex = convertOrdinalsToHex(copy_trace);
+      actual_hex = convert_ordinals_to_hex(copy_trace);
 
       // test fails here actual_hex is
       BOOST_REQUIRE_EQUAL(expected_hex,actual_hex);
@@ -445,7 +445,7 @@ public:
       int i = 0;
       std::string copy_trace = std::string(trace->action_traces[i].return_value.begin(), trace->action_traces[i].return_value.end());
       // convert from string of ordinals to char representation of hex
-      actual_hex = convertOrdinalsToHex(copy_trace);
+      actual_hex = convert_ordinals_to_hex(copy_trace);
 
       // test fails here actual_hex is
       BOOST_REQUIRE_EQUAL(expected_hex,actual_hex);
@@ -478,7 +478,7 @@ public:
       int i = 0;
       std::string copy_trace = std::string(trace->action_traces[i].return_value.begin(), trace->action_traces[i].return_value.end());
       // convert from string of ordinals to char representation of hex
-      actual_hex = convertOrdinalsToHex(copy_trace);
+      actual_hex = convert_ordinals_to_hex(copy_trace);
 
       // test fails here actual_hex is
       BOOST_REQUIRE_EQUAL(expected_hex,actual_hex);
@@ -507,7 +507,7 @@ public:
       int i = 0;
       std::string copy_trace = std::string(trace->action_traces[i].return_value.begin(), trace->action_traces[i].return_value.end());
       // convert from string of ordinals to char representation of hex
-      actual_hex = convertOrdinalsToHex(copy_trace);
+      actual_hex = convert_ordinals_to_hex(copy_trace);
 
       // test fails here actual_hex is
       BOOST_REQUIRE_EQUAL(expected_hex,actual_hex);
@@ -535,7 +535,7 @@ public:
       int i = 0;
       std::string copy_trace = std::string(trace->action_traces[i].return_value.begin(), trace->action_traces[i].return_value.end());
       // convert from string of ordinals to char representation of hex
-      actual_hex = convertOrdinalsToHex(copy_trace);
+      actual_hex = convert_ordinals_to_hex(copy_trace);
 
       // test fails here actual_hex is
       BOOST_REQUIRE_EQUAL(expected_hex,actual_hex);
