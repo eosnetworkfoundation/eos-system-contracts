@@ -36,7 +36,7 @@ defaults:
 jobs:
   build-test:
     name: Build & Test
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Setup leap-dev & cdt versions
         id: versions
@@ -62,7 +62,7 @@ jobs:
             echo cdt-prerelease=${{inputs.override-cdt-prerelease}} >> $GITHUB_OUTPUT
           fi
       - name: Download cdt
-        uses: AntelopeIO/asset-artifact-download-action@v2
+        uses: AntelopeIO/asset-artifact-download-action@v3
         with:
           owner: AntelopeIO
           repo: cdt
@@ -70,29 +70,27 @@ jobs:
           target: '${{steps.versions.outputs.cdt-target}}'
           prereleases: ${{fromJSON(steps.versions.outputs.cdt-prerelease)}}
           artifact-name: cdt_ubuntu_package_amd64
-          token: ${{github.token}}
       - name: Download leap-dev
-        uses: AntelopeIO/asset-artifact-download-action@v2
+        uses: AntelopeIO/asset-artifact-download-action@v3
         with:
           owner: AntelopeIO
           repo: leap
-          file: 'leap-dev.*(x86_64|amd64).deb'
+          file: 'leap-dev.*ubuntu22\.04_amd64.deb'
           target: '${{steps.versions.outputs.leap-dev-target}}'
           prereleases: ${{fromJSON(steps.versions.outputs.leap-dev-prerelease)}}
-          artifact-name: leap-dev-ubuntu20-amd64
+          artifact-name: leap-dev-ubuntu22-amd64
           container-package: experimental-binaries
-          token: ${{github.token}}
       - name: Install packages
         run: |
           sudo apt install ./*.deb
           sudo apt-get install cmake
           rm ./*.deb
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: src
       - name: Build & Test
         run: |
-          cmake -S src -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=On -DSYSTEM_ENABLE_LEAP_VERSION_CHECK=Off -DSYSTEM_ENABLE_CDT_VERSION_CHECK=Off
+          cmake -S src -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=On
           cmake --build build -- -j $(nproc)
           tar zcf build.tar.gz build
           ctest --test-dir build/tests --output-on-failure -j $(nproc)
