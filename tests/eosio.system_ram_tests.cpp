@@ -47,16 +47,20 @@ BOOST_FIXTURE_TEST_CASE( ram_transfer, eosio_system_tester ) try {
    "to_ram_bytes": 18984
 }
 )=====";
-   validate_ramtransfer_return(alice, bob, 1, "", "action_return_ramtransfer", expected_return_data );
+   validate_ramtransfer_return(alice, bob, 1, "",
+                               "action_return_ramtransfer", expected_return_data );
 
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE( buy_sell_ram_validate, eosio_system_tester ) try {
-   const std::vector<account_name> accounts = { "alice"_n };
+   const std::vector<account_name> accounts = { "alice"_n, "bob"_n };
    create_accounts_with_resources( accounts );
    const account_name alice = accounts[0];
+   const account_name bob = accounts[1];
 
    transfer( config::system_account_name, alice, core_sym::from_string("100.0000"), config::system_account_name );
+   transfer( config::system_account_name, bob, core_sym::from_string("100.0000"), config::system_account_name );
+   BOOST_REQUIRE_EQUAL( success(), buyrambytes( bob, bob, 10000 ) );
 
    const char* expected_buyrambytes_return_data = R"=====(
 {
@@ -67,9 +71,10 @@ BOOST_FIXTURE_TEST_CASE( buy_sell_ram_validate, eosio_system_tester ) try {
    "ram_bytes": 17983
 }
 )=====";
-   validate_buyrambytes_return(alice, alice, 10000, "action_return_buyram", expected_buyrambytes_return_data );
+   validate_buyrambytes_return(alice, alice, 10000,
+                               "action_return_buyram", expected_buyrambytes_return_data );
 
-const char* expected_sellram_return_data = R"=====(
+   const char* expected_sellram_return_data = R"=====(
 {
    "account": "alice",
    "quantity": "0.1455 TST",
@@ -77,20 +82,46 @@ const char* expected_sellram_return_data = R"=====(
    "ram_bytes": 7983
 }
 )=====";
-   validate_sellram_return(alice, 10000, "action_return_sellram", expected_sellram_return_data );
+   validate_sellram_return(alice, 10000,
+                        "action_return_sellram", expected_sellram_return_data );
 
+   const char* expected_buyram_return_data = R"=====(
+{
+   "payer": "bob",
+   "receiver": "alice",
+   "quantity": "2.0000 TST",
+   "bytes": 136750,
+   "ram_bytes": 144733
+}
+)=====";
+   validate_buyram_return(bob, alice, core_sym::from_string("2.0000"),
+                          "action_return_buyram", expected_buyram_return_data );
 } FC_LOG_AND_RETHROW()
 
 // ramburn
 BOOST_FIXTURE_TEST_CASE( ram_burn, eosio_system_tester ) try {
-   const std::vector<account_name> accounts = { "alice"_n };
+   const std::vector<account_name> accounts = { "alice"_n, "bob"_n };
    create_accounts_with_resources( accounts );
    const account_name alice = accounts[0];
+   const account_name bob = accounts[1];
    const account_name null_account = "eosio.null"_n;
 
    transfer( config::system_account_name, alice, core_sym::from_string("100.0000"), config::system_account_name );
+   transfer( config::system_account_name, bob, core_sym::from_string("100.0000"), config::system_account_name );
    BOOST_REQUIRE_EQUAL( success(), buyrambytes( alice, alice, 10000 ) );
    BOOST_REQUIRE_EQUAL( success(), buyrambytes( alice, null_account, 10000 ) );
+
+   const char* expected_buyramself_return_data = R"=====(
+{
+   "payer": "bob",
+   "receiver": "bob",
+   "quantity": "10.0000 TST",
+   "bytes": 683747,
+   "ram_bytes": 691739
+}
+)=====";
+   validate_buyramself_return(bob, core_sym::from_string("10.0000"),
+                              "action_return_buyram", expected_buyramself_return_data ) ;
 
    const uint64_t null_before_burn = get_total_stake( null_account )["ram_bytes"].as_uint64();
    const uint64_t alice_before_burn = get_total_stake( alice )["ram_bytes"].as_uint64();
@@ -101,6 +132,18 @@ BOOST_FIXTURE_TEST_CASE( ram_burn, eosio_system_tester ) try {
    const uint64_t null_after_burn = get_total_stake( null_account )["ram_bytes"].as_uint64();
    BOOST_REQUIRE_EQUAL( alice_before_burn - 3000, alice_after_burn );
    BOOST_REQUIRE_EQUAL( null_before_burn + 3000, null_after_burn );
+
+   const char* expected_ramburn_return_data = R"=====(
+{
+   "from": "bob",
+   "to": "eosio.null",
+   "bytes": 1,
+   "from_ram_bytes": 691738,
+   "to_ram_bytes": 12992
+}
+)=====";
+   validate_ramburn_return(bob, 1, "burn RAM memo",
+                           "action_return_ramtransfer", expected_ramburn_return_data );
 
 } FC_LOG_AND_RETHROW()
 
@@ -117,6 +160,18 @@ BOOST_FIXTURE_TEST_CASE( buy_ram_self, eosio_system_tester ) try {
    const uint64_t alice_after = get_total_stake( alice )["ram_bytes"].as_uint64();
    BOOST_REQUIRE_EQUAL( alice_before + 68375, alice_after );
 
+   const char* expected_buyramself_return_data = R"=====(
+{
+   "payer": "alice",
+   "receiver": "alice",
+   "quantity": "2.0000 TST",
+   "bytes": 136750,
+   "ram_bytes": 213117
+}
+)=====";
+
+   validate_buyramself_return(alice, core_sym::from_string("2.0000"),
+                       "action_return_buyram", expected_buyramself_return_data );
 } FC_LOG_AND_RETHROW()
 
 
