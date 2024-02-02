@@ -51,6 +51,36 @@ BOOST_FIXTURE_TEST_CASE( ram_transfer, eosio_system_tester ) try {
 
 } FC_LOG_AND_RETHROW()
 
+BOOST_FIXTURE_TEST_CASE( buy_sell_ram_validate, eosio_system_tester ) try {
+   const std::vector<account_name> accounts = { "alice"_n };
+   create_accounts_with_resources( accounts );
+   const account_name alice = accounts[0];
+
+   transfer( config::system_account_name, alice, core_sym::from_string("100.0000"), config::system_account_name );
+
+   const char* expected_buyrambytes_return_data = R"=====(
+{
+   "payer": "alice",
+   "receiver": "alice",
+   "quantity": "0.1462 TST",
+   "bytes": 9991,
+   "ram_bytes": 17983
+}
+)=====";
+   validate_buyrambytes_return(alice, alice, 10000, "action_return_buyram", expected_buyrambytes_return_data );
+
+const char* expected_sellram_return_data = R"=====(
+{
+   "account": "alice",
+   "quantity": "0.1455 TST",
+   "bytes": 10000,
+   "ram_bytes": 7983
+}
+)=====";
+   validate_sellram_return(alice, 10000, "action_return_sellram", expected_sellram_return_data );
+
+} FC_LOG_AND_RETHROW()
+
 // ramburn
 BOOST_FIXTURE_TEST_CASE( ram_burn, eosio_system_tester ) try {
    const std::vector<account_name> accounts = { "alice"_n };
