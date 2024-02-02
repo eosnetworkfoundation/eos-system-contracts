@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.5)
 project(eosio_contracts)
 
 set(VERSION_MAJOR 3)
-set(VERSION_MINOR 3)
+set(VERSION_MINOR 2)
 set(VERSION_PATCH 0)
 set(VERSION_SUFFIX dev)
 
@@ -44,6 +44,13 @@ ExternalProject_Add(
   TEST_COMMAND ""
   INSTALL_COMMAND ""
   BUILD_ALWAYS 1)
+
+if(APPLE)
+  set(OPENSSL_ROOT "/usr/local/opt/openssl")
+elseif(UNIX)
+  set(OPENSSL_ROOT "/usr/include/openssl")
+endif()
+set(SECP256K1_ROOT "/usr/local")
 
 if(APPLE)
   set(OPENSSL_ROOT "/usr/local/opt/openssl")
