@@ -8,7 +8,7 @@ option(SYSTEM_CONFIGURABLE_WASM_LIMITS
 option(SYSTEM_BLOCKCHAIN_PARAMETERS
        "Enables use of the host functions activated by the BLOCKCHAIN_PARAMETERS protocol feature" ON)
 
-find_package(cdt)
+find_package(cdt REQUIRED)
 
 set(CDT_VERSION_MIN "3.0")
 set(CDT_VERSION_SOFT_MAX "4.0")

@@ -4,7 +4,7 @@ set(EOSIO_VERSION_MIN "3.1")
 set(EOSIO_VERSION_SOFT_MAX "5.0")
 # set(EOSIO_VERSION_HARD_MAX "")
 
-find_package(leap)
+find_package(leap REQUIRED)
 
 # Check the version of Leap
 if(SYSTEM_ENABLE_LEAP_VERSION_CHECK)
