@@ -81,7 +81,7 @@ BOOST_FIXTURE_TEST_CASE( buy_sell_ram_validate, eosio_system_tester ) try {
    "payer": "alice",
    "receiver": "alice",
    "quantity": "0.1462 TST",
-   "bytes": 9991,
+   "bytes_purchased": 9991,
    "ram_bytes": 17983
 }
 )=====";
@@ -92,7 +92,7 @@ BOOST_FIXTURE_TEST_CASE( buy_sell_ram_validate, eosio_system_tester ) try {
 {
    "account": "alice",
    "quantity": "0.1455 TST",
-   "bytes": 10000,
+   "bytes_sold": 10000,
    "ram_bytes": 7983
 }
 )=====";
@@ -104,7 +104,7 @@ BOOST_FIXTURE_TEST_CASE( buy_sell_ram_validate, eosio_system_tester ) try {
    "payer": "bob",
    "receiver": "alice",
    "quantity": "2.0000 TST",
-   "bytes": 136750,
+   "bytes_purchased": 136750,
    "ram_bytes": 144733
 }
 )=====";
@@ -130,7 +130,7 @@ BOOST_FIXTURE_TEST_CASE( ram_burn, eosio_system_tester ) try {
    "payer": "bob",
    "receiver": "bob",
    "quantity": "10.0000 TST",
-   "bytes": 683747,
+   "bytes_purchased": 683747,
    "ram_bytes": 691739
 }
 )=====";
@@ -179,7 +179,7 @@ BOOST_FIXTURE_TEST_CASE( buy_ram_self, eosio_system_tester ) try {
    "payer": "alice",
    "receiver": "alice",
    "quantity": "2.0000 TST",
-   "bytes": 136750,
+   "bytes_purchased": 136750,
    "ram_bytes": 213117
 }
 )=====";

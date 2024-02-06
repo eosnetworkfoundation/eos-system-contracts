@@ -548,7 +548,7 @@ namespace eosiosystem {
    struct action_return_sellram {
       name account;
       asset quantity;
-      int64_t bytes;
+      int64_t bytes_sold;
       int64_t ram_bytes;
    };
 
@@ -556,7 +556,7 @@ namespace eosiosystem {
       name payer;
       name receiver;
       asset quantity;
-      int64_t bytes;
+      int64_t bytes_purchased;
       int64_t ram_bytes;
    };
 
