@@ -2835,7 +2835,7 @@ BOOST_FIXTURE_TEST_CASE(producers_upgrade_system_contract, eosio_system_tester) 
    );
 
    transaction_trace_ptr trace;
-   control->applied_transaction.connect(
+   control->applied_transaction().connect(
    [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
       trace = std::get<0>(p);
    } );
@@ -3601,7 +3601,7 @@ BOOST_FIXTURE_TEST_CASE( setparams, eosio_system_tester ) try {
    }
 
    transaction_trace_ptr trace;
-   control->applied_transaction.connect(
+   control->applied_transaction().connect(
    [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
       trace = std::get<0>(p);
    } );
@@ -3691,7 +3691,7 @@ BOOST_FIXTURE_TEST_CASE( wasmcfg, eosio_system_tester ) try {
    }
 
    transaction_trace_ptr trace;
-   control->applied_transaction.connect(
+   control->applied_transaction().connect(
    [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
       trace = std::get<0>(p);
    } );
