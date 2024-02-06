@@ -253,7 +253,7 @@ public:
                      "type": "asset"
                  },
                  {
-                     "name": "bytes",
+                     "name": "bytes_purchased",
                      "type": "int64"
                  },
                  {
@@ -301,7 +301,7 @@ public:
                      "type": "asset"
                  },
                  {
-                     "name": "bytes",
+                     "name": "bytes_sold",
                      "type": "int64"
                  },
                  {
