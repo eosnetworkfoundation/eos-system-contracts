@@ -45,12 +45,12 @@ BOOST_FIXTURE_TEST_CASE( ram_transfer, eosio_system_tester ) try {
     *     this is via create_accounts_with_resources()
     * Next buyram on each account purchases 10,000 additional ram bytes
     *     minus fees of 17 ram bytes
-    * 
+    *
     * Before ram transfer the totals for each account are 17,983 ram bytes
     * After transfer of 1,000 bytes
-    *      bob and alice respective totals are 16,983 and 18,983
+    *      bob and alice respective totals are 18,983 and 16,983
     * After the validate ram transfer below of 1 ram byte
-    *      bob and alices respective totals are 16,982 and 18,984
+    *      bob and alices respective totals are 18,984 and 16,982
     */
    const char* expected_return_data = R"=====(
 {
