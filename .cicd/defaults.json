@@ -1,6 +1,6 @@
 {
    "leap-dev":{
-      "target":"controller-self",
+      "target":"instant-finality",
       "prerelease":false
    },
    "cdt":{
