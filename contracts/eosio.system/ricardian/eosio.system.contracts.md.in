@@ -59,6 +59,17 @@ icon: @ICON_BASE_URL@/@RESOURCE_ICON_URI@
 
 {{payer}} buys RAM on behalf of {{receiver}} by paying {{quant}}. This transaction will incur a 0.5% fee out of {{quant}} and the amount of RAM delivered will depend on market rates.
 
+<h1 class="contract">buyramself</h1>
+
+---
+spec_version: "0.2.0"
+title: Buy RAM self
+summary: '{{nowrap account}} buys RAM to self by paying {{nowrap quant}}'
+icon: @ICON_BASE_URL@/@RESOURCE_ICON_URI@
+---
+
+{{account}} buys RAM to self by paying {{quant}}. This transaction will incur a 0.5% fee out of {{quant}} and the amount of RAM delivered will depend on market rates.
+
 <h1 class="contract">buyrambytes</h1>
 
 ---
@@ -412,6 +423,36 @@ icon: @ICON_BASE_URL@/@RESOURCE_ICON_URI@
 ---
 
 Sell {{bytes}} bytes of unused RAM from account {{account}} at market price. This transaction will incur a 0.5% fee on the proceeds which depend on market rates.
+
+<h1 class="contract">ramtransfer</h1>
+
+---
+spec_version: "0.2.0"
+title: Transfer RAM from Account
+summary: 'Transfer unused RAM from {{nowrap from}} to {{nowrap to}}'
+icon: @ICON_BASE_URL@/@RESOURCE_ICON_URI@
+---
+
+Transfer {{bytes}} bytes of unused RAM from account {{from}} to account {{to}}.
+
+{{#if memo}}There is a memo attached to the transfer stating:
+{{memo}}
+{{/if}}
+
+<h1 class="contract">ramburn</h1>
+
+---
+spec_version: "0.2.0"
+title: Burn RAM from Account
+summary: 'Burn unused RAM from {{nowrap owner}}'
+icon: @ICON_BASE_URL@/@RESOURCE_ICON_URI@
+---
+
+Burn {{bytes}} bytes of unused RAM from account {{owner}}.
+
+{{#if memo}}There is a memo attached to the burn stating:
+{{memo}}
+{{/if}}
 
 <h1 class="contract">sellrex</h1>
 
