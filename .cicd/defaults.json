@@ -1,6 +1,6 @@
 {
    "leap-dev":{
-      "target":"pubkey_base64url",
+      "target":"hotstuff_integration",
       "prerelease":false
    },
    "cdt":{
