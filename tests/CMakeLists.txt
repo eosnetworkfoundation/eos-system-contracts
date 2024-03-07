@@ -23,7 +23,7 @@ if(SYSTEM_ENABLE_LEAP_VERSION_CHECK)
       FATAL_ERROR
         "Found Leap version ${EOSIO_VERSION} but it does not satisfy version requirements: ${VERSION_MATCH_ERROR_MSG}\nPlease use Leap version ${EOSIO_VERSION_SOFT_MAX}.x"
     )
-  endif()
+  endif(VERSION_OUTPUT STREQUAL "MATCH")
 endif()
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/contracts.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/contracts.hpp)

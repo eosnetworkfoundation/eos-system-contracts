@@ -11,7 +11,7 @@ option(SYSTEM_BLOCKCHAIN_PARAMETERS
 find_package(cdt REQUIRED)
 
 set(CDT_VERSION_MIN "3.0")
-set(CDT_VERSION_SOFT_MAX "3.0")
+set(CDT_VERSION_SOFT_MAX "4.0")
 # set(CDT_VERSION_HARD_MAX "")
 
 # Check the version of CDT
@@ -31,7 +31,7 @@ if(SYSTEM_ENABLE_CDT_VERSION_CHECK)
       FATAL_ERROR
         "Found CDT version ${CDT_VERSION} but it does not satisfy version requirements: ${VERSION_MATCH_ERROR_MSG}\nPlease use CDT version ${CDT_VERSION_SOFT_MAX}.x"
     )
-  endif()
+  endif(VERSION_OUTPUT STREQUAL "MATCH")
 endif()
 
 set(ICON_BASE_URL "https://raw.githubusercontent.com/eosnetworkfoundation/eos-system-contracts/main/contracts/icons")
