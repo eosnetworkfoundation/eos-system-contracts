@@ -197,6 +197,15 @@ namespace eosiosystem {
       EOSLIB_SERIALIZE( eosio_global_state4, (continuous_rate)(inflation_pay_factor)(votepay_factor) )
    };
 
+   // Defines new global state parameters to store last finalizer set.
+   // It is also used as an indicator Savanna consensus has been switched over.
+   struct [[eosio::table("global5"), eosio::contract("eosio.system")]] eosio_global_state5 {
+      eosio_global_state5() { }
+      std::vector<finalizer_authority> last_finalizers;
+
+      EOSLIB_SERIALIZE( eosio_global_state5, (last_finalizers) )
+   };
+
    inline eosio::block_signing_authority convert_to_block_signing_authority( const eosio::public_key& producer_key ) {
       return eosio::block_signing_authority_v0{ .threshold = 1, .keys = {{producer_key, 1}} };
    }
@@ -282,6 +291,18 @@ namespace eosiosystem {
       EOSLIB_SERIALIZE( producer_info2, (owner)(votepay_share)(last_votepay_share_update) )
    };
 
+   // Defines finalizer_key info structure to be stored in finalizer_keys info table, added after version 6.0
+   struct [[eosio::table, eosio::contract("eosio.system")]] finalizer_key_info {
+      name                            producer;
+      std::string                     active_finalizer_key; // the currently active key
+      std::unordered_set<std::string> registered_finalizer_keys; // including the active_finalizer_key
+
+      uint64_t primary_key()const { return producer.value; }
+
+      // explicit serialization macro is not necessary, used here only to improve compilation time
+      EOSLIB_SERIALIZE( finalizer_key_info, (producer)(active_finalizer_key)(active_finalizer_key) )
+   };
+
    // Voter info. Voter info stores information about the voter:
    // - `owner` the voter
    // - `proxy` the proxy set by the voter, if any
@@ -329,6 +350,7 @@ namespace eosiosystem {
 
    typedef eosio::multi_index< "producers2"_n, producer_info2 > producers_table2;
 
+   typedef eosio::multi_index< "finalizer_key"_n, finalizer_key_info > finalizer_keys_table;
 
    typedef eosio::singleton< "global"_n, eosio_global_state >   global_state_singleton;
 
@@ -337,6 +359,8 @@ namespace eosiosystem {
    typedef eosio::singleton< "global3"_n, eosio_global_state3 > global_state3_singleton;
 
    typedef eosio::singleton< "global4"_n, eosio_global_state4 > global_state4_singleton;
+
+   typedef eosio::singleton< "global5"_n, eosio_global_state5 > global_state5_singleton;
 
    struct [[eosio::table, eosio::contract("eosio.system")]] user_resources {
       name          owner;
@@ -682,14 +706,17 @@ namespace eosiosystem {
          voters_table             _voters;
          producers_table          _producers;
          producers_table2         _producers2;
+         finalizer_keys_table     _finalizer_keys;
          global_state_singleton   _global;
          global_state2_singleton  _global2;
          global_state3_singleton  _global3;
          global_state4_singleton  _global4;
+         global_state5_singleton  _global5;
          eosio_global_state       _gstate;
          eosio_global_state2      _gstate2;
          eosio_global_state3      _gstate3;
          eosio_global_state4      _gstate4;
+         eosio_global_state5      _gstate5;
          rammarket                _rammarket;
          rex_pool_table           _rexpool;
          rex_return_pool_table    _rexretpool;
@@ -1171,6 +1198,66 @@ namespace eosiosystem {
           */
          [[eosio::action]]
          void unregprod( const name& producer );
+
+         /**
+          * Action to permanently transition to Savanna consensus.
+          * Create the first generation of finalizer policy and activate
+          * the policy by using `set_finalizers` host function 
+          *
+          * @pre Require the authority of the contract itself
+          * @pre A sufficient number (15) of the top 21 block producers have registered a finalizer key
+          */
+         [[eosio::action]]
+         void switchtosvnn();
+
+         /**
+          * Register a finalizer key action by a registered producer.
+          * If this is the first registered finalizer key of the producer,
+          * it will also implicitly be marked active.
+          * If this finalizer key was registered before (and still exists) even
+          * by other block producers, the registration will fail.
+          * A registered producer can have multiple registered finalizer keys.
+          *
+          * @param producer - account registering `finalizer_key`,
+          * @param finalizer_key - key to be registered. The key is in base64url format.
+          * @param proof_of_possession - a valid Proof of Possession signature to show the producer owns the private key of the finalizer_key. The signature is in base64url format.
+          *
+          * @pre `producer` must be a registered producer
+          * @pre Authority of `producer` to register
+          */
+         [[eosio::action]]
+         void regfinkey( const name& producer, const std::string& finalizer_key, const std::string& proof_of_possession);
+
+         /**
+          * Activate a finalizer key action. If the block producer is currently
+          * active (in top 21), then immediately change Finalizer Policy.
+          * Activating a finalizer key of a block producer implicitly deactivates
+          * the previously active finalizer key of that block producer.
+          *
+          * @param producer - account activating `finalizer_key`,
+          * @param finalizer_key - key to be activated.
+          *
+          * @pre `producer` must be a registered producer
+          * @pre `finalizer_key` must be a registered  finalizer key
+          * @pre Authority of `producer`
+          */
+         [[eosio::action]]
+         void actfinkey( const name& producer, const std::string& finalizer_key );
+
+         /**
+          * Delete a finalizer key action which is not active unless it is the
+          * last regitered finalizer key.
+          *
+          * @param producer - account deleting `finalizer_key`,
+          * @param finalizer_key - key to be deleted.
+          *
+          * @pre `producer` must be a registered producer
+          * @pre `finalizer_key` must be a registered finalizer key
+          * @pre `finalizer_key` must be not be active, unless it is the last regitered finalizer key
+          * @pre Authority of `producer`
+          */
+         [[eosio::action]]
+         void delfinkey( const name& producer, const std::string& finalizer_key );
 
          /**
           * Set ram action sets the ram supply.

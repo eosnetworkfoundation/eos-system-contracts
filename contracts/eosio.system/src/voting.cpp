@@ -110,7 +110,9 @@ namespace eosiosystem {
 
       using value_type = std::pair<eosio::producer_authority, uint16_t>;
       std::vector< value_type > top_producers;
+      std::vector< name > top_producer_names;
       top_producers.reserve(21);
+      top_producer_names.reserve(21);
 
       for( auto it = idx.cbegin(); it != idx.cend() && top_producers.size() < 21 && 0 < it->total_votes && it->active(); ++it ) {
          top_producers.emplace_back(
@@ -120,6 +122,7 @@ namespace eosiosystem {
             },
             it->location
          );
+         top_producer_names.emplace_back(it->owner);
       }
 
       if( top_producers.size() == 0 || top_producers.size() < _gstate.last_producer_schedule_size ) {
@@ -139,6 +142,10 @@ namespace eosiosystem {
 
       if( set_proposed_producers( producers ) >= 0 ) {
          _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( top_producers.size() );
+      }
+
+      if( is_savanna_consensus() ) {
+         check(set_next_finalizers_set( top_producer_names ), "set_next_finalizers_set failed (less than 15 producers have registered keys");
       }
    }
 
