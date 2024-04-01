@@ -7,6 +7,7 @@
 #include <eosio/singleton.hpp>
 #include <eosio/system.hpp>
 #include <eosio/time.hpp>
+#include <eosio/instant_finality.hpp>
 
 #include <eosio.system/exchange_state.hpp>
 #include <eosio.system/native.hpp>
@@ -14,6 +15,7 @@
 #include <deque>
 #include <optional>
 #include <string>
+#include <set>
 #include <type_traits>
 
 #ifdef CHANNEL_RAM_AND_NAMEBID_FEES_TO_REX
@@ -201,9 +203,13 @@ namespace eosiosystem {
    // It is also used as an indicator Savanna consensus has been switched over.
    struct [[eosio::table("global5"), eosio::contract("eosio.system")]] eosio_global_state5 {
       eosio_global_state5() { }
-      std::vector<finalizer_authority> last_finalizers;
+      // The data structure was chosen to optimize for fast check whether a finalizer
+      // key is used in last finalizer policy.
+      // Could cache entire finalizer_authorities; but that's only needed when
+      // replacing an active producer's active key, which happens rarely.
+      std::set<uint64_t> last_finalizer_key_ids;
 
-      EOSLIB_SERIALIZE( eosio_global_state5, (last_finalizers) )
+      EOSLIB_SERIALIZE( eosio_global_state5, (last_finalizer_key_ids) )
    };
 
    inline eosio::block_signing_authority convert_to_block_signing_authority( const eosio::public_key& producer_key ) {
@@ -292,16 +298,32 @@ namespace eosiosystem {
    };
 
    // Defines finalizer_key info structure to be stored in finalizer_keys info table, added after version 6.0
-   struct [[eosio::table, eosio::contract("eosio.system")]] finalizer_key_info {
-      name                            producer;
-      std::string                     active_finalizer_key; // the currently active key
-      std::unordered_set<std::string> registered_finalizer_keys; // including the active_finalizer_key
+   struct [[eosio::table("finkeys"), eosio::contract("eosio.system")]] finalizer_key_info {
+      uint64_t       id;
+      name           finalizer;
+      std::string    finalizer_key; // base64url
 
-      uint64_t primary_key()const { return producer.value; }
-
-      // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( finalizer_key_info, (producer)(active_finalizer_key)(active_finalizer_key) )
+      uint64_t    primary_key()  const { return id; }
+      uint64_t    by_finalizer() const { return finalizer.value; }
+      checksum256 by_fin_key()   const { auto g1 = eosio::decode_bls_public_key_to_g1(finalizer_key); return eosio::sha256(g1.data(), g1.size()); }
    };
+
+   typedef eosio::multi_index<
+      "finkeys"_n, finalizer_key_info,
+      indexed_by<"byfinalizer"_n, const_mem_fun<finalizer_key_info, uint64_t, &finalizer_key_info::by_finalizer>>,
+      indexed_by<"byfinkey"_n, const_mem_fun<finalizer_key_info, checksum256, &finalizer_key_info::by_fin_key>>
+   > finalizer_keys_table;
+
+   struct [[eosio::table("finalizers"), eosio::contract("eosio.system")]] finalizer_info {
+      name              finalizer;
+      uint64_t          active_key_id;
+      std::vector<char> active_key;  // Affine little endian non-montgomery g1
+      uint32_t          num_registered_keys;
+
+      uint64_t primary_key() const { return finalizer.value; }
+   };
+
+   typedef eosio::multi_index< "finalizers"_n, finalizer_info > finalizers_table;
 
    // Voter info. Voter info stores information about the voter:
    // - `owner` the voter
@@ -349,8 +371,6 @@ namespace eosiosystem {
                              > producers_table;
 
    typedef eosio::multi_index< "producers2"_n, producer_info2 > producers_table2;
-
-   typedef eosio::multi_index< "finalizer_key"_n, finalizer_key_info > finalizer_keys_table;
 
    typedef eosio::singleton< "global"_n, eosio_global_state >   global_state_singleton;
 
@@ -707,6 +727,7 @@ namespace eosiosystem {
          producers_table          _producers;
          producers_table2         _producers2;
          finalizer_keys_table     _finalizer_keys;
+         finalizers_table         _finalizers;
          global_state_singleton   _global;
          global_state2_singleton  _global2;
          global_state3_singleton  _global3;
@@ -1226,7 +1247,7 @@ namespace eosiosystem {
           * @pre Authority of `producer` to register
           */
          [[eosio::action]]
-         void regfinkey( const name& producer, const std::string& finalizer_key, const std::string& proof_of_possession);
+         void regfinkey( const name& finalizer, const std::string& finalizer_key, const std::string& proof_of_possession);
 
          /**
           * Activate a finalizer key action. If the block producer is currently
@@ -1594,6 +1615,11 @@ namespace eosiosystem {
                                                double shares_rate, bool reset_to_zero = false );
          double update_total_votepay_share( const time_point& ct,
                                             double additional_shares_delta = 0.0, double shares_rate_delta = 0.0 );
+
+         // defined in finalizer_key.cpp
+         bool is_savanna_consensus() const;
+         void set_finalizers( const std::vector<eosio::finalizer_authority>& finalizer_authorities, const std::set<uint64_t>& finalizer_key_ids );
+         void replace_key_in_finalizer_policy(const name& finalizer, uint64_t old_id, uint64_t new_id);
 
          template <auto system_contract::*...Ptrs>
          class registration {

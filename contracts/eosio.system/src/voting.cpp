@@ -111,10 +111,40 @@ namespace eosiosystem {
       using value_type = std::pair<eosio::producer_authority, uint16_t>;
       std::vector< value_type > top_producers;
       std::vector< name > top_producer_names;
+      std::vector< eosio::finalizer_authority > next_finalizer_authorities;
+      std::set< uint64_t > next_finalizer_key_ids;
       top_producers.reserve(21);
       top_producer_names.reserve(21);
+      next_finalizer_authorities.reserve(21);
+      bool new_finalizer_keys_found = false;
 
       for( auto it = idx.cbegin(); it != idx.cend() && top_producers.size() < 21 && 0 < it->total_votes && it->active(); ++it ) {
+         if( is_savanna_consensus() ) {
+            auto finalizer = _finalizers.find( it->owner.value );
+            if( finalizer == _finalizers.end() ) {
+               // The producer is not in finalizers table, indicating it does not have an
+               // active registered finalizer key. Try next one.
+               continue;
+            }
+
+            // If the producer's finalizer_key_id is not in last_finalizer_key_ids,
+            // it means a new finalizer policy is needed.
+            if( !_gstate5.last_finalizer_key_ids.contains(finalizer->active_key_id) ) {
+               new_finalizer_keys_found = true;
+            }
+
+            // Store finalizer key ID and pre-build finalizer_authorities in case
+            // we need to set new finalizer policy
+            next_finalizer_key_ids.insert(finalizer->active_key_id);
+            next_finalizer_authorities.emplace_back(
+               eosio::finalizer_authority{
+                  .description = it->owner.to_string(),
+                  .weight      = 1,
+                  .public_key  = finalizer->active_key
+               }
+            );
+         }
+
          top_producers.emplace_back(
             eosio::producer_authority{
                .producer_name = it->owner,
@@ -144,8 +174,11 @@ namespace eosiosystem {
          _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( top_producers.size() );
       }
 
-      if( is_savanna_consensus() ) {
-         check(set_next_finalizers_set( top_producer_names ), "set_next_finalizers_set failed (less than 15 producers have registered keys");
+      // Only set a new finalizer policy if it has changed.
+      // Even if no new finalizer key found, the size must be match to account for if
+      // any finalizers are removed.
+      if( is_savanna_consensus() && (new_finalizer_keys_found || next_finalizer_authorities.size() != _gstate5.last_finalizer_key_ids.size()) ) {
+         set_finalizers( next_finalizer_authorities, next_finalizer_key_ids );
       }
    }
 
