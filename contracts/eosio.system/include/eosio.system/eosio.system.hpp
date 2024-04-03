@@ -15,7 +15,6 @@
 #include <deque>
 #include <optional>
 #include <string>
-#include <set>
 #include <type_traits>
 
 #ifdef CHANNEL_RAM_AND_NAMEBID_FEES_TO_REX
@@ -199,19 +198,6 @@ namespace eosiosystem {
       EOSLIB_SERIALIZE( eosio_global_state4, (continuous_rate)(inflation_pay_factor)(votepay_factor) )
    };
 
-   // Defines new global state parameters to store last finalizer set.
-   // It is also used as an indicator Savanna consensus has been switched over.
-   struct [[eosio::table("global5"), eosio::contract("eosio.system")]] eosio_global_state5 {
-      eosio_global_state5() { }
-      // The data structure was chosen to optimize for fast check whether a finalizer
-      // key is used in last finalizer policy.
-      // Could cache entire finalizer_authorities; but that's only needed when
-      // replacing an active producer's active key, which happens rarely.
-      std::set<uint64_t> last_finalizer_key_ids;
-
-      EOSLIB_SERIALIZE( eosio_global_state5, (last_finalizer_key_ids) )
-   };
-
    inline eosio::block_signing_authority convert_to_block_signing_authority( const eosio::public_key& producer_key ) {
       return eosio::block_signing_authority_v0{ .threshold = 1, .keys = {{producer_key, 1}} };
    }
@@ -326,6 +312,14 @@ namespace eosiosystem {
 
    typedef eosio::multi_index< "finalizers"_n, finalizer_info > finalizers_table;
 
+   struct [[eosio::table("lastfkeyids"), eosio::contract("eosio.system")]] last_finkey_id_info {
+      uint64_t          key_id;
+
+      uint64_t primary_key() const { return key_id; }
+   };
+
+   typedef eosio::multi_index< "lastfkeyids"_n, last_finkey_id_info > last_finkey_ids_table;
+
    // Voter info. Voter info stores information about the voter:
    // - `owner` the voter
    // - `proxy` the proxy set by the voter, if any
@@ -380,8 +374,6 @@ namespace eosiosystem {
    typedef eosio::singleton< "global3"_n, eosio_global_state3 > global_state3_singleton;
 
    typedef eosio::singleton< "global4"_n, eosio_global_state4 > global_state4_singleton;
-
-   typedef eosio::singleton< "global5"_n, eosio_global_state5 > global_state5_singleton;
 
    struct [[eosio::table, eosio::contract("eosio.system")]] user_resources {
       name          owner;
@@ -729,16 +721,15 @@ namespace eosiosystem {
          producers_table2         _producers2;
          finalizer_keys_table     _finalizer_keys;
          finalizers_table         _finalizers;
+         last_finkey_ids_table    _last_finkey_ids;
          global_state_singleton   _global;
          global_state2_singleton  _global2;
          global_state3_singleton  _global3;
          global_state4_singleton  _global4;
-         global_state5_singleton  _global5;
          eosio_global_state       _gstate;
          eosio_global_state2      _gstate2;
          eosio_global_state3      _gstate3;
          eosio_global_state4      _gstate4;
-         eosio_global_state5      _gstate5;
          rammarket                _rammarket;
          rex_pool_table           _rexpool;
          rex_return_pool_table    _rexretpool;
@@ -1620,7 +1611,7 @@ namespace eosiosystem {
 
          // defined in finalizer_key.cpp
          bool is_savanna_consensus() const;
-         void set_finalizers( std::vector<eosio::finalizer_authority>&& finalizer_authorities, const std::set<uint64_t>& finalizer_key_ids );
+         void set_finalizers( std::vector<eosio::finalizer_authority>&& finalizer_authorities, const std::vector<uint64_t>& finalizer_key_ids );
          void replace_key_in_finalizer_policy(const name& finalizer, uint64_t old_id, uint64_t new_id);
 
          template <auto system_contract::*...Ptrs>
