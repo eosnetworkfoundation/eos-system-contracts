@@ -302,10 +302,11 @@ namespace eosiosystem {
       uint64_t       id;
       name           finalizer;
       std::string    finalizer_key; // base64url
+      checksum256    finalizer_key_hash;
 
       uint64_t    primary_key()  const { return id; }
       uint64_t    by_finalizer() const { return finalizer.value; }
-      checksum256 by_fin_key()   const { auto g1 = eosio::decode_bls_public_key_to_g1(finalizer_key); return eosio::sha256(g1.data(), g1.size()); }
+      checksum256 by_fin_key()   const { return finalizer_key_hash; }
    };
 
    typedef eosio::multi_index<

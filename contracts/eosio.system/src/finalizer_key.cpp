@@ -108,7 +108,7 @@ namespace eosiosystem {
 
       // Duplication check across all registered keys
       auto idx = _finalizer_keys.get_index<"byfinkey"_n>();
-      auto hash = eosio::sha256(fin_key_g1.data(), fin_key_g1.size());
+      auto hash = eosio::sha256(finalizer_key.data(), finalizer_key.size());
       check(idx.lower_bound(hash) == idx.end(), "duplicate finalizer key");
 
       // Proof of possession check is expensive, do it at last
@@ -116,9 +116,10 @@ namespace eosiosystem {
 
       // Insert into finalyzer_keys table
       auto key_itr = _finalizer_keys.emplace( finalizer, [&]( auto& k ) {
-         k.id            = _finalizer_keys.available_primary_key();
-         k.finalizer     = finalizer;
-         k.finalizer_key = finalizer_key;
+         k.id                 = _finalizer_keys.available_primary_key();
+         k.finalizer          = finalizer;
+         k.finalizer_key      = finalizer_key;
+         k.finalizer_key_hash = eosio::sha256(finalizer_key.data(), finalizer_key.size());
       });
 
       // Update finalizers table
@@ -155,7 +156,7 @@ namespace eosiosystem {
       // Check the key is registered
       const auto fin_key_g1 = eosio::decode_bls_public_key_to_g1(finalizer_key);
       auto idx = _finalizer_keys.get_index<"byfinkey"_n>();
-      auto hash = eosio::sha256(fin_key_g1.data(), fin_key_g1.size());
+      auto hash = eosio::sha256(finalizer_key.data(), finalizer_key.size());
       auto fin_key = idx.lower_bound(hash);
       check(fin_key != idx.end(), "finalizer key was not registered");
 
@@ -213,9 +214,8 @@ namespace eosiosystem {
       check( producer != _producers.end(), "finalizer is not a registered producer");
 
       // Check the key is registered
-      const auto pk = eosio::decode_bls_public_key_to_g1(finalizer_key);
       auto idx = _finalizer_keys.get_index<"byfinkey"_n>();
-      auto hash = eosio::sha256(pk.data(), pk.size());
+      auto hash = eosio::sha256(finalizer_key.data(), finalizer_key.size());
       auto fin_key = idx.lower_bound(hash);
       check(fin_key != idx.end(), "finalizer_key was not registered");
 
