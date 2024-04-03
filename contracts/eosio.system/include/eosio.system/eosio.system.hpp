@@ -1232,7 +1232,7 @@ namespace eosiosystem {
          void switchtosvnn();
 
          /**
-          * Register a finalizer key action by a registered producer.
+          * Action to register a finalizer key by a registered producer.
           * If this is the first registered finalizer key of the producer,
           * it will also implicitly be marked active.
           * If this finalizer key was registered before (and still exists) even
@@ -1250,13 +1250,13 @@ namespace eosiosystem {
          void regfinkey( const name& finalizer, const std::string& finalizer_key, const std::string& proof_of_possession);
 
          /**
-          * Activate a finalizer key action. If the block producer is currently
+          * Action to activate a finalizer key. If the block producer is currently
           * active (in top 21), then immediately change Finalizer Policy.
           * Activating a finalizer key of a block producer implicitly deactivates
           * the previously active finalizer key of that block producer.
           *
           * @param finalizer - account activating `finalizer_key`,
-          * @param finalizer_key - key to be activated.
+          * @param finalizer_key - key to be activated, in base64url format.
           *
           * @pre `finalizer` must be a registered producer
           * @pre `finalizer_key` must be a registered  finalizer key
@@ -1266,15 +1266,16 @@ namespace eosiosystem {
          void actfinkey( const name& finalizer, const std::string& finalizer_key );
 
          /**
-          * Delete a finalizer key action which is not active unless it is the
-          * last regitered finalizer key.
+          * Action to delete a finalizer key. The key cannot be active unless
+          * it is the last registered finalizer key. If it is the last one,
+          * it will be deleted.
           *
           * @param finalizer - account deleting `finalizer_key`,
           * @param finalizer_key - key to be deleted.
           *
           * @pre `finalizer` must be a registered producer
           * @pre `finalizer_key` must be a registered finalizer key
-          * @pre `finalizer_key` must be not be active, unless it is the last regitered finalizer key
+          * @pre `finalizer_key` must be not be active, unless it is the last registered finalizer key
           * @pre Authority of `finalizer`
           */
          [[eosio::action]]
