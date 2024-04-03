@@ -69,8 +69,7 @@ namespace eosiosystem {
          producers.push_back( std::move(item.first) );
 
       if( set_proposed_producers( producers ) >= 0 ) {
-         // what block_time to use here?
-         //_gstate.last_producer_schedule_update = block_time;
+         _gstate.last_producer_schedule_update = eosio::current_time_point();
          _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( top_producers.size() );
       }
 
