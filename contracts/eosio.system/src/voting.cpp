@@ -168,7 +168,7 @@ namespace eosiosystem {
          producers.push_back( std::move(item.first) );
 
       if( set_proposed_producers( producers ) >= 0 ) {
-         _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( top_producers.size() );
+         _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( producers.size() );
       }
 
       // Only set a new finalizer policy if it has changed.

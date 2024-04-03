@@ -70,7 +70,7 @@ namespace eosiosystem {
 
       if( set_proposed_producers( producers ) >= 0 ) {
          _gstate.last_producer_schedule_update = eosio::current_time_point();
-         _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( top_producers.size() );
+         _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( producers.size() );
       }
 
       set_finalizers(std::move(finalizer_authorities), next_finalizer_key_ids);
