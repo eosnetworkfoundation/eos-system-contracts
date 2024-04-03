@@ -89,6 +89,7 @@ namespace eosiosystem {
       };
       eosio::set_finalizers(std::move(fin_policy)); // call host function
 
+      // Insert new ones
       for (auto id: finalizer_key_ids ) {
          // Insert it into last_finkey_ids_table if the key is new
          if( _last_finkey_ids.find(id) == _last_finkey_ids.end() ) {
@@ -249,6 +250,11 @@ namespace eosiosystem {
       if( fin->num_registered_keys == 1 ) {
          // The finalizer does not have any registered keys. Remove it from finalizers table.
          _finalizers.erase( fin );
+
+         // This is the last registered and must be active and in last_finkey_ids table
+         auto itr = _last_finkey_ids.find(fin_key->id);
+         assert(itr);
+         _last_finkey_ids.erase( itr );
       } else {
          // Decrement num_registered_keys finalizers table
          _finalizers.modify( fin, same_payer, [&]( auto& f ) {

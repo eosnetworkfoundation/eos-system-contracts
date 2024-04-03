@@ -173,8 +173,6 @@ namespace eosiosystem {
       }
 
       // Only set a new finalizer policy if it has changed.
-      // Even if no new finalizer key found, the size must be match to account for if
-      // any finalizers are removed.
       if( is_savanna_consensus() && new_finalizer_keys_found ) {
          set_finalizers( std::move(next_finalizer_authorities), next_finalizer_key_ids );
       }
