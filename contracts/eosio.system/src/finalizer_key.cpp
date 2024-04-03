@@ -151,6 +151,11 @@ namespace eosiosystem {
       auto producer = _producers.find( finalizer.value );
       check( producer != _producers.end(), "finalizer is not a registered producer");
 
+      // Check finalizer has registered keys
+      auto fin = _finalizers.find(finalizer.value);
+      check( fin != _finalizers.end(), "finalizer has not registered any finalizer keys" );
+      check( fin->num_registered_keys > 0, "num_registered_keys of the finalizer must be greater than one" );
+
       // Check the key is registered
       const auto fin_key_g1 = eosio::decode_bls_public_key_to_g1(finalizer_key);
       auto idx = _finalizer_keys.get_index<"byfinkey"_n>();
@@ -160,11 +165,6 @@ namespace eosiosystem {
 
       // Check the key belongs to finalizer
       check(fin_key->finalizer == finalizer, "finalizer_key was not registered by the finalizer");
-
-      // Check finalizer itself
-      auto fin = _finalizers.find(finalizer.value);
-      check( fin != _finalizers.end(), "finalizer is not in the finalizers table" );
-      check( fin->num_registered_keys > 0, "num_registered_keys of the finalizer must be greater than one" );
 
       // Check if the finalizer key is not already active
       check( fin_key->id != fin->active_key_id, "the finalizer key was already active" );
