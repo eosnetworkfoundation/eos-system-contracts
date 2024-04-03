@@ -161,6 +161,9 @@ namespace eosiosystem {
       check( fin != _finalizers.end(), "finalizer has not registered any finalizer keys" );
       check( fin->num_registered_keys > 0, "num_registered_keys of the finalizer must be greater than one" );
 
+      // Basic format check
+      check(finalizer_key.compare(0, 7, "PUB_BLS") == 0, "finalizer key must start with  PUB_BLS");
+
       // Check the key is registered
       const auto fin_key_g1 = eosio::decode_bls_public_key_to_g1(finalizer_key);
       auto idx = _finalizer_keys.get_index<"byfinkey"_n>();
