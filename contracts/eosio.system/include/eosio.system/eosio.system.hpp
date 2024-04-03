@@ -1239,12 +1239,12 @@ namespace eosiosystem {
           * by other block producers, the registration will fail.
           * A registered producer can have multiple registered finalizer keys.
           *
-          * @param producer - account registering `finalizer_key`,
+          * @param finalizer - account registering `finalizer_key`,
           * @param finalizer_key - key to be registered. The key is in base64url format.
           * @param proof_of_possession - a valid Proof of Possession signature to show the producer owns the private key of the finalizer_key. The signature is in base64url format.
           *
-          * @pre `producer` must be a registered producer
-          * @pre Authority of `producer` to register
+          * @pre `finalizer` must be a registered producer
+          * @pre Authority of `finalizer` to register
           */
          [[eosio::action]]
          void regfinkey( const name& finalizer, const std::string& finalizer_key, const std::string& proof_of_possession);
@@ -1255,30 +1255,30 @@ namespace eosiosystem {
           * Activating a finalizer key of a block producer implicitly deactivates
           * the previously active finalizer key of that block producer.
           *
-          * @param producer - account activating `finalizer_key`,
+          * @param finalizer - account activating `finalizer_key`,
           * @param finalizer_key - key to be activated.
           *
-          * @pre `producer` must be a registered producer
+          * @pre `finalizer` must be a registered producer
           * @pre `finalizer_key` must be a registered  finalizer key
-          * @pre Authority of `producer`
+          * @pre Authority of `finalizer`
           */
          [[eosio::action]]
-         void actfinkey( const name& producer, const std::string& finalizer_key );
+         void actfinkey( const name& finalizer, const std::string& finalizer_key );
 
          /**
           * Delete a finalizer key action which is not active unless it is the
           * last regitered finalizer key.
           *
-          * @param producer - account deleting `finalizer_key`,
+          * @param finalizer - account deleting `finalizer_key`,
           * @param finalizer_key - key to be deleted.
           *
-          * @pre `producer` must be a registered producer
+          * @pre `finalizer` must be a registered producer
           * @pre `finalizer_key` must be a registered finalizer key
           * @pre `finalizer_key` must be not be active, unless it is the last regitered finalizer key
-          * @pre Authority of `producer`
+          * @pre Authority of `finalizer`
           */
          [[eosio::action]]
-         void delfinkey( const name& producer, const std::string& finalizer_key );
+         void delfinkey( const name& finalizer, const std::string& finalizer_key );
 
          /**
           * Set ram action sets the ram supply.
