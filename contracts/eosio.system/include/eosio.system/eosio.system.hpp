@@ -300,28 +300,28 @@ namespace eosiosystem {
    // Defines finalizer_key info structure to be stored in finalizer_keys info table, added after version 6.0
    struct [[eosio::table("finkeys"), eosio::contract("eosio.system")]] finalizer_key_info {
       uint64_t       id;
-      name           finalizer;
+      name           finalizer_name;
       std::string    finalizer_key; // base64url
       checksum256    finalizer_key_hash;
 
-      uint64_t    primary_key()  const { return id; }
-      uint64_t    by_finalizer() const { return finalizer.value; }
-      checksum256 by_fin_key()   const { return finalizer_key_hash; }
+      uint64_t    primary_key() const { return id; }
+      uint64_t    by_fin_name() const { return finalizer_name.value; }
+      checksum256 by_fin_key()  const { return finalizer_key_hash; }
    };
 
    typedef eosio::multi_index<
       "finkeys"_n, finalizer_key_info,
-      indexed_by<"byfinalizer"_n, const_mem_fun<finalizer_key_info, uint64_t, &finalizer_key_info::by_finalizer>>,
+      indexed_by<"byfinname"_n, const_mem_fun<finalizer_key_info, uint64_t, &finalizer_key_info::by_fin_name>>,
       indexed_by<"byfinkey"_n, const_mem_fun<finalizer_key_info, checksum256, &finalizer_key_info::by_fin_key>>
    > finalizer_keys_table;
 
    struct [[eosio::table("finalizers"), eosio::contract("eosio.system")]] finalizer_info {
-      name              finalizer;
+      name              finalizer_name;
       uint64_t          active_key_id;
       std::vector<char> active_key;  // Affine little endian non-montgomery g1
       uint32_t          num_registered_keys;
 
-      uint64_t primary_key() const { return finalizer.value; }
+      uint64_t primary_key() const { return finalizer_name.value; }
    };
 
    typedef eosio::multi_index< "finalizers"_n, finalizer_info > finalizers_table;
@@ -1248,7 +1248,7 @@ namespace eosiosystem {
           * @pre Authority of `finalizer` to register
           */
          [[eosio::action]]
-         void regfinkey( const name& finalizer, const std::string& finalizer_key, const std::string& proof_of_possession);
+         void regfinkey( const name& finalizer_name, const std::string& finalizer_key, const std::string& proof_of_possession);
 
          /**
           * Action to activate a finalizer key. If the block producer is currently
@@ -1256,31 +1256,31 @@ namespace eosiosystem {
           * Activating a finalizer key of a block producer implicitly deactivates
           * the previously active finalizer key of that block producer.
           *
-          * @param finalizer - account activating `finalizer_key`,
+          * @param finalizer_name - account activating `finalizer_key`,
           * @param finalizer_key - key to be activated, in base64url format.
           *
-          * @pre `finalizer` must be a registered producer
+          * @pre `finalizer_name` must be a registered producer
           * @pre `finalizer_key` must be a registered  finalizer key
           * @pre Authority of `finalizer`
           */
          [[eosio::action]]
-         void actfinkey( const name& finalizer, const std::string& finalizer_key );
+         void actfinkey( const name& finalizer_name, const std::string& finalizer_key );
 
          /**
           * Action to delete a finalizer key. The key cannot be active unless
           * it is the last registered finalizer key. If it is the last one,
           * it will be deleted.
           *
-          * @param finalizer - account deleting `finalizer_key`,
+          * @param finalizer_name - account deleting `finalizer_key`,
           * @param finalizer_key - key to be deleted.
           *
-          * @pre `finalizer` must be a registered producer
+          * @pre `finalizer_name` must be a registered producer
           * @pre `finalizer_key` must be a registered finalizer key
           * @pre `finalizer_key` must be not be active, unless it is the last registered finalizer key
           * @pre Authority of `finalizer`
           */
          [[eosio::action]]
-         void delfinkey( const name& finalizer, const std::string& finalizer_key );
+         void delfinkey( const name& finalizer_name, const std::string& finalizer_key );
 
          /**
           * Set ram action sets the ram supply.

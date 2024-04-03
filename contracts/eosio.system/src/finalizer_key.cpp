@@ -117,7 +117,7 @@ namespace eosiosystem {
       // Insert into finalyzer_keys table
       auto key_itr = _finalizer_keys.emplace( finalizer, [&]( auto& k ) {
          k.id                 = _finalizer_keys.available_primary_key();
-         k.finalizer          = finalizer;
+         k.finalizer_name     = finalizer;
          k.finalizer_key      = finalizer_key;
          k.finalizer_key_hash = eosio::sha256(finalizer_key.data(), finalizer_key.size());
       });
@@ -128,7 +128,7 @@ namespace eosiosystem {
          // First time the finalizer to register a finalier key,
          // make the key active
          _finalizers.emplace( finalizer, [&]( auto& f ) {
-            f.finalizer           = finalizer;
+            f.finalizer_name      = finalizer;
             f.active_key_id       = key_itr->id;
             f.active_key          = { fin_key_g1.begin(), fin_key_g1.end() };
             f.num_registered_keys = 1;
@@ -161,7 +161,7 @@ namespace eosiosystem {
       check(fin_key != idx.end(), "finalizer key was not registered");
 
       // Check the key belongs to finalizer
-      check(fin_key->finalizer == finalizer, "finalizer_key was not registered by the finalizer");
+      check(fin_key->finalizer_name == finalizer, "finalizer_key was not registered by the finalizer");
 
       // Check if the finalizer key is not already active
       check( fin_key->id != fin->active_key_id, "the finalizer key was already active" );
@@ -196,7 +196,7 @@ namespace eosiosystem {
          const auto pk = eosio::decode_bls_public_key_to_g1(key->finalizer_key);
          finalizer_authorities.emplace_back(
             eosio::finalizer_authority{
-               .description = key->finalizer.to_string(),
+               .description = key->finalizer_name.to_string(),
                .weight      = 1,
                .public_key  = { pk.begin(), pk.end() }
             }
@@ -220,7 +220,7 @@ namespace eosiosystem {
       check(fin_key != idx.end(), "finalizer_key was not registered");
 
       // Check the key belongs to finalizer
-      check(fin_key->finalizer == finalizer, "finalizer_key was not registered by the finalizer");
+      check(fin_key->finalizer_name == finalizer, "finalizer_key was not registered by the finalizer");
       
       // Cross check finalizers table
       auto fin = _finalizers.find(finalizer.value);
