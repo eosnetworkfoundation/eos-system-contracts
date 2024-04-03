@@ -110,11 +110,9 @@ namespace eosiosystem {
 
       using value_type = std::pair<eosio::producer_authority, uint16_t>;
       std::vector< value_type > top_producers;
-      std::vector< name > top_producer_names;
       std::vector< eosio::finalizer_authority > next_finalizer_authorities;
       std::set< uint64_t > next_finalizer_key_ids;
       top_producers.reserve(21);
-      top_producer_names.reserve(21);
       next_finalizer_authorities.reserve(21);
       bool new_finalizer_keys_found = false;
 
@@ -152,7 +150,6 @@ namespace eosiosystem {
             },
             it->location
          );
-         top_producer_names.emplace_back(it->owner);
       }
 
       if( top_producers.size() == 0 || top_producers.size() < _gstate.last_producer_schedule_size ) {

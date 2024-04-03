@@ -13,11 +13,9 @@ namespace eosiosystem {
 
       using value_type = std::pair<eosio::producer_authority, uint16_t>;
       std::vector<value_type> top_producers;
-      std::vector<name> top_producer_names;
       std::vector<eosio::finalizer_authority> finalizer_authorities;
       std::set<uint64_t> next_finalizer_key_ids;
       top_producers.reserve(21);
-      top_producer_names.reserve(21);
       finalizer_authorities.reserve(21);
 
       // From up to 30 top producers, find 21 producers that meet all the normal requirements
@@ -34,7 +32,7 @@ namespace eosiosystem {
          // If a producer is found in finalizers_table, it means it has at least one finalizer
          // key registered, and one of them must be active
          if( finalizer != _finalizers.end() ) {
-            check( !finalizer->active_key.empty(), "Active finalizer key of a finalizer in finalizers_table cannot be empty" );
+            assert( !finalizer->active_key.empty() );
 
             // builds up producer_authority
             top_producers.emplace_back(
@@ -44,7 +42,6 @@ namespace eosiosystem {
                },
                it->location
             );
-            top_producer_names.emplace_back(it->owner);
 
             // builds up finalizer_authorities
             next_finalizer_key_ids.insert(finalizer->active_key_id);
