@@ -1618,7 +1618,7 @@ namespace eosiosystem {
 
          // defined in finalizer_key.cpp
          bool is_savanna_consensus() const;
-         void set_finalizers( const std::vector<eosio::finalizer_authority>& finalizer_authorities, const std::set<uint64_t>& finalizer_key_ids );
+         void set_finalizers( std::vector<eosio::finalizer_authority>&& finalizer_authorities, const std::set<uint64_t>& finalizer_key_ids );
          void replace_key_in_finalizer_policy(const name& finalizer, uint64_t old_id, uint64_t new_id);
 
          template <auto system_contract::*...Ptrs>

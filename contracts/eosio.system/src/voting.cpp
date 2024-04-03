@@ -175,7 +175,7 @@ namespace eosiosystem {
       // Even if no new finalizer key found, the size must be match to account for if
       // any finalizers are removed.
       if( is_savanna_consensus() && (new_finalizer_keys_found || next_finalizer_authorities.size() != _gstate5.last_finalizer_key_ids.size()) ) {
-         set_finalizers( next_finalizer_authorities, next_finalizer_key_ids );
+         set_finalizers( std::move(next_finalizer_authorities), next_finalizer_key_ids );
       }
    }
 

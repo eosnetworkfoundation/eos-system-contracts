@@ -74,14 +74,14 @@ namespace eosiosystem {
          _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( top_producers.size() );
       }
 
-      set_finalizers(finalizer_authorities, next_finalizer_key_ids);
+      set_finalizers(std::move(finalizer_authorities), next_finalizer_key_ids);
    }
 
    bool system_contract::is_savanna_consensus() const {
       return !_gstate5.last_finalizer_key_ids.empty();
    }
 
-   void system_contract::set_finalizers( const std::vector<eosio::finalizer_authority>& finalizer_authorities, const std::set<uint64_t>& finalizer_key_ids ) {
+   void system_contract::set_finalizers( std::vector<eosio::finalizer_authority>&& finalizer_authorities, const std::set<uint64_t>& finalizer_key_ids ) {
       // Establish finalizer policy and call set_finalizers() host function
       eosio::finalizer_policy fin_policy {
          .threshold  = ( finalizer_authorities.size() * 2 ) / 3 + 1, // or hardcoded to 15?
@@ -203,7 +203,7 @@ namespace eosiosystem {
          );
       }
 
-      set_finalizers(finalizer_authorities, next_finalizer_key_ids);
+      set_finalizers(std::move(finalizer_authorities), next_finalizer_key_ids);
    }
 
    // Action to delete a registered finalizer key
