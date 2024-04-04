@@ -9,6 +9,8 @@ struct finalizer_key_tester : eosio_system_tester {
    static const std::string pop_1;
    static const std::string finalizer_key_2;
    static const std::string pop_2;
+   static const std::string finalizer_key_3;
+   static const std::string pop_3;
 
    fc::variant get_finalizer_key_info( uint64_t id ) {
       vector<char> data = get_row_by_id( config::system_account_name, config::system_account_name, "finkeys"_n, id );
@@ -42,8 +44,11 @@ struct finalizer_key_tester : eosio_system_tester {
 
 const std::string finalizer_key_tester::finalizer_key_1 = "PUB_BLS_6j4Y3LfsRiBxY-DgvqrZNMCttHftBQPIWwDiN2CMhHWULjN1nGwM1O_nEEJefqwAG4X09n4Kdt4a1mfZ1ES1cLGjQo6uLLSloiVW4i9BUhMHU2nVujP1_U_9ihdI3egZ17N-iA";
 const std::string finalizer_key_tester::finalizer_key_2 = "PUB_BLS_gtaOjOTa0NzDt8etBDqLoZKlfKTpTalcdfmbTJknLUJB2Fu4Cv-uoa8unF3bJ5kFewaCzf3tjYUyNE6CDSrwvYP5Nw47Y9oE9x4nqJWfJykMOoaI0kJz-GDrGN2nZdUAp5tWEg";
+const std::string finalizer_key_tester::finalizer_key_3 = "PUB_BLS_CT8khvZYYZdObeIV9aTnd8fZ8bdaCL1UpSRyqNLZZM5sdrOSpOjDTAY2drTYGvQPVS21BhtD8acLJhqGyTfjqrWjyY5FTfqLdcligofSpa2lrG3FqKVNeUULR5QgcIMYga4vkQ";
+
 const std::string pop1 = "SIG_BLS_N5r73_i50OVkydasCVVBOqqAqM4XQo_-DHgNawK77bcf06Bx0_rh5TNn9iZewNMZ6ecyEjs_sEkwjAXplhqyqf7S9FqSt8mfRxO7pE3bUZS0Z-Fxitsh9X0l_-kj3Z8VD8IwsaUwBLacudzShIXA-5E47cEqYoV3bGhANerKuDhZ4Pesm2xotAScK0pcNp0LbTNj0MZpVr0u6kJh169IoeG4ngCvD6uE2EicNrzyvDhu0u925Q1cm5z_bVha-DsANq3zcA";
 const std::string pop2 = "SIG_BLS_9e1SzM60bWLdxwz4lYNQMNzMGeFuzFgJDYy7WykmynRVRQeIx2O2xnyzwv1WXvgYHLyMYZ4wK0Y_kU6jl330WazkBsw-_GzvIOGy8fnBnt5AyMaj9X5bhDbvB5MZc0QQz4-P2Z4SltTY17ZItGeekkjX_fgQ9kegM4qnuGU-2iqFj5i3Qf322L77b2SHjFoLmxdFOsfGpz7LyImSP8GcZH39W30cj5bmxfsp_90tGdAkz-7DG9nhSHYxFq6qTqMGijVPGg";
+const std::string pop3 = "SIG_BLS_cJTQMGv1isqpcHEfhogLhlU56bKpGgo-Svi3Z4NXvWcly5TJo8hDChodIV-aEHgMqr06LuZftR7WFvgGkbOSdmwdO4t58R3RYOMSK-jjif2z-fEwCl7jsxUutASIRwIYtTI7h6NLCjARiKNi5BkES33xY8wYMWf-JkgbpsD2cGsZW4hkMW7T2j_1w89HmNwCn4V_hjlPM_kgz45RoYpKq4w2QEaLdCYTJ6xYOfc9Occc15c76dd1jjty_yT2RMAKO0mfUA";
 
 BOOST_AUTO_TEST_SUITE(eosio_system_finalizer_key_tests)
 
@@ -169,22 +174,62 @@ BOOST_FIXTURE_TEST_CASE(register_duplicate_key_from_different_finalizers_tests, 
 FC_LOG_AND_RETHROW() // register_duplicate_key_from_different_finalizers_tests
 
 BOOST_FIXTURE_TEST_CASE(activate_finalizer_key_failure_tests, finalizer_key_tester) try {
-   { // attempt to activate finalizer_key for an unregistered producer
-      BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer is not a registered producer" ),
-                           activate_finalizer_key(alice, finalizer_key_1) );
-   }
+   // attempt to activate finalizer_key for an unregistered producer
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer is not a registered producer" ),
+                         activate_finalizer_key(alice, finalizer_key_1) );
 
+   // Register producers
    BOOST_REQUIRE_EQUAL( success(), regproducer(alice) );
    BOOST_REQUIRE_EQUAL( success(), regproducer(bob) );
 
-   { // finalizer has not registered any finalizer keys yet.
-      BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer has not registered any finalizer keys" ),
-                           activate_finalizer_key(alice, finalizer_key_1) );
-   }
+   // finalizer has not registered any finalizer keys yet.
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer has not registered any finalizer keys" ),
+                        activate_finalizer_key(alice, finalizer_key_1) );
 
+   // Alice registers a finalizer key
    BOOST_REQUIRE_EQUAL( success(), register_finalizer_key(alice, finalizer_key_1, pop1) );
    BOOST_REQUIRE_EQUAL( success(), register_finalizer_key(bob, finalizer_key_2, pop2) );
-} // activate_finalizer_key_failure_tests
-FC_LOG_AND_RETHROW()
+
+   // Activate a finalizer key not registered by Alice
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer key was not registered" ),
+                        activate_finalizer_key(alice, finalizer_key_3) );
+
+   // Activate a finalizer key not registered by Alice
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer_key was not registered by the finalizer" ),
+                        activate_finalizer_key(alice, finalizer_key_2) );
+
+   // Activate a finalizer key that is already active (the first key registered is
+   // automatically set to active
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "the finalizer key was already active" ),
+                        activate_finalizer_key(alice, finalizer_key_1) );
+}
+FC_LOG_AND_RETHROW() // activate_finalizer_key_failure_tests
+
+BOOST_FIXTURE_TEST_CASE(activate_finalizer_key_success_tests, finalizer_key_tester) try {
+   // Alice registers as a producer
+   BOOST_REQUIRE_EQUAL( success(), regproducer(alice) );
+
+   // Alice registers two finalizer keys. The first key is active
+   BOOST_REQUIRE_EQUAL( success(), register_finalizer_key(alice, finalizer_key_1, pop1) );
+   BOOST_REQUIRE_EQUAL( success(), register_finalizer_key(alice, finalizer_key_2, pop2) );
+
+   // Check finalizer_key_1 is the active key
+   auto alice_info = get_finalizer_info(alice);
+   uint64_t active_key_id = alice_info["active_key_id"].as_uint64();
+   auto finalizer_key_info = get_finalizer_key_info(active_key_id);
+   BOOST_REQUIRE_EQUAL( "alice1111111", finalizer_key_info["finalizer_name"].as_string() );
+   BOOST_REQUIRE_EQUAL( finalizer_key_1, finalizer_key_info["finalizer_key"].as_string() );
+
+   // Activate the second key
+   BOOST_REQUIRE_EQUAL( success(), activate_finalizer_key(alice, finalizer_key_2) );
+
+   // Check finalizer_key_2 is the active key
+   alice_info = get_finalizer_info(alice);
+   active_key_id = alice_info["active_key_id"].as_uint64();
+   finalizer_key_info = get_finalizer_key_info(active_key_id);
+   BOOST_REQUIRE_EQUAL( "alice1111111", finalizer_key_info["finalizer_name"].as_string() );
+   BOOST_REQUIRE_EQUAL( finalizer_key_2, finalizer_key_info["finalizer_key"].as_string() );
+}
+FC_LOG_AND_RETHROW() // activate_finalizer_key_success_tests
 
 BOOST_AUTO_TEST_SUITE_END()

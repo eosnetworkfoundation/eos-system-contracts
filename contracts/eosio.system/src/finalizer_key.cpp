@@ -118,7 +118,7 @@ namespace eosiosystem {
       // Duplication check across all registered keys
       auto idx = _finalizer_keys.get_index<"byfinkey"_n>();
       auto hash = eosio::sha256(finalizer_key.data(), finalizer_key.size());
-      check(idx.lower_bound(hash) == idx.end(), "duplicate finalizer key");
+      check(idx.find(hash) == idx.end(), "duplicate finalizer key");
 
       // Proof of possession check is expensive, do it at last
       check(eosio::bls_pop_verify(fin_key_g1, signature), "proof of possession check failed");
@@ -151,16 +151,16 @@ namespace eosiosystem {
    }
 
    // Action to activate a finalizer key
-   void system_contract::actfinkey( const name& finalizer, const std::string& finalizer_key ) {
-      require_auth( finalizer );
+   void system_contract::actfinkey( const name& finalizer_name, const std::string& finalizer_key ) {
+      require_auth( finalizer_name );
 
-      auto producer = _producers.find( finalizer.value );
+      auto producer = _producers.find( finalizer_name.value );
       check( producer != _producers.end(), "finalizer is not a registered producer");
 
       // Check finalizer has registered keys
-      auto fin = _finalizers.find(finalizer.value);
-      check( fin != _finalizers.end(), "finalizer has not registered any finalizer keys" );
-      check( fin->num_registered_keys > 0, "num_registered_keys of the finalizer must be greater than one" );
+      auto finalizer = _finalizers.find(finalizer_name.value);
+      check( finalizer != _finalizers.end(), "finalizer has not registered any finalizer keys" );
+      check( finalizer->num_registered_keys > 0, "num_registered_keys of the finalizer must be greater than one" );
 
       // Basic format check
       check(finalizer_key.compare(0, 7, "PUB_BLS") == 0, "finalizer key must start with  PUB_BLS");
@@ -169,18 +169,18 @@ namespace eosiosystem {
       const auto fin_key_g1 = eosio::decode_bls_public_key_to_g1(finalizer_key);
       auto idx = _finalizer_keys.get_index<"byfinkey"_n>();
       auto hash = eosio::sha256(finalizer_key.data(), finalizer_key.size());
-      auto fin_key = idx.lower_bound(hash);
+      auto fin_key = idx.find(hash);
       check(fin_key != idx.end(), "finalizer key was not registered");
 
       // Check the key belongs to finalizer
-      check(fin_key->finalizer_name == finalizer, "finalizer_key was not registered by the finalizer");
+      check(fin_key->finalizer_name == name(finalizer_name), "finalizer_key was not registered by the finalizer");
 
       // Check if the finalizer key is not already active
-      check( fin_key->id != fin->active_key_id, "the finalizer key was already active" );
+      check( fin_key->id != finalizer->active_key_id, "the finalizer key was already active" );
 
-      auto old_active_key_id = fin->active_key_id;
+      auto old_active_key_id = finalizer->active_key_id;
 
-      _finalizers.modify( fin, same_payer, [&]( auto& f ) {
+      _finalizers.modify( finalizer, same_payer, [&]( auto& f ) {
          f.active_key_id = fin_key->id;
          f.active_key    = { fin_key_g1.begin(), fin_key_g1.end() };
       });
@@ -188,7 +188,7 @@ namespace eosiosystem {
       // Replace the finalizer policy immediately if the finalizer is
       // participating in current voting
       if( _last_finkey_ids.find(old_active_key_id) != _last_finkey_ids.end() ) {
-         replace_key_in_finalizer_policy(finalizer, old_active_key_id, fin_key->id);
+         replace_key_in_finalizer_policy(finalizer_name, old_active_key_id, fin_key->id);
       }
    }
 
