@@ -16,18 +16,12 @@ struct finalizer_key_tester : eosio_system_tester {
 
    fc::variant get_finalizer_key_info( uint64_t id ) {
       vector<char> data = get_row_by_id( config::system_account_name, config::system_account_name, "finkeys"_n, id );
-      return abi_ser.binary_to_variant(
-         "finalizer_key_info",
-         data,
-         abi_serializer::create_yield_function(abi_serializer_max_time) );
+      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "finalizer_key_info", data, abi_serializer::create_yield_function(abi_serializer_max_time) );
    }
 
    fc::variant get_finalizer_info( const account_name& act ) {
       vector<char> data = get_row_by_account( config::system_account_name, config::system_account_name, "finalizers"_n, act );
-      return abi_ser.binary_to_variant(
-         "finalizer_info",
-         data,
-         abi_serializer::create_yield_function(abi_serializer_max_time) );
+      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "finalizer_info", data, abi_serializer::create_yield_function(abi_serializer_max_time) );
    }
 
    action_result register_finalizer_key( const account_name& act, const std::string& finalizer_key, const std::string& pop  ) {
@@ -274,5 +268,50 @@ BOOST_FIXTURE_TEST_CASE(delete_finalizer_key_failure_tests, finalizer_key_tester
 
 }
 FC_LOG_AND_RETHROW() // delete_finalizer_key_failure_tests
+
+BOOST_FIXTURE_TEST_CASE(delete_finalizer_key_success_test, finalizer_key_tester) try {
+   // Alice registers as a producer
+   BOOST_REQUIRE_EQUAL( success(), regproducer(alice) );
+
+   // Alice registers two keys and the first key is active 
+   BOOST_REQUIRE_EQUAL( success(), register_finalizer_key(alice, finalizer_key_1, pop1) );
+   BOOST_REQUIRE_EQUAL( success(), register_finalizer_key(alice, finalizer_key_2, pop2) );
+
+   // Check finalizer_key_1 is the active key
+   auto alice_info = get_finalizer_info(alice);
+   uint64_t active_key_id = alice_info["active_key_id"].as_uint64();
+   auto finalizer_key_info = get_finalizer_key_info(active_key_id);
+   BOOST_REQUIRE_EQUAL( "alice1111111", finalizer_key_info["finalizer_name"].as_string() );
+   BOOST_REQUIRE_EQUAL( finalizer_key_1, finalizer_key_info["finalizer_key"].as_string() );
+
+   // Delete the non-active key
+   BOOST_REQUIRE_EQUAL( success(), delete_finalizer_key(alice, finalizer_key_2) );
+
+   // ToDo: Need to check finalizer_key_2 is removed from the finalizer_key table using finalizer_key
+}
+FC_LOG_AND_RETHROW() // delete_finalizer_key_success_test
+
+BOOST_FIXTURE_TEST_CASE(delete_last_finalizer_key_test, finalizer_key_tester) try {
+   // Alice registers as a producer
+   BOOST_REQUIRE_EQUAL( success(), regproducer(alice) );
+
+   // Alice registers one key and it is active
+   BOOST_REQUIRE_EQUAL( success(), register_finalizer_key(alice, finalizer_key_1, pop1) );
+
+   // Check finalizer_key_1 is the active key
+   auto alice_info = get_finalizer_info(alice);
+   uint64_t active_key_id = alice_info["active_key_id"].as_uint64();
+   auto finalizer_key_info = get_finalizer_key_info(active_key_id);
+   BOOST_REQUIRE_EQUAL( "alice1111111", finalizer_key_info["finalizer_name"].as_string() );
+   BOOST_REQUIRE_EQUAL( finalizer_key_1, finalizer_key_info["finalizer_key"].as_string() );
+
+   // Delete it
+   BOOST_REQUIRE_EQUAL( success(), delete_finalizer_key(alice, finalizer_key_1) );
+
+   // Both finalizer_key_1 and alice should be removed from finalizers and finalizer_keys tables
+   BOOST_REQUIRE_EQUAL( true, get_finalizer_key_info(active_key_id).is_null() );
+   BOOST_REQUIRE_EQUAL( true, get_finalizer_info(alice).is_null() );
+}
+FC_LOG_AND_RETHROW() // delete_last_finalizer_key_test
 
 BOOST_AUTO_TEST_SUITE_END()
