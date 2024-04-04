@@ -55,11 +55,15 @@ struct finalizer_key_tester : eosio_system_tester {
                           ("finalizer_key", finalizer_key) );
    }
 
-   void register_finalizer_keys(const std::vector<name>& producer_names) {
+   void register_finalizer_keys(const std::vector<name>& producer_names, uint32_t num_keys_to_register) {
       uint32_t i = 0;
       for (const auto& p: producer_names) {
          BOOST_REQUIRE_EQUAL( success(), register_finalizer_key(p, key_pair[i].pub_key, key_pair[i].pop));
          ++i;
+
+         if ( i  == num_keys_to_register ) {
+            break;
+         }
       }
    }
 };
@@ -362,7 +366,7 @@ FC_LOG_AND_RETHROW() // delete_last_finalizer_key_test
 BOOST_FIXTURE_TEST_CASE(switchtosvnn_success_tests, finalizer_key_tester) try {
    auto producer_names = active_and_vote_producers();
 
-   register_finalizer_keys(producer_names);
+   register_finalizer_keys(producer_names, 21);
 
    BOOST_REQUIRE_EQUAL(success(),  push_action( config::system_account_name, "switchtosvnn"_n, mvo()) );
 
@@ -382,6 +386,17 @@ BOOST_FIXTURE_TEST_CASE(switchtosvnn_success_tests, finalizer_key_tester) try {
 
    // Cannot switch to Savanna multiple times
    BOOST_REQUIRE_EQUAL( wasm_assert_msg( "switchtosvnn can be run only once" ),
+                        push_action( config::system_account_name, "switchtosvnn"_n, mvo()) );
+}
+FC_LOG_AND_RETHROW()
+
+BOOST_FIXTURE_TEST_CASE(switchtosvnn_not_enough_finalizer_keys_tests, finalizer_key_tester) try {
+   auto producer_names = active_and_vote_producers();
+
+   register_finalizer_keys(producer_names, 20);
+
+   // Have only 20 finalizer keys, short by 1
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "not enough top producers have registered finalizer keys" ),
                         push_action( config::system_account_name, "switchtosvnn"_n, mvo()) );
 }
 FC_LOG_AND_RETHROW()
