@@ -173,7 +173,7 @@ namespace eosiosystem {
       check(fin_key != idx.end(), "finalizer key was not registered");
 
       // Check the key belongs to finalizer
-      check(fin_key->finalizer_name == name(finalizer_name), "finalizer_key was not registered by the finalizer");
+      check(fin_key->finalizer_name == name(finalizer_name), "finalizer key was not registered by the finalizer");
 
       // Check if the finalizer key is not already active
       check( fin_key->id != finalizer->active_key_id, "the finalizer key was already active" );
@@ -219,37 +219,37 @@ namespace eosiosystem {
    }
 
    // Action to delete a registered finalizer key
-   void system_contract::delfinkey( const name& finalizer, const std::string& finalizer_key ) {
-      require_auth( finalizer );
+   void system_contract::delfinkey( const name& finalizer_name, const std::string& finalizer_key ) {
+      require_auth( finalizer_name );
 
-      auto producer = _producers.find( finalizer.value );
+      auto producer = _producers.find( finalizer_name.value );
       check( producer != _producers.end(), "finalizer is not a registered producer");
+
+      // Check finalizer has registered keys
+      auto finalizer = _finalizers.find(finalizer_name.value);
+      check( finalizer != _finalizers.end(), "finalizer has not registered any finalizer keys" );
+      assert( finalizer->num_registered_keys > 0 );
 
       // Check the key is registered
       auto idx = _finalizer_keys.get_index<"byfinkey"_n>();
       auto hash = eosio::sha256(finalizer_key.data(), finalizer_key.size());
-      auto fin_key = idx.lower_bound(hash);
-      check(fin_key != idx.end(), "finalizer_key was not registered");
+      auto fin_key = idx.find(hash);
+      check(fin_key != idx.end(), "finalizer key was not registered");
 
       // Check the key belongs to finalizer
-      check(fin_key->finalizer_name == finalizer, "finalizer_key was not registered by the finalizer");
+      check(fin_key->finalizer_name == name(finalizer_name), "finalizer key was not registered by the finalizer");
       
-      // Cross check finalizers table
-      auto fin = _finalizers.find(finalizer.value);
-      check( fin != _finalizers.end(), "finalizer is not in the finalizers table" );
-      check( fin->num_registered_keys > 0, "num_registered_keys of the finalizer must be greater than one" );
-      
-      if( fin_key->id == fin->active_key_id ) {
-         check( fin->num_registered_keys == 1, "cannot delete an active key unless it is the last registered finalizer key");
+      if( fin_key->id == finalizer->active_key_id ) {
+         check( finalizer->num_registered_keys == 1, "cannot delete an active key unless it is the last registered finalizer key");
       }
 
       // Remove the key from finalizer_keys table
       idx.erase( fin_key );
 
       // Update finalizers table
-      if( fin->num_registered_keys == 1 ) {
+      if( finalizer->num_registered_keys == 1 ) {
          // The finalizer does not have any registered keys. Remove it from finalizers table.
-         _finalizers.erase( fin );
+         _finalizers.erase( finalizer );
 
          // This is the last registered and must be active and in last_finkey_ids table
          auto itr = _last_finkey_ids.find(fin_key->id);
@@ -257,7 +257,7 @@ namespace eosiosystem {
          _last_finkey_ids.erase( itr );
       } else {
          // Decrement num_registered_keys finalizers table
-         _finalizers.modify( fin, same_payer, [&]( auto& f ) {
+         _finalizers.modify( finalizer, same_payer, [&]( auto& f ) {
             --f.num_registered_keys;
          });
       }
