@@ -16,6 +16,7 @@
 #include <optional>
 #include <string>
 #include <type_traits>
+#include <unordered_set>
 
 #ifdef CHANNEL_RAM_AND_NAMEBID_FEES_TO_REX
 #undef CHANNEL_RAM_AND_NAMEBID_FEES_TO_REX
@@ -1611,7 +1612,7 @@ namespace eosiosystem {
 
          // defined in finalizer_key.cpp
          bool is_savanna_consensus() const;
-         void set_finalizers( std::vector<eosio::finalizer_authority>&& finalizer_authorities, const std::vector<uint64_t>& finalizer_key_ids );
+         void set_finalizers( std::vector<eosio::finalizer_authority>&& finalizer_authorities, const std::vector<uint64_t>& finalizer_key_ids, const std::unordered_set<uint64_t>& kept_key_ids );
          void replace_key_in_finalizer_policy(const name& finalizer, uint64_t old_id, uint64_t new_id);
 
          template <auto system_contract::*...Ptrs>

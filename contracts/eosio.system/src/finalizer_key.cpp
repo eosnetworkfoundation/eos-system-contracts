@@ -14,10 +14,10 @@ namespace eosiosystem {
       using value_type = std::pair<eosio::producer_authority, uint16_t>;
       std::vector<value_type> top_producers;
       std::vector<eosio::finalizer_authority> finalizer_authorities;
-      std::vector<uint64_t> next_finalizer_key_ids;
+      std::vector<uint64_t> new_finalizer_key_ids;
       top_producers.reserve(21);
       finalizer_authorities.reserve(21);
-      next_finalizer_key_ids.reserve(21);
+      new_finalizer_key_ids.reserve(21);
 
       // From up to 30 top producers, find 21 producers that meet all the normal requirements
       // for being a proposer and also have an active finalizer key
@@ -45,7 +45,7 @@ namespace eosiosystem {
             );
 
             // builds up finalizer_authorities
-            next_finalizer_key_ids.emplace_back(finalizer->active_key_id);
+            new_finalizer_key_ids.emplace_back(finalizer->active_key_id);
             finalizer_authorities.emplace_back(
                eosio::finalizer_authority{
                   .description = it->owner.to_string(),
@@ -74,14 +74,14 @@ namespace eosiosystem {
          _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( producers.size() );
       }
 
-      set_finalizers(std::move(finalizer_authorities), next_finalizer_key_ids);
+      set_finalizers(std::move(finalizer_authorities), new_finalizer_key_ids, {});
    }
 
    bool system_contract::is_savanna_consensus() const {
       return _last_finkey_ids.begin() != _last_finkey_ids.end();
    }
 
-   void system_contract::set_finalizers( std::vector<eosio::finalizer_authority>&& finalizer_authorities, const std::vector<uint64_t>& finalizer_key_ids ) {
+   void system_contract::set_finalizers( std::vector<eosio::finalizer_authority>&& finalizer_authorities, const std::vector<uint64_t>& new_key_ids, const std::unordered_set<uint64_t>& kept_key_ids ) {
       // Establish finalizer policy and call set_finalizers() host function
       eosio::finalizer_policy fin_policy {
          .threshold  = ( finalizer_authorities.size() * 2 ) / 3 + 1, // or hardcoded to 15?
@@ -89,14 +89,20 @@ namespace eosiosystem {
       };
       eosio::set_finalizers(std::move(fin_policy)); // call host function
 
-      // Insert new ones
-      for (auto id: finalizer_key_ids ) {
-         // Insert it into last_finkey_ids_table if the key is new
-         if( _last_finkey_ids.find(id) == _last_finkey_ids.end() ) {
-            _last_finkey_ids.emplace( get_self(), [&]( auto& f ) {
-               f.key_id = id;
-            });
+      // Purge any ids not in kept_key_ids from _last_finkey_ids
+      for (auto itr = _last_finkey_ids.begin(); itr != _last_finkey_ids.end(); /* intentionally empty */ ) {
+         if( kept_key_ids.contains(itr->key_id) ) {
+            ++itr;
+         } else {
+            itr = _last_finkey_ids.erase(itr);
          }
+      }
+
+      // Add new_key_ids to _last_finkey_ids
+      for (auto id: new_key_ids ) {
+         _last_finkey_ids.emplace( get_self(), [&]( auto& f ) {
+            f.key_id = id;
+         });
       }
    }
 
@@ -215,7 +221,12 @@ namespace eosiosystem {
          );
       }
 
-      set_finalizers(std::move(finalizer_authorities), {}); // last_finkey_ids_table has already updated. Pass an empty finalizer_key_ids to set_finalizers
+      // last_finkey_ids table has already been updated. Call set_finalizers host function directly
+      eosio::finalizer_policy fin_policy {
+         .threshold  = ( finalizer_authorities.size() * 2 ) / 3 + 1,
+         .finalizers = finalizer_authorities
+      };
+      eosio::set_finalizers(std::move(fin_policy)); // call host function
    }
 
    // Action to delete a registered finalizer key
@@ -250,11 +261,6 @@ namespace eosiosystem {
       if( finalizer->num_registered_keys == 1 ) {
          // The finalizer does not have any registered keys. Remove it from finalizers table.
          _finalizers.erase( finalizer );
-
-         // This is the last registered and must be active and in last_finkey_ids table
-         auto itr = _last_finkey_ids.find(fin_key->id);
-         assert(itr);
-         _last_finkey_ids.erase( itr );
       } else {
          // Decrement num_registered_keys finalizers table
          _finalizers.modify( finalizer, same_payer, [&]( auto& f ) {
