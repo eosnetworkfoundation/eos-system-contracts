@@ -85,7 +85,7 @@ namespace eosiosystem {
       // Establish finalizer policy and call set_finalizers() host function
       eosio::finalizer_policy fin_policy {
          .threshold  = ( finalizer_authorities.size() * 2 ) / 3 + 1, // or hardcoded to 15?
-         .finalizers = finalizer_authorities
+         .finalizers = std::move(finalizer_authorities)
       };
       eosio::set_finalizers(std::move(fin_policy)); // call host function
 
@@ -224,7 +224,7 @@ namespace eosiosystem {
       // last_finkey_ids table has already been updated. Call set_finalizers host function directly
       eosio::finalizer_policy fin_policy {
          .threshold  = ( finalizer_authorities.size() * 2 ) / 3 + 1,
-         .finalizers = finalizer_authorities
+         .finalizers = std::move(finalizer_authorities)
       };
       eosio::set_finalizers(std::move(fin_policy)); // call host function
    }
