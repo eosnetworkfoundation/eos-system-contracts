@@ -1253,7 +1253,7 @@ namespace eosiosystem {
           *
           * @pre `finalizer_name` must be a registered producer
           * @pre `finalizer_key` must be a registered  finalizer key
-          * @pre Authority of `finalizer`
+          * @pre Authority of `finalizer_name`
           */
          [[eosio::action]]
          void actfinkey( const name& finalizer_name, const std::string& finalizer_key );
@@ -1268,8 +1268,8 @@ namespace eosiosystem {
           *
           * @pre `finalizer_name` must be a registered producer
           * @pre `finalizer_key` must be a registered finalizer key
-          * @pre `finalizer_key` must be not be active, unless it is the last registered finalizer key
-          * @pre Authority of `finalizer`
+          * @pre `finalizer_key` must not be active, unless it is the last registered finalizer key
+          * @pre Authority of `finalizer_name`
           */
          [[eosio::action]]
          void delfinkey( const name& finalizer_name, const std::string& finalizer_key );
