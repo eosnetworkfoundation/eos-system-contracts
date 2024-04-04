@@ -372,6 +372,17 @@ BOOST_FIXTURE_TEST_CASE(switchtosvnn_success_tests, finalizer_key_tester) try {
       uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
       BOOST_REQUIRE_EQUAL( false, get_last_finkey_id_info(active_key_id).is_null() );
    }
+
+   // Produce enough blocks so transition to Savanna finishes
+   produce_blocks(400);
+
+   // If head_finality_data has value, it means we are at least after or on
+   // Savanna Genesis Block
+   BOOST_REQUIRE_EQUAL( true, control->head_finality_data().has_value() );
+
+   // Cannot switch to Savanna multiple times
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "switchtosvnn can be run only once" ),
+                        push_action( config::system_account_name, "switchtosvnn"_n, mvo()) );
 }
 FC_LOG_AND_RETHROW()
 
