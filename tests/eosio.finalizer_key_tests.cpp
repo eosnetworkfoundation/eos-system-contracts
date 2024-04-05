@@ -364,10 +364,10 @@ BOOST_FIXTURE_TEST_CASE(delete_last_finalizer_key_test, finalizer_key_tester) tr
 FC_LOG_AND_RETHROW() // delete_last_finalizer_key_test
 
 BOOST_FIXTURE_TEST_CASE(switchtosvnn_success_tests, finalizer_key_tester) try {
+   // Register and vote 21 producers
    auto producer_names = active_and_vote_producers();
-
+   // Register 21 finalizer keys
    register_finalizer_keys(producer_names, 21);
-
    BOOST_REQUIRE_EQUAL(success(),  push_action( config::system_account_name, "switchtosvnn"_n, mvo()) );
 
    // Verify last finalizer key id table contains all finalzer keys
@@ -378,7 +378,7 @@ BOOST_FIXTURE_TEST_CASE(switchtosvnn_success_tests, finalizer_key_tester) try {
    }
 
    // Produce enough blocks so transition to Savanna finishes
-   produce_blocks(400);
+   produce_blocks(504); // 21 Producers * 12 Blocks per producer * 2 rounds to reach Legacy finality
 
    // If head_finality_data has value, it means we are at least after or on
    // Savanna Genesis Block
@@ -393,11 +393,101 @@ FC_LOG_AND_RETHROW()
 BOOST_FIXTURE_TEST_CASE(switchtosvnn_not_enough_finalizer_keys_tests, finalizer_key_tester) try {
    auto producer_names = active_and_vote_producers();
 
+   // Register 20 finalizer keys
    register_finalizer_keys(producer_names, 20);
 
    // Have only 20 finalizer keys, short by 1
    BOOST_REQUIRE_EQUAL( wasm_assert_msg( "not enough top producers have registered finalizer keys" ),
                         push_action( config::system_account_name, "switchtosvnn"_n, mvo()) );
+}
+FC_LOG_AND_RETHROW()
+
+BOOST_FIXTURE_TEST_CASE(update_elected_producers_no_finalizers_changed_test, finalizer_key_tester) try {
+   auto producer_names = active_and_vote_producers();
+   register_finalizer_keys(producer_names, 21);
+   BOOST_REQUIRE_EQUAL(success(),  push_action( config::system_account_name, "switchtosvnn"_n, mvo()) );
+
+   // Produce enough blocks so transition to Savanna finishes
+   produce_blocks(504); // 21 Producers * 12 Blocks per producer * 2 rounds to reach Legacy finality
+
+   // head_finality_data is available when nodoes is in Savanna
+   BOOST_REQUIRE_EQUAL( true, control->head_finality_data().has_value() );
+
+   // Verify last finalizer key id table contains all finalzer keys
+   std::set<uint64_t> last_finkey_ids;
+   for( auto& p : producer_names ) {
+      auto finalizer_info = get_finalizer_info(p);
+      uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
+      BOOST_REQUIRE_EQUAL( false, get_last_finkey_id_info(active_key_id).is_null() );
+      last_finkey_ids.insert(active_key_id);
+   }
+
+   // Produce for one round
+   produce_block( fc::minutes(2) );
+
+   // Since finalizer keys have not changed, last_finkey_ids should be the same
+   std::set<uint64_t> last_finkey_ids_2;
+   for( auto& p : producer_names ) {
+      auto finalizer_info = get_finalizer_info(p);
+      uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
+      BOOST_REQUIRE_EQUAL( false, get_last_finkey_id_info(active_key_id).is_null() );
+      last_finkey_ids_2.insert(active_key_id);
+   }
+
+   BOOST_REQUIRE_EQUAL( true, last_finkey_ids == last_finkey_ids_2 );
+}
+FC_LOG_AND_RETHROW()
+
+BOOST_FIXTURE_TEST_CASE(update_elected_producers_finalizers_changed_test, finalizer_key_tester) try {
+   auto producer_names = active_and_vote_producers();
+   register_finalizer_keys(producer_names, 21);
+   BOOST_REQUIRE_EQUAL(success(),  push_action( config::system_account_name, "switchtosvnn"_n, mvo()) );
+
+   // Produce enough blocks so transition to Savanna finishes
+   produce_blocks(504); // 21 Producers * 12 Blocks per producer * 2 rounds to reach Legacy finality
+
+   // head_finality_data is available when nodoes is in Savanna
+   BOOST_REQUIRE_EQUAL( true, control->head_finality_data().has_value() );
+
+   // Verify last finalizer key id table contains all finalzer keys
+   std::set<uint64_t> last_finkey_ids;
+   for( auto& p : producer_names ) {
+      auto finalizer_info = get_finalizer_info(p);
+      uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
+      BOOST_REQUIRE_EQUAL( false, get_last_finkey_id_info(active_key_id).is_null() );
+      last_finkey_ids.insert(active_key_id);
+   }
+
+   // Pick a producer
+   name test_producer = producer_names.back();
+
+   // Take a note of old active_key_id
+   auto p_info = get_finalizer_info(test_producer);
+   uint64_t old_id = p_info["active_key_id"].as_uint64();
+
+   // Register and activate a new finalizer key
+   BOOST_REQUIRE_EQUAL( success(), register_finalizer_key(test_producer, finalizer_key_1, pop_1) );
+   BOOST_REQUIRE_EQUAL( success(), activate_finalizer_key(test_producer, finalizer_key_1));
+
+   // Since producer is an active producer, the finalizer key change takes effective
+   // immediately.
+   std::set<uint64_t> last_finkey_ids_2;
+   for( auto& p : producer_names ) {
+      auto finalizer_info = get_finalizer_info(p);
+      uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
+      BOOST_REQUIRE_EQUAL( false, get_last_finkey_id_info(active_key_id).is_null() );
+      last_finkey_ids_2.insert(active_key_id);
+   }
+
+   // Take a note of new active_key_id
+   auto p_info_2 = get_finalizer_info(test_producer);
+   uint64_t new_id = p_info_2["active_key_id"].as_uint64();
+
+   // After replace the old_id with new_id in last_finkey_ids,
+   // last_finkey_ids should be the same as last_finkey_ids_2
+   last_finkey_ids.erase(old_id);
+   last_finkey_ids.insert(new_id);
+   BOOST_REQUIRE_EQUAL( true, last_finkey_ids == last_finkey_ids_2 );
 }
 FC_LOG_AND_RETHROW()
 
