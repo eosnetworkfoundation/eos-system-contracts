@@ -1232,12 +1232,13 @@ namespace eosiosystem {
           * by other block producers, the registration will fail.
           * A registered producer can have multiple registered finalizer keys.
           *
-          * @param finalizer - account registering `finalizer_key`,
+          * @param finalizer_name - account registering `finalizer_key`,
           * @param finalizer_key - key to be registered. The key is in base64url format.
           * @param proof_of_possession - a valid Proof of Possession signature to show the producer owns the private key of the finalizer_key. The signature is in base64url format.
           *
-          * @pre `finalizer` must be a registered producer
-          * @pre Authority of `finalizer` to register
+          * @pre `finalizer_name` must be a registered producer
+          * @pre `finalizer_key` must be in base64url format
+          * @pre Authority of `finalizer_name` to register. `linkauth` may be used to allow a lower authrity to exectute this action.
           */
          [[eosio::action]]
          void regfinkey( const name& finalizer_name, const std::string& finalizer_key, const std::string& proof_of_possession);
@@ -1249,10 +1250,10 @@ namespace eosiosystem {
           * the previously active finalizer key of that block producer.
           *
           * @param finalizer_name - account activating `finalizer_key`,
-          * @param finalizer_key - key to be activated, in base64url format.
+          * @param finalizer_key - key to be activated.
           *
           * @pre `finalizer_name` must be a registered producer
-          * @pre `finalizer_key` must be a registered  finalizer key
+          * @pre `finalizer_key` must be a registered finalizer key in base64url format
           * @pre Authority of `finalizer_name`
           */
          [[eosio::action]]
@@ -1267,7 +1268,7 @@ namespace eosiosystem {
           * @param finalizer_key - key to be deleted.
           *
           * @pre `finalizer_name` must be a registered producer
-          * @pre `finalizer_key` must be a registered finalizer key
+          * @pre `finalizer_key` must be a registered finalizer key in base64url format
           * @pre `finalizer_key` must not be active, unless it is the last registered finalizer key
           * @pre Authority of `finalizer_name`
           */
