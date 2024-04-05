@@ -66,6 +66,25 @@ struct finalizer_key_tester : eosio_system_tester {
          }
       }
    }
+
+   std::unordered_set<uint64_t> get_last_finkey_ids() {
+      const auto* table_id_itr = control->db().find<eosio::chain::table_id_object, eosio::chain::by_code_scope_table>(
+         boost::make_tuple(config::system_account_name, config::system_account_name, "lastfkeyids"_n));
+
+      if (!table_id_itr) {
+         return {};
+      }
+
+      std::unordered_set<uint64_t> last_finkey_ids;
+      auto t_id = table_id_itr->id;
+      const auto& idx = control->db().get_index<eosio::chain::key_value_index, eosio::chain::by_scope_primary>();
+      for (auto itr = idx.lower_bound(boost::make_tuple(t_id, 0)); itr != idx.end() && itr->t_id == t_id; ++itr)
+      {
+         last_finkey_ids.insert(itr->primary_key);
+      }
+
+      return last_finkey_ids;
+   }
 };
 
 const std::string finalizer_key_tester::finalizer_key_1 = "PUB_BLS_6j4Y3LfsRiBxY-DgvqrZNMCttHftBQPIWwDiN2CMhHWULjN1nGwM1O_nEEJefqwAG4X09n4Kdt4a1mfZ1ES1cLGjQo6uLLSloiVW4i9BUhMHU2nVujP1_U_9ihdI3egZ17N-iA";
@@ -329,6 +348,8 @@ BOOST_FIXTURE_TEST_CASE(delete_finalizer_key_success_test, finalizer_key_tester)
    // Check finalizer_key_1 is the active key
    auto alice_info = get_finalizer_info(alice);
    uint64_t active_key_id = alice_info["active_key_id"].as_uint64();
+   auto num_registered_keys_before = alice_info["num_registered_keys"].as_uint64();
+
    auto finalizer_key_info = get_finalizer_key_info(active_key_id);
    BOOST_REQUIRE_EQUAL( "alice1111111", finalizer_key_info["finalizer_name"].as_string() );
    BOOST_REQUIRE_EQUAL( finalizer_key_1, finalizer_key_info["finalizer_key"].as_string() );
@@ -336,7 +357,9 @@ BOOST_FIXTURE_TEST_CASE(delete_finalizer_key_success_test, finalizer_key_tester)
    // Delete the non-active key
    BOOST_REQUIRE_EQUAL( success(), delete_finalizer_key(alice, finalizer_key_2) );
 
-   // ToDo: Need to check finalizer_key_2 is removed from the finalizer_key table using finalizer_key
+   alice_info = get_finalizer_info(alice);
+   auto num_registered_keys_after = alice_info["num_registered_keys"].as_uint64();
+   BOOST_REQUIRE_EQUAL( num_registered_keys_before - 1, num_registered_keys_after );
 }
 FC_LOG_AND_RETHROW() // delete_finalizer_key_success_test
 
@@ -414,26 +437,18 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_no_finalizers_changed_test, fin
    BOOST_REQUIRE_EQUAL( true, control->head_finality_data().has_value() );
 
    // Verify last finalizer key id table contains all finalzer keys
-   std::set<uint64_t> last_finkey_ids;
+   auto last_finkey_ids = get_last_finkey_ids();
    for( auto& p : producer_names ) {
       auto finalizer_info = get_finalizer_info(p);
       uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
-      BOOST_REQUIRE_EQUAL( false, get_last_finkey_id_info(active_key_id).is_null() );
-      last_finkey_ids.insert(active_key_id);
+      BOOST_REQUIRE_EQUAL( true, last_finkey_ids.contains(active_key_id) );
    }
 
    // Produce for one round
    produce_block( fc::minutes(2) );
 
    // Since finalizer keys have not changed, last_finkey_ids should be the same
-   std::set<uint64_t> last_finkey_ids_2;
-   for( auto& p : producer_names ) {
-      auto finalizer_info = get_finalizer_info(p);
-      uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
-      BOOST_REQUIRE_EQUAL( false, get_last_finkey_id_info(active_key_id).is_null() );
-      last_finkey_ids_2.insert(active_key_id);
-   }
-
+   auto last_finkey_ids_2 = get_last_finkey_ids();
    BOOST_REQUIRE_EQUAL( true, last_finkey_ids == last_finkey_ids_2 );
 }
 FC_LOG_AND_RETHROW()
@@ -450,12 +465,11 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_finalizers_changed_test, finali
    BOOST_REQUIRE_EQUAL( true, control->head_finality_data().has_value() );
 
    // Verify last finalizer key id table contains all finalzer keys
-   std::set<uint64_t> last_finkey_ids;
+   auto last_finkey_ids = get_last_finkey_ids();
    for( auto& p : producer_names ) {
       auto finalizer_info = get_finalizer_info(p);
       uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
-      BOOST_REQUIRE_EQUAL( false, get_last_finkey_id_info(active_key_id).is_null() );
-      last_finkey_ids.insert(active_key_id);
+      BOOST_REQUIRE_EQUAL( true, last_finkey_ids.contains(active_key_id) );
    }
 
    // Pick a producer
@@ -471,13 +485,7 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_finalizers_changed_test, finali
 
    // Since producer is an active producer, the finalizer key change takes effective
    // immediately.
-   std::set<uint64_t> last_finkey_ids_2;
-   for( auto& p : producer_names ) {
-      auto finalizer_info = get_finalizer_info(p);
-      uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
-      BOOST_REQUIRE_EQUAL( false, get_last_finkey_id_info(active_key_id).is_null() );
-      last_finkey_ids_2.insert(active_key_id);
-   }
+   auto last_finkey_ids_2 = get_last_finkey_ids();
 
    // Take a note of new active_key_id
    auto p_info_2 = get_finalizer_info(test_producer);
@@ -550,12 +558,11 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_finalizers_replaced_test, final
    BOOST_REQUIRE_EQUAL( true, control->head_finality_data().has_value() );
 
    // Verify last finalizer key id table contains all finalzer keys
-   std::set<uint64_t> last_finkey_ids;
+   auto last_finkey_ids = get_last_finkey_ids();
    for( auto i = 0; i < 21; ++i ) {
       auto finalizer_info = get_finalizer_info(producer_names[i]);
       uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
-      BOOST_REQUIRE_EQUAL( false, get_last_finkey_id_info(active_key_id).is_null() );
-      last_finkey_ids.insert(active_key_id);
+      BOOST_REQUIRE_EQUAL( true, last_finkey_ids.contains(active_key_id) );
    }
 
    const auto new_prod_name = producer_names[21];
@@ -579,17 +586,9 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_finalizers_replaced_test, final
    produce_blocks(504);
 
    // find new last_finkey_ids
-   std::set<uint64_t> last_finkey_ids_2;
-   for( auto i = 1; i < 21; ++i ) {
-      auto finalizer_info = get_finalizer_info(producer_names[i]);
-      uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
-      BOOST_REQUIRE_EQUAL( false, get_last_finkey_id_info(active_key_id).is_null() );
-      last_finkey_ids_2.insert(active_key_id);
-   }
-
+   auto last_finkey_ids_2 = get_last_finkey_ids();
    // Make sure new_id is in the new last_finkey_ids
-   BOOST_REQUIRE_EQUAL( false, get_last_finkey_id_info(new_id).is_null() );
-   last_finkey_ids_2.insert(new_id);
+   BOOST_REQUIRE_EQUAL( true, last_finkey_ids_2.contains(new_id) );
 
    // After replace the deleted_id with new_id in last_finkey_ids,
    // last_finkey_ids should be the same as last_finkey_ids_2
