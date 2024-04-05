@@ -193,21 +193,26 @@ namespace eosiosystem {
 
       // Replace the finalizer policy immediately if the finalizer is
       // participating in current voting
-      if( _last_finkey_ids.find(old_active_key_id) != _last_finkey_ids.end() ) {
-         replace_key_in_finalizer_policy(finalizer_name, old_active_key_id, fin_key->id);
+      const auto old_id_itr = _last_finkey_ids.find(old_active_key_id);
+      if( old_id_itr != _last_finkey_ids.end() ) {
+         replace_key_in_finalizer_policy(finalizer_name, old_id_itr, fin_key->id);
       }
    }
 
    // replace the key in last finalizer policy and call set_finalizers host function immediately
-   void system_contract::replace_key_in_finalizer_policy(const name& finalizer, uint64_t old_id, uint64_t new_id) {
-      // replace key ID in last_finkey_ids_table
-      auto id_itr = _last_finkey_ids.find(old_id);
-      _last_finkey_ids.modify( id_itr, get_self(), [&]( auto& f ) {
-          f.key_id = new_id;
+   void system_contract::replace_key_in_finalizer_policy(const name& finalizer, const last_finkey_ids_table::const_iterator& old_id_itr, uint64_t new_id) {
+      // Delete old id
+      assert(old_id_itr);
+      _last_finkey_ids.erase(old_id_itr);
+
+      // Insert new ID
+      _last_finkey_ids.emplace( get_self(), [&]( auto& f ) {
+         f.key_id = new_id;
       });
 
       std::vector<eosio::finalizer_authority> finalizer_authorities;
 
+      // Build a new finalizer_authority by going over all last_finkey_ids
       for (auto itr = _last_finkey_ids.begin(); itr != _last_finkey_ids.end(); ++itr) {
          auto key = _finalizer_keys.find(itr->key_id);
          assert( key != _finalizer_keys.end() );
