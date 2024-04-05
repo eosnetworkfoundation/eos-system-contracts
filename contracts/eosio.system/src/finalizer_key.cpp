@@ -1,7 +1,6 @@
 #include <eosio.system/eosio.system.hpp>
 
 #include <eosio/eosio.hpp>
-#include <eosio/privileged.hpp>
 
 namespace eosiosystem {
 
@@ -21,17 +20,12 @@ namespace eosiosystem {
 
       // From up to 30 top producers, find 21 producers that meet all the normal requirements
       // for being a proposer and also have an active finalizer key
-      uint32_t n = 0;
+      uint32_t i = 0;
       auto idx = _producers.get_index<"prototalvote"_n>();
-      for( auto it = idx.cbegin(); it != idx.cend() && top_producers.size() < 21 && 0 < it->total_votes && it->active(); ++it ) {
-         if( n > 30 ) {
-            break;
-         }
-         ++n;
-
+      for( auto it = idx.cbegin(); it != idx.cend() && top_producers.size() < 21 && 0 < it->total_votes && it->active() && i < 30; ++it, ++i ) {
          auto finalizer = _finalizers.find( it->owner.value );
          // If a producer is found in finalizers_table, it means it has at least one finalizer
-         // key registered, and one of them must be active
+         // key registered, and has an active key
          if( finalizer != _finalizers.end() ) {
             assert( !finalizer->active_key.empty() );
 
@@ -89,12 +83,12 @@ namespace eosiosystem {
       };
       eosio::set_finalizers(std::move(fin_policy)); // call host function
 
-      // Purge any ids not in kept_key_ids from _last_finkey_ids
+      // Purge any ids not in kept_key_ids from last_finkey_ids table
       for (auto itr = _last_finkey_ids.begin(); itr != _last_finkey_ids.end(); /* intentionally empty */ ) {
-         if( kept_key_ids.contains(itr->key_id) ) {
-            ++itr;
-         } else {
+         if( !kept_key_ids.contains(itr->key_id) ) {
             itr = _last_finkey_ids.erase(itr);
+         } else {
+            ++itr;
          }
       }
 
@@ -106,11 +100,15 @@ namespace eosiosystem {
       }
    }
 
-   // Action to register a finalizer key
-   void system_contract::regfinkey( const name& finalizer, const std::string& finalizer_key, const std::string& proof_of_possession) {
-      require_auth( finalizer );
+   static eosio::checksum256 get_finalizer_key_hash(const std::string& finalizer_key) {
+      return eosio::sha256(finalizer_key.data(), finalizer_key.size());
+   }
 
-      auto producer = _producers.find( finalizer.value );
+   // Action to register a finalizer key
+   void system_contract::regfinkey( const name& finalizer_name, const std::string& finalizer_key, const std::string& proof_of_possession) {
+      require_auth( finalizer_name );
+
+      auto producer = _producers.find( finalizer_name.value );
       check( producer != _producers.end(), "finalizer is not a registered producer");
 
       // Basic key and signature format check
@@ -123,27 +121,27 @@ namespace eosiosystem {
 
       // Duplication check across all registered keys
       auto idx = _finalizer_keys.get_index<"byfinkey"_n>();
-      auto hash = eosio::sha256(finalizer_key.data(), finalizer_key.size());
+      auto hash = get_finalizer_key_hash(finalizer_key);
       check(idx.find(hash) == idx.end(), "duplicate finalizer key");
 
       // Proof of possession check is expensive, do it at last
       check(eosio::bls_pop_verify(fin_key_g1, signature), "proof of possession check failed");
 
       // Insert into finalyzer_keys table
-      auto key_itr = _finalizer_keys.emplace( finalizer, [&]( auto& k ) {
+      auto key_itr = _finalizer_keys.emplace( finalizer_name, [&]( auto& k ) {
          k.id                 = _finalizer_keys.available_primary_key();
-         k.finalizer_name     = finalizer;
+         k.finalizer_name     = finalizer_name;
          k.finalizer_key      = finalizer_key;
-         k.finalizer_key_hash = eosio::sha256(finalizer_key.data(), finalizer_key.size());
+         k.finalizer_key_hash = get_finalizer_key_hash(finalizer_key);
       });
 
       // Update finalizers table
-      auto f_itr = _finalizers.find(finalizer.value);
+      auto f_itr = _finalizers.find(finalizer_name.value);
       if( f_itr == _finalizers.end() ) {
          // First time the finalizer to register a finalier key,
          // make the key active
-         _finalizers.emplace( finalizer, [&]( auto& f ) {
-            f.finalizer_name      = finalizer;
+         _finalizers.emplace( finalizer_name, [&]( auto& f ) {
+            f.finalizer_name      = finalizer_name;
             f.active_key_id       = key_itr->id;
             f.active_key          = { fin_key_g1.begin(), fin_key_g1.end() };
             f.num_registered_keys = 1;
@@ -174,7 +172,7 @@ namespace eosiosystem {
       // Check the key is registered
       const auto fin_key_g1 = eosio::decode_bls_public_key_to_g1(finalizer_key);
       auto idx = _finalizer_keys.get_index<"byfinkey"_n>();
-      auto hash = eosio::sha256(finalizer_key.data(), finalizer_key.size());
+      auto hash = get_finalizer_key_hash(finalizer_key);
       auto fin_key = idx.find(hash);
       check(fin_key != idx.end(), "finalizer key was not registered");
 
@@ -248,7 +246,7 @@ namespace eosiosystem {
 
       // Check the key is registered
       auto idx = _finalizer_keys.get_index<"byfinkey"_n>();
-      auto hash = eosio::sha256(finalizer_key.data(), finalizer_key.size());
+      auto hash = get_finalizer_key_hash(finalizer_key);
       auto fin_key = idx.find(hash);
       check(fin_key != idx.end(), "finalizer key was not registered");
 
