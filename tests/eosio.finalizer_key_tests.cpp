@@ -491,4 +491,112 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_finalizers_changed_test, finali
 }
 FC_LOG_AND_RETHROW()
 
+BOOST_FIXTURE_TEST_CASE(update_elected_producers_finalizers_replaced_test, finalizer_key_tester) try {
+   // creat voters
+   const asset net = core_sym::from_string("80.0000");
+   const asset cpu = core_sym::from_string("80.0000");
+   const std::vector<account_name> voters = { "producvotera"_n, "producvoterb"_n, "producvoterc"_n, "producvoterd"_n };
+   for (const auto& v: voters) {
+      create_account_with_resources( v, config::system_account_name, core_sym::from_string("1.0000"), false, net, cpu );
+      transfer( config::system_account_name, v, core_sym::from_string("100000000.0000"), config::system_account_name );
+      BOOST_REQUIRE_EQUAL(success(), stake(v, core_sym::from_string("30000000.0000"), core_sym::from_string("30000000.0000")) );
+   }
+
+   // create accounts {defproducera, defproducerb, ..., defproducerz, abcproducera, ..., defproducern} and register as producers
+   std::vector<account_name> producer_names;
+   {
+      producer_names.reserve('z' - 'a' + 1);
+      {
+         const std::string root("defproducer");
+         for ( char c = 'a'; c <= 'z'; ++c ) {
+            producer_names.emplace_back(root + std::string(1, c));
+         }
+      }
+      {
+         const std::string root("abcproducer");
+         for ( char c = 'a'; c <= 'n'; ++c ) {
+            producer_names.emplace_back(root + std::string(1, c));
+         }
+      }
+      setup_producer_accounts(producer_names);
+      for (const auto& p: producer_names) {
+         BOOST_REQUIRE_EQUAL( success(), regproducer(p) );
+         produce_blocks(1);
+         BOOST_TEST(0 == get_producer_info(p)["total_votes"].as<double>());
+      }
+   }
+
+   produce_blocks( 2 * 21 * 1 );
+
+   // producvotera votes for defproducera ... defproducerj
+   // producvoterb votes for defproducera ... defproduceru
+   // producvoterc votes for defproducera ... defproducerz
+   // producvoterd votes for abcproducera ... abcproducern
+   {
+      BOOST_REQUIRE_EQUAL(success(), vote("producvotera"_n, vector<account_name>(producer_names.begin(), producer_names.begin()+10)));
+      BOOST_REQUIRE_EQUAL(success(), vote("producvoterb"_n, vector<account_name>(producer_names.begin(), producer_names.begin()+21)));
+      BOOST_REQUIRE_EQUAL(success(), vote("producvoterc"_n, vector<account_name>(producer_names.begin(), producer_names.begin()+26)));
+      BOOST_REQUIRE_EQUAL(success(), vote("producvoterd"_n, vector<account_name>(producer_names.begin()+26, producer_names.end())));
+   }
+
+   // Register 21 finalizer keys
+   register_finalizer_keys(producer_names, 21);
+   // Transition to Savanna
+   BOOST_REQUIRE_EQUAL(success(),  push_action( config::system_account_name, "switchtosvnn"_n, mvo()) );
+
+   // Produce enough blocks so transition to Savanna finishes
+   produce_blocks(2 * 21 * 12);
+   // head_finality_data is available when nodoes is in Savanna
+   BOOST_REQUIRE_EQUAL( true, control->head_finality_data().has_value() );
+
+   // Verify last finalizer key id table contains all finalzer keys
+   std::set<uint64_t> last_finkey_ids;
+   for( auto i = 0; i < 21; ++i ) {
+      auto finalizer_info = get_finalizer_info(producer_names[i]);
+      uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
+      BOOST_REQUIRE_EQUAL( false, get_last_finkey_id_info(active_key_id).is_null() );
+      last_finkey_ids.insert(active_key_id);
+   }
+
+   const auto new_prod_name = producer_names[21];
+   BOOST_REQUIRE_EQUAL( success(), regproducer(new_prod_name) );
+   BOOST_REQUIRE_EQUAL( success(), register_finalizer_key(new_prod_name, finalizer_key_1, pop_1) );
+   auto prod_info = get_finalizer_info(new_prod_name);
+   uint64_t new_id = prod_info["active_key_id"].as_uint64();
+
+   // Wait for two rounds of producer schedule so new finalizer policy takes effect
+   produce_block( fc::minutes(2) );
+
+   // Delete an active finalizer key
+   name deleted_prod_name = producer_names[0];
+   auto p_info = get_finalizer_info(deleted_prod_name);
+   uint64_t deleted_id = p_info["active_key_id"].as_uint64();
+   auto k_info = get_finalizer_key_info(deleted_id);
+   auto deleted_key = k_info["finalizer_key"].as_string();
+   BOOST_REQUIRE_EQUAL( success(), delete_finalizer_key(deleted_prod_name, deleted_key) );
+
+   // Wait for two rounds of producer schedule so new finalizer policy takes effect
+   produce_blocks(504);
+
+   // find new last_finkey_ids
+   std::set<uint64_t> last_finkey_ids_2;
+   for( auto i = 1; i < 21; ++i ) {
+      auto finalizer_info = get_finalizer_info(producer_names[i]);
+      uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
+      BOOST_REQUIRE_EQUAL( false, get_last_finkey_id_info(active_key_id).is_null() );
+      last_finkey_ids_2.insert(active_key_id);
+   }
+
+   // Make sure new_id is in the new last_finkey_ids
+   BOOST_REQUIRE_EQUAL( false, get_last_finkey_id_info(new_id).is_null() );
+   last_finkey_ids_2.insert(new_id);
+
+   // After replace the deleted_id with new_id in last_finkey_ids,
+   // last_finkey_ids should be the same as last_finkey_ids_2
+   last_finkey_ids.erase(deleted_id);
+   last_finkey_ids.insert(new_id);
+   BOOST_REQUIRE_EQUAL( true, last_finkey_ids == last_finkey_ids_2 );
+}
+FC_LOG_AND_RETHROW()
+
 BOOST_AUTO_TEST_SUITE_END()
