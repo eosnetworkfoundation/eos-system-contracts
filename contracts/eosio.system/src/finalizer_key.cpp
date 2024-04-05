@@ -27,7 +27,7 @@ namespace eosiosystem {
          // If a producer is found in finalizers_table, it means it has at least one finalizer
          // key registered, and has an active key
          if( finalizer != _finalizers.end() ) {
-            assert( !finalizer->active_key.empty() );
+            assert( !finalizer->active_finalizer_key_binary.empty() );
 
             // builds up producer_authority
             top_producers.emplace_back(
@@ -39,12 +39,12 @@ namespace eosiosystem {
             );
 
             // builds up finalizer_authorities
-            new_finalizer_key_ids.emplace_back(finalizer->active_key_id);
+            new_finalizer_key_ids.emplace_back(finalizer->active_finalizer_key_id);
             finalizer_authorities.emplace_back(
                eosio::finalizer_authority{
                   .description = it->owner.to_string(),
                   .weight      = 1,
-                  .public_key  = finalizer->active_key
+                  .public_key  = finalizer->active_finalizer_key_binary
                }
             );
          }
@@ -141,15 +141,15 @@ namespace eosiosystem {
          // First time the finalizer to register a finalier key,
          // make the key active
          _finalizers.emplace( finalizer_name, [&]( auto& f ) {
-            f.finalizer_name      = finalizer_name;
-            f.active_key_id       = key_itr->id;
-            f.active_key          = { fin_key_g1.begin(), fin_key_g1.end() };
-            f.num_registered_keys = 1;
+            f.finalizer_name              = finalizer_name;
+            f.active_finalizer_key_id     = key_itr->id;
+            f.active_finalizer_key_binary = { fin_key_g1.begin(), fin_key_g1.end() };
+            f.finalizer_key_count         = 1;
          });
       } else {
-         // Update num_registered_keys
+         // Update finalizer_key_count
          _finalizers.modify( f_itr, same_payer, [&]( auto& f ) {
-            ++f.num_registered_keys;
+            ++f.finalizer_key_count;
          });
       }
    }
@@ -164,7 +164,7 @@ namespace eosiosystem {
       // Check finalizer has registered keys
       auto finalizer = _finalizers.find(finalizer_name.value);
       check( finalizer != _finalizers.end(), "finalizer has not registered any finalizer keys" );
-      check( finalizer->num_registered_keys > 0, "num_registered_keys of the finalizer must be greater than one" );
+      check( finalizer->finalizer_key_count > 0, "finalizer_key_count of the finalizer must be greater than one" );
 
       // Basic format check
       check(finalizer_key.compare(0, 7, "PUB_BLS") == 0, "finalizer key must start with  PUB_BLS");
@@ -180,18 +180,18 @@ namespace eosiosystem {
       check(fin_key->finalizer_name == name(finalizer_name), "finalizer key was not registered by the finalizer");
 
       // Check if the finalizer key is not already active
-      check( fin_key->id != finalizer->active_key_id, "the finalizer key was already active" );
+      check( fin_key->id != finalizer->active_finalizer_key_id, "the finalizer key was already active" );
 
-      auto old_active_key_id = finalizer->active_key_id;
+      auto old_active_finalizer_key_id = finalizer->active_finalizer_key_id;
 
       _finalizers.modify( finalizer, same_payer, [&]( auto& f ) {
-         f.active_key_id = fin_key->id;
-         f.active_key    = { fin_key_g1.begin(), fin_key_g1.end() };
+         f.active_finalizer_key_id      = fin_key->id;
+         f.active_finalizer_key_binary  = { fin_key_g1.begin(), fin_key_g1.end() };
       });
 
       // Replace the finalizer policy immediately if the finalizer is
       // participating in current voting
-      const auto old_id_itr = _last_finkey_ids.find(old_active_key_id);
+      const auto old_id_itr = _last_finkey_ids.find(old_active_finalizer_key_id);
       if( old_id_itr != _last_finkey_ids.end() ) {
          replace_key_in_finalizer_policy(finalizer_name, old_id_itr, fin_key->id);
       }
@@ -242,7 +242,7 @@ namespace eosiosystem {
       // Check finalizer has registered keys
       auto finalizer = _finalizers.find(finalizer_name.value);
       check( finalizer != _finalizers.end(), "finalizer has not registered any finalizer keys" );
-      assert( finalizer->num_registered_keys > 0 );
+      assert( finalizer->finalizer_key_count > 0 );
 
       // Check the key is registered
       auto idx = _finalizer_keys.get_index<"byfinkey"_n>();
@@ -250,24 +250,26 @@ namespace eosiosystem {
       auto fin_key = idx.find(hash);
       check(fin_key != idx.end(), "finalizer key was not registered");
 
-      // Check the key belongs to finalizer
+      // Check the key belongs to the finalizer
       check(fin_key->finalizer_name == name(finalizer_name), "finalizer key was not registered by the finalizer");
       
-      if( fin_key->id == finalizer->active_key_id ) {
-         check( finalizer->num_registered_keys == 1, "cannot delete an active key unless it is the last registered finalizer key");
+      // If the key is currently active, it cannot be deleted unless it is the
+      // only key of the finalizer.
+      if( fin_key->id == finalizer->active_finalizer_key_id ) {
+         check( finalizer->finalizer_key_count == 1, "cannot delete an active key unless it is the last registered finalizer key");
       }
 
       // Remove the key from finalizer_keys table
       idx.erase( fin_key );
 
       // Update finalizers table
-      if( finalizer->num_registered_keys == 1 ) {
+      if( finalizer->finalizer_key_count == 1 ) {
          // The finalizer does not have any registered keys. Remove it from finalizers table.
          _finalizers.erase( finalizer );
       } else {
-         // Decrement num_registered_keys finalizers table
+         // Decrement finalizer_key_count finalizers table
          _finalizers.modify( finalizer, same_payer, [&]( auto& f ) {
-            --f.num_registered_keys;
+            --f.finalizer_key_count;
          });
       }
    }

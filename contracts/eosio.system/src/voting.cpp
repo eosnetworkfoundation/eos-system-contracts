@@ -127,13 +127,13 @@ namespace eosiosystem {
                continue;
             }
 
-            if( _last_finkey_ids.find(finalizer->active_key_id) == _last_finkey_ids.end() ) {
+            if( _last_finkey_ids.find(finalizer->active_finalizer_key_id) == _last_finkey_ids.end() ) {
                // If any producer's active finalizer_key_id is not in
                // last_finalizer_key_ids, it means a new finalizer policy is needed.
-               new_finalizer_key_ids.emplace_back(finalizer->active_key_id);
+               new_finalizer_key_ids.emplace_back(finalizer->active_finalizer_key_id);
             } else {
                // the active_key is the same as last round for the producer
-               kept_finalizer_key_ids.insert(finalizer->active_key_id);
+               kept_finalizer_key_ids.insert(finalizer->active_finalizer_key_id);
             }
 
             // Pre-build next_finalizer_authorities in case it is needed.
@@ -141,7 +141,7 @@ namespace eosiosystem {
                eosio::finalizer_authority{
                   .description = it->owner.to_string(),
                   .weight      = 1,
-                  .public_key  = finalizer->active_key
+                  .public_key  = finalizer->active_finalizer_key_binary
                }
             );
          }

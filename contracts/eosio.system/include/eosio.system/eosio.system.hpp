@@ -304,9 +304,9 @@ namespace eosiosystem {
 
    struct [[eosio::table("finalizers"), eosio::contract("eosio.system")]] finalizer_info {
       name              finalizer_name;
-      uint64_t          active_key_id;
-      std::vector<char> active_key;  // Affine little endian non-montgomery g1
-      uint32_t          num_registered_keys;
+      uint64_t          active_finalizer_key_id; // finalizer's active finalizer_key_id
+      std::vector<char> active_finalizer_key_binary;  // Affine little endian non-montgomery g1
+      uint32_t          finalizer_key_count; // number of finalizer keys registered by this finalizer
 
       uint64_t primary_key() const { return finalizer_name.value; }
    };
