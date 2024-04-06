@@ -119,7 +119,16 @@ const std::string pop_2 = "SIG_BLS_9e1SzM60bWLdxwz4lYNQMNzMGeFuzFgJDYy7WykmynRVR
 const std::string pop_3 = "SIG_BLS_cJTQMGv1isqpcHEfhogLhlU56bKpGgo-Svi3Z4NXvWcly5TJo8hDChodIV-aEHgMqr06LuZftR7WFvgGkbOSdmwdO4t58R3RYOMSK-jjif2z-fEwCl7jsxUutASIRwIYtTI7h6NLCjARiKNi5BkES33xY8wYMWf-JkgbpsD2cGsZW4hkMW7T2j_1w89HmNwCn4V_hjlPM_kgz45RoYpKq4w2QEaLdCYTJ6xYOfc9Occc15c76dd1jjty_yT2RMAKO0mfUA";
 const std::string pop_4 = "SIG_BLS_GNlwGxjL-LCVDApTHernv8Hj6EqlsxWlZBUzOu6DcJmNNuHsfetXK14RPJ-L63wVnhPRL9aNrQAURy2wYJ1__rNiGk-nUMZ5RDTO7tO2EPTiyySq9cbzgn43vKG8FgsA4gbNlqVFeTCbo5CgGj8m9vXNV4-Cv68WW-ivcwJzDtnNA3O9PPIpRY6_HhbmwTUVrHL2v7X_arNCyAf29nucAYNOsCM-br6F6HwpSjqSxi4-KqcFfQCWbAbn_SgJNVAA4yx5fQ";
 
-BOOST_FIXTURE_TEST_CASE(register_finalizer_key_invalid_key_tests, finalizer_key_tester) try {
+BOOST_FIXTURE_TEST_CASE(register_finalizer_key_failure_tests, finalizer_key_tester) try {
+   {  // bob111111111 does not have Alice's authority
+      BOOST_REQUIRE_EQUAL( error( "missing authority of bob111111111" ),
+                           push_action(alice, "regfinkey"_n, mvo()
+                              ("finalizer_name",  "bob111111111")
+                              ("finalizer_key", finalizer_key_1 )
+                              ("proof_of_possession", pop_1 )
+                           ) );
+   }
+
    { // attempt to register finalizer_key for an unregistered producer
       BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer is not a registered producer" ),
                            register_finalizer_key(alice, finalizer_key_1, pop_1));
@@ -127,6 +136,7 @@ BOOST_FIXTURE_TEST_CASE(register_finalizer_key_invalid_key_tests, finalizer_key_
 
    // Now alice1111111 registers as a producer
    BOOST_REQUIRE_EQUAL( success(), regproducer(alice) );
+
 
    {  // finalizer key does not start with PUB_BLS
       BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer key must start with PUB_BLS" ),
@@ -238,6 +248,13 @@ BOOST_FIXTURE_TEST_CASE(register_duplicate_key_from_different_finalizers_tests, 
 FC_LOG_AND_RETHROW() // register_duplicate_key_from_different_finalizers_tests
 
 BOOST_FIXTURE_TEST_CASE(activate_finalizer_key_failure_tests, finalizer_key_tester) try {
+   // bob111111111 does not have Alice's authority
+   BOOST_REQUIRE_EQUAL( error( "missing authority of bob111111111" ),
+                        push_action(alice, "actfinkey"_n, mvo()
+                           ("finalizer_name", "bob111111111")
+                           ("finalizer_key",  finalizer_key_1 )
+                        ) );
+
    // attempt to activate finalizer_key for an unregistered producer
    BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer is not a registered producer" ),
                          activate_finalizer_key(alice, finalizer_key_1) );
@@ -297,6 +314,13 @@ BOOST_FIXTURE_TEST_CASE(activate_finalizer_key_success_tests, finalizer_key_test
 FC_LOG_AND_RETHROW() // activate_finalizer_key_success_tests
 
 BOOST_FIXTURE_TEST_CASE(delete_finalizer_key_failure_tests, finalizer_key_tester) try {
+   // bob111111111 does not have Alice's authority
+   BOOST_REQUIRE_EQUAL( error( "missing authority of bob111111111" ),
+                        push_action(alice, "delfinkey"_n, mvo()
+                           ("finalizer_name", "bob111111111")
+                           ("finalizer_key",  finalizer_key_1 )
+                        ) );
+
    // attempt to delete finalizer_key for an unregistered producer
    BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer is not a registered producer" ),
                          delete_finalizer_key(alice, finalizer_key_1) );
@@ -379,9 +403,9 @@ BOOST_FIXTURE_TEST_CASE(delete_last_finalizer_key_test, finalizer_key_tester) tr
 FC_LOG_AND_RETHROW() // delete_last_finalizer_key_test
 
 BOOST_FIXTURE_TEST_CASE(switchtosvnn_success_tests, finalizer_key_tester) try {
-   // Register and vote 21 producers
+   // Register and vote 26 producers
    auto producer_names = active_and_vote_producers();
-   // Register 21 finalizer keys
+   // Register 21 finalizer keys for the first 21 producers
    register_finalizer_keys(producer_names, 21);
    BOOST_REQUIRE_EQUAL(success(),  push_action( config::system_account_name, "switchtosvnn"_n, mvo()) );
 
@@ -402,6 +426,12 @@ BOOST_FIXTURE_TEST_CASE(switchtosvnn_success_tests, finalizer_key_tester) try {
    // Cannot switch to Savanna multiple times
    BOOST_REQUIRE_EQUAL( wasm_assert_msg( "switchtosvnn can be run only once" ),
                         push_action( config::system_account_name, "switchtosvnn"_n, mvo()) );
+}
+FC_LOG_AND_RETHROW()
+
+BOOST_FIXTURE_TEST_CASE(switchtosvnn_missing_authority_tests, finalizer_key_tester) try {
+   BOOST_REQUIRE_EQUAL( error( "missing authority of eosio" ),
+                        push_action( alice, "switchtosvnn"_n, mvo()) );
 }
 FC_LOG_AND_RETHROW()
 
