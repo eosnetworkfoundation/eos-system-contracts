@@ -284,42 +284,41 @@ namespace eosiosystem {
       EOSLIB_SERIALIZE( producer_info2, (owner)(votepay_share)(last_votepay_share_update) )
    };
 
-   // Defines finalizer_key info structure to be stored in finalizer_keys info table, added after version 6.0
+   // finalizer_key_info stores information about a finalizer key.
    struct [[eosio::table("finkeys"), eosio::contract("eosio.system")]] finalizer_key_info {
-      uint64_t       id;
-      name           finalizer_name;
-      std::string    finalizer_key; // base64url
-      checksum256    finalizer_key_hash;
+      uint64_t      id;                 // automatically generated ID for the key in the table
+      name          finalizer_name;     // name of the finalizer owning the key
+      std::string   finalizer_key;      // finalizer key in base64url format
+      checksum256   finalizer_key_hash; // hash of finalizer key, cached to avoid re-computing
 
       uint64_t    primary_key() const { return id; }
       uint64_t    by_fin_name() const { return finalizer_name.value; }
       checksum256 by_fin_key()  const { return finalizer_key_hash; }
    };
-
    typedef eosio::multi_index<
       "finkeys"_n, finalizer_key_info,
       indexed_by<"byfinname"_n, const_mem_fun<finalizer_key_info, uint64_t, &finalizer_key_info::by_fin_name>>,
       indexed_by<"byfinkey"_n, const_mem_fun<finalizer_key_info, checksum256, &finalizer_key_info::by_fin_key>>
    > finalizer_keys_table;
 
+   // finalizer_info stores information about a finalizer.
    struct [[eosio::table("finalizers"), eosio::contract("eosio.system")]] finalizer_info {
-      name              finalizer_name;
-      uint64_t          active_finalizer_key_id; // finalizer's active finalizer_key_id
-      std::vector<char> active_finalizer_key_binary;  // Affine little endian non-montgomery g1
-      uint32_t          finalizer_key_count; // number of finalizer keys registered by this finalizer
+      name              finalizer_name;              // finalizer's name
+      uint64_t          active_finalizer_key_id;     // finalizer's active finalizer key's id in finalizer_keys_table, for fast finding key information
+      std::vector<char> active_finalizer_key_binary; // finalizer's active finalizer key's binary format in Affine little endian non-montgomery g1
+      uint32_t          finalizer_key_count = 0;     // number of finalizer keys registered by this finalizer
 
       uint64_t primary_key() const { return finalizer_name.value; }
    };
-
    typedef eosio::multi_index< "finalizers"_n, finalizer_info > finalizers_table;
 
-   struct [[eosio::table("lastfkeyids"), eosio::contract("eosio.system")]] last_finkey_id_info {
-      uint64_t          key_id;
+   // last_fin_key_info stores information about a finalizer key used in last finalizer policy.
+   struct [[eosio::table("lastfinkeys"), eosio::contract("eosio.system")]] last_fin_key_info {
+      uint64_t          id;  // finalizer key's id in finalizer_keys_table
 
-      uint64_t primary_key() const { return key_id; }
+      uint64_t primary_key() const { return id; }
    };
-
-   typedef eosio::multi_index< "lastfkeyids"_n, last_finkey_id_info > last_finkey_ids_table;
+   typedef eosio::multi_index< "lastfinkeys"_n, last_fin_key_info > last_fin_keys_table;
 
    // Voter info. Voter info stores information about the voter:
    // - `owner` the voter
@@ -722,7 +721,7 @@ namespace eosiosystem {
          producers_table2         _producers2;
          finalizer_keys_table     _finalizer_keys;
          finalizers_table         _finalizers;
-         last_finkey_ids_table    _last_finkey_ids;
+         last_fin_keys_table      _last_fin_keys;
          global_state_singleton   _global;
          global_state2_singleton  _global2;
          global_state3_singleton  _global3;
@@ -1614,7 +1613,7 @@ namespace eosiosystem {
          // defined in finalizer_key.cpp
          bool is_savanna_consensus() const;
          void set_finalizers( std::vector<eosio::finalizer_authority>&& finalizer_authorities, const std::vector<uint64_t>& finalizer_key_ids, const std::unordered_set<uint64_t>& kept_key_ids );
-         void replace_key_in_finalizer_policy(const name& finalizer, const last_finkey_ids_table::const_iterator& old_id_itr, uint64_t new_id);
+         void replace_key_in_finalizer_policy(const name& finalizer, const last_fin_keys_table::const_iterator& old_id_itr, uint64_t new_id);
 
          template <auto system_contract::*...Ptrs>
          class registration {

@@ -23,8 +23,8 @@ struct finalizer_key_tester : eosio_system_tester {
    }
 
    fc::variant get_last_finkey_id_info( uint64_t id ) {
-      vector<char> data = get_row_by_id( config::system_account_name, config::system_account_name, "lastfkeyids"_n, id );
-      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "last_finkey_id_info", data, abi_serializer::create_yield_function(abi_serializer_max_time) );
+      vector<char> data = get_row_by_id( config::system_account_name, config::system_account_name, "lastfinkeys"_n, id );
+      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "last_fin_key_info", data, abi_serializer::create_yield_function(abi_serializer_max_time) );
    }
 
    action_result register_finalizer_key( const account_name& act, const std::string& finalizer_key, const std::string& pop  ) {
@@ -60,7 +60,7 @@ struct finalizer_key_tester : eosio_system_tester {
 
    std::unordered_set<uint64_t> get_last_finkey_ids() {
       const auto* table_id_itr = control->db().find<eosio::chain::table_id_object, eosio::chain::by_code_scope_table>(
-         boost::make_tuple(config::system_account_name, config::system_account_name, "lastfkeyids"_n));
+         boost::make_tuple(config::system_account_name, config::system_account_name, "lastfinkeys"_n));
 
       if (!table_id_itr) {
          return {};

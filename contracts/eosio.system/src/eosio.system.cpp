@@ -22,7 +22,7 @@ namespace eosiosystem {
     _producers2(get_self(), get_self().value),
     _finalizer_keys(get_self(), get_self().value),
     _finalizers(get_self(), get_self().value),
-    _last_finkey_ids(get_self(), get_self().value),
+    _last_fin_keys(get_self(), get_self().value),
     _global(get_self(), get_self().value),
     _global2(get_self(), get_self().value),
     _global3(get_self(), get_self().value),

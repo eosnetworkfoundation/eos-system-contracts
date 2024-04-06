@@ -127,7 +127,7 @@ namespace eosiosystem {
                continue;
             }
 
-            if( _last_finkey_ids.find(finalizer->active_finalizer_key_id) == _last_finkey_ids.end() ) {
+            if( _last_fin_keys.find(finalizer->active_finalizer_key_id) == _last_fin_keys.end() ) {
                // If any producer's active finalizer_key_id is not in
                // last_finalizer_key_ids, it means a new finalizer policy is needed.
                new_finalizer_key_ids.emplace_back(finalizer->active_finalizer_key_id);

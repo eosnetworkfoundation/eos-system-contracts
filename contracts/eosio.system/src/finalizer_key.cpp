@@ -72,10 +72,10 @@ namespace eosiosystem {
    }
 
    bool system_contract::is_savanna_consensus() const {
-      return _last_finkey_ids.begin() != _last_finkey_ids.end();
+      return _last_fin_keys.begin() != _last_fin_keys.end();
    }
 
-   void system_contract::set_finalizers( std::vector<eosio::finalizer_authority>&& finalizer_authorities, const std::vector<uint64_t>& new_key_ids, const std::unordered_set<uint64_t>& kept_key_ids ) {
+   void system_contract::set_finalizers( std::vector<eosio::finalizer_authority>&& finalizer_authorities, const std::vector<uint64_t>& new_ids, const std::unordered_set<uint64_t>& kept_ids ) {
       // Establish finalizer policy and call set_finalizers() host function
       eosio::finalizer_policy fin_policy {
          .threshold  = ( finalizer_authorities.size() * 2 ) / 3 + 1, // or hardcoded to 15?
@@ -83,19 +83,19 @@ namespace eosiosystem {
       };
       eosio::set_finalizers(std::move(fin_policy)); // call host function
 
-      // Purge any ids not in kept_key_ids from last_finkey_ids table
-      for (auto itr = _last_finkey_ids.begin(); itr != _last_finkey_ids.end(); /* intentionally empty */ ) {
-         if( !kept_key_ids.contains(itr->key_id) ) {
-            itr = _last_finkey_ids.erase(itr);
+      // Purge any ids not in kept_ids from _last_fin_keys table
+      for (auto itr = _last_fin_keys.begin(); itr != _last_fin_keys.end(); /* intentionally empty */ ) {
+         if( !kept_ids.contains(itr->id) ) {
+            itr = _last_fin_keys.erase(itr);
          } else {
             ++itr;
          }
       }
 
-      // Add new_key_ids to _last_finkey_ids
-      for (auto id: new_key_ids ) {
-         _last_finkey_ids.emplace( get_self(), [&]( auto& f ) {
-            f.key_id = id;
+      // Add new_ids to _last_fin_keys
+      for (auto id: new_ids ) {
+         _last_fin_keys.emplace( get_self(), [&]( auto& f ) {
+            f.id = id;
          });
       }
    }
@@ -191,28 +191,28 @@ namespace eosiosystem {
 
       // Replace the finalizer policy immediately if the finalizer is
       // participating in current voting
-      const auto old_id_itr = _last_finkey_ids.find(old_active_finalizer_key_id);
-      if( old_id_itr != _last_finkey_ids.end() ) {
+      const auto old_id_itr = _last_fin_keys.find(old_active_finalizer_key_id);
+      if( old_id_itr != _last_fin_keys.end() ) {
          replace_key_in_finalizer_policy(finalizer_name, old_id_itr, fin_key->id);
       }
    }
 
    // replace the key in last finalizer policy and call set_finalizers host function immediately
-   void system_contract::replace_key_in_finalizer_policy(const name& finalizer, const last_finkey_ids_table::const_iterator& old_id_itr, uint64_t new_id) {
+   void system_contract::replace_key_in_finalizer_policy(const name& finalizer, const last_fin_keys_table::const_iterator& old_id_itr, uint64_t new_id) {
       // Delete old id
       assert(old_id_itr);
-      _last_finkey_ids.erase(old_id_itr);
+      _last_fin_keys.erase(old_id_itr);
 
       // Insert new ID
-      _last_finkey_ids.emplace( get_self(), [&]( auto& f ) {
-         f.key_id = new_id;
+      _last_fin_keys.emplace( get_self(), [&]( auto& f ) {
+         f.id = new_id;
       });
 
       std::vector<eosio::finalizer_authority> finalizer_authorities;
 
-      // Build a new finalizer_authority by going over all last_finkey_ids
-      for (auto itr = _last_finkey_ids.begin(); itr != _last_finkey_ids.end(); ++itr) {
-         auto key = _finalizer_keys.find(itr->key_id);
+      // Build a new finalizer_authority by going over all keys in _last_fin_keys table
+      for (auto itr = _last_fin_keys.begin(); itr != _last_fin_keys.end(); ++itr) {
+         auto key = _finalizer_keys.find(itr->id);
          assert( key != _finalizer_keys.end() );
          const auto pk = eosio::decode_bls_public_key_to_g1(key->finalizer_key);
          finalizer_authorities.emplace_back(
@@ -224,7 +224,7 @@ namespace eosiosystem {
          );
       }
 
-      // last_finkey_ids table has already been updated. Call set_finalizers host function directly
+      // _last_fin_keys table has already been updated. Call set_finalizers host function directly
       eosio::finalizer_policy fin_policy {
          .threshold  = ( finalizer_authorities.size() * 2 ) / 3 + 1,
          .finalizers = std::move(finalizer_authorities)
