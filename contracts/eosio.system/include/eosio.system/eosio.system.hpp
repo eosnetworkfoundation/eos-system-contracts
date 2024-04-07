@@ -286,10 +286,11 @@ namespace eosiosystem {
 
    // finalizer_key_info stores information about a finalizer key.
    struct [[eosio::table("finkeys"), eosio::contract("eosio.system")]] finalizer_key_info {
-      uint64_t      id;                 // automatically generated ID for the key in the table
-      name          finalizer_name;     // name of the finalizer owning the key
-      std::string   finalizer_key;      // finalizer key in base64url format
-      checksum256   finalizer_key_hash; // hash of finalizer key, cached to avoid re-computing
+      uint64_t          id;                   // automatically generated ID for the key in the table
+      name              finalizer_name;       // name of the finalizer owning the key
+      std::string       finalizer_key;        // finalizer key in base64url format
+      std::vector<char> finalizer_key_binary; // finalizer key in binary format in Affine little endian non-montgomery g1
+      checksum256       finalizer_key_hash;   // hash of finalizer key, cached to avoid re-computing
 
       uint64_t    primary_key() const { return id; }
       uint64_t    by_fin_name() const { return finalizer_name.value; }
@@ -1218,17 +1219,17 @@ namespace eosiosystem {
           * the policy by using `set_finalizers` host function 
           *
           * @pre Require the authority of the contract itself
-          * @pre A sufficient number (15) of the top 21 block producers have registered a finalizer key
+          * @pre A sufficient numner of the top 21 block producers have registered a finalizer key
           */
          [[eosio::action]]
          void switchtosvnn();
 
          /**
           * Action to register a finalizer key by a registered producer.
+          * If this was registered before (and still exists) even
+          * by other block producers, the registration will fail.
           * If this is the first registered finalizer key of the producer,
           * it will also implicitly be marked active.
-          * If this finalizer key was registered before (and still exists) even
-          * by other block producers, the registration will fail.
           * A registered producer can have multiple registered finalizer keys.
           *
           * @param finalizer_name - account registering `finalizer_key`,
@@ -1237,16 +1238,18 @@ namespace eosiosystem {
           *
           * @pre `finalizer_name` must be a registered producer
           * @pre `finalizer_key` must be in base64url format
+          * @pre `proof_of_possession` must be a valid of proof of possession signature
           * @pre Authority of `finalizer_name` to register. `linkauth` may be used to allow a lower authrity to exectute this action.
           */
          [[eosio::action]]
          void regfinkey( const name& finalizer_name, const std::string& finalizer_key, const std::string& proof_of_possession);
 
          /**
-          * Action to activate a finalizer key. If the block producer is currently
-          * active (in top 21), then immediately change Finalizer Policy.
-          * Activating a finalizer key of a block producer implicitly deactivates
-          * the previously active finalizer key of that block producer.
+          * Action to activate a finalizer key. If the finalizer is currently an
+          * active block producer (in top 21), then immediately change Finalizer Policy.
+          * A finalizer may only have one active finalizer key. Activating a
+          * finalizer key implicitly deactivates the previously active finalizer
+          * key of that finalizer.
           *
           * @param finalizer_name - account activating `finalizer_key`,
           * @param finalizer_key - key to be activated.
@@ -1259,8 +1262,8 @@ namespace eosiosystem {
          void actfinkey( const name& finalizer_name, const std::string& finalizer_key );
 
          /**
-          * Action to delete a finalizer key. The key cannot be active unless
-          * it is the last registered finalizer key. If it is the last one,
+          * Action to delete a finalizer key. An active finalizer key may not be deleted
+          * unless it is the last registered finalizer key. If it is the last one,
           * it will be deleted.
           *
           * @param finalizer_name - account deleting `finalizer_key`,
