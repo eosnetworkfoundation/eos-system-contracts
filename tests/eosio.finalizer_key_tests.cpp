@@ -135,7 +135,7 @@ BOOST_FIXTURE_TEST_CASE(register_finalizer_key_failure_tests, finalizer_key_test
    }
 
    { // attempt to register finalizer_key for an unregistered producer
-      BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer is not a registered producer" ),
+      BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer alice1111111 is not a registered producer" ),
                            register_finalizer_key(alice, finalizer_key_1, pop_1));
    }
 
@@ -144,7 +144,7 @@ BOOST_FIXTURE_TEST_CASE(register_finalizer_key_failure_tests, finalizer_key_test
 
 
    {  // finalizer key does not start with PUB_BLS
-      BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer key must start with PUB_BLS" ),
+      BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer key does not start with PUB_BLS: UB_BLS_6j4Y3LfsRiBxY-DgvqrZNMCttHftBQPIWwDiN2CMhHWULjN1nGwM1O_nEEJefqwAG4X09n4Kdt4a1mfZ1ES1cLGjQo6uLLSloiVW4i9BUhMHU2nVujP1_U_9ihdI3egZ17N-iA"),
                            push_action(alice, "regfinkey"_n, mvo()
                               ("finalizer_name",  "alice1111111")
                               ("finalizer_key", "UB_BLS_6j4Y3LfsRiBxY-DgvqrZNMCttHftBQPIWwDiN2CMhHWULjN1nGwM1O_nEEJefqwAG4X09n4Kdt4a1mfZ1ES1cLGjQo6uLLSloiVW4i9BUhMHU2nVujP1_U_9ihdI3egZ17N-iA" )
@@ -153,7 +153,7 @@ BOOST_FIXTURE_TEST_CASE(register_finalizer_key_failure_tests, finalizer_key_test
    }
 
    {  // proof_of_possession does not start with SIG_BLS
-      BOOST_REQUIRE_EQUAL( wasm_assert_msg( "proof of possession signature must start with SIG_BLS" ),
+      BOOST_REQUIRE_EQUAL( wasm_assert_msg( "proof of possession signature does not start with SIG_BLS: XIG_BLS_N5r73_i50OVkydasCVVBOqqAqM4XQo_-DHgNawK77bcf06Bx0_rh5TNn9iZewNMZ6ecyEjs_sEkwjAXplhqyqf7S9FqSt8mfRxO7pE3bUZS0Z-Fxitsh9X0l_-kj3Z8VD8IwsaUwBLacudzShIXA-5E47cEqYoV3bGhANerKuDhZ4Pesm2xotAScK0pcNp0LbTNj0MZpVr0u6kJh169IoeG4ngCvD6uE2EicNrzyvDhu0u925Q1cm5z_bVha-DsANq3zcA" ),
                            push_action(alice, "regfinkey"_n, mvo()
                               ("finalizer_name",  "alice1111111")
                               ("finalizer_key", finalizer_key_1)
@@ -211,7 +211,7 @@ BOOST_FIXTURE_TEST_CASE(register_finalizer_key_duplicate_key_tests, finalizer_ke
    BOOST_REQUIRE_EQUAL( 1, alice_info["finalizer_key_count"].as_uint64() );
 
    // Tries to register the same finalizer key
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "duplicate finalizer key" ),
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "duplicate finalizer key: " + finalizer_key_1 ),
                         register_finalizer_key(alice, finalizer_key_1, pop_1) );
 
    // finalizer key count still 1
@@ -257,7 +257,7 @@ BOOST_FIXTURE_TEST_CASE(register_duplicate_key_from_different_finalizers_tests, 
    BOOST_REQUIRE_EQUAL( 1, fin_info["finalizer_key_count"].as_uint64() );
 
    // bob111111111 tries to register the same finalizer key as the first one
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "duplicate finalizer key" ),
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "duplicate finalizer key: " + finalizer_key_1 ),
                         register_finalizer_key(bob, finalizer_key_1, pop_1) );
 }
 FC_LOG_AND_RETHROW() // register_duplicate_key_from_different_finalizers_tests
@@ -271,8 +271,8 @@ BOOST_FIXTURE_TEST_CASE(activate_finalizer_key_failure_tests, finalizer_key_test
                         ) );
 
    // attempt to activate finalizer_key for an unregistered producer
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer is not a registered producer" ),
-                         activate_finalizer_key(alice, finalizer_key_1) );
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer alice1111111 is not a registered producer" ),
+                        activate_finalizer_key(alice, finalizer_key_1) );
 
    // Register producers
    BOOST_REQUIRE_EQUAL( success(), regproducer(alice) );
@@ -287,16 +287,16 @@ BOOST_FIXTURE_TEST_CASE(activate_finalizer_key_failure_tests, finalizer_key_test
    BOOST_REQUIRE_EQUAL( success(), register_finalizer_key(bob, finalizer_key_2, pop_2) );
 
    // Activate a finalizer key not registered by anyone
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer key was not registered" ),
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer key was not registered: " + finalizer_key_3 ),
                         activate_finalizer_key(alice, finalizer_key_3) );
 
    // Activate a finalizer key not registered by Alice
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer key was not registered by the finalizer" ),
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer key was not registered by the finalizer: " + finalizer_key_2 ),
                         activate_finalizer_key(alice, finalizer_key_2) );
 
    // Activate a finalizer key that is already active (the first key registered is
    // automatically set to active
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "the finalizer key was already active" ),
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer key was already active: " + finalizer_key_1 ),
                         activate_finalizer_key(alice, finalizer_key_1) );
 }
 FC_LOG_AND_RETHROW() // activate_finalizer_key_failure_tests
@@ -340,15 +340,15 @@ BOOST_FIXTURE_TEST_CASE(delete_finalizer_key_failure_tests, finalizer_key_tester
                         ) );
 
    // attempt to delete finalizer_key for an unregistered producer
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer is not a registered producer" ),
-                         delete_finalizer_key(alice, finalizer_key_1) );
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer alice1111111 is not a registered producer" ),
+                        delete_finalizer_key(alice, finalizer_key_1) );
 
    // Register producers
    BOOST_REQUIRE_EQUAL( success(), regproducer(alice) );
    BOOST_REQUIRE_EQUAL( success(), regproducer(bob) );
 
    // finalizer has not registered any finalizer keys yet.
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer has not registered any finalizer keys" ),
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer alice1111111 has not registered any finalizer keys" ),
                         delete_finalizer_key(alice, finalizer_key_1) );
 
    // Alice and Bob register finalizer keys
@@ -357,11 +357,11 @@ BOOST_FIXTURE_TEST_CASE(delete_finalizer_key_failure_tests, finalizer_key_tester
    BOOST_REQUIRE_EQUAL( success(), register_finalizer_key(bob, finalizer_key_3, pop_3) );
 
    // Alice tries to delete  a finalizer key not registered by anyone
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer key was not registered" ),
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer key was not registered: " + finalizer_key_4 ),
                         delete_finalizer_key(alice, finalizer_key_4) );
 
    // Alice tries to delete a finalizer key registered by Bob
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer key was not registered by the finalizer" ),
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer key " + finalizer_key_2 + " was not registered by the finalizer alice1111111" ),
                         delete_finalizer_key(alice, finalizer_key_2) );
 
    // Make sure finalizer_key_2 is Bob's active finalizer key and Bob has 2 keys
@@ -372,7 +372,7 @@ BOOST_FIXTURE_TEST_CASE(delete_finalizer_key_failure_tests, finalizer_key_tester
    BOOST_REQUIRE_EQUAL( 2, bob_info["finalizer_key_count"].as_uint64() );
 
    // Bob tries to delete his active finalizer key but he has 2 keys
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "cannot delete an active key unless it is the last registered finalizer key" ),
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "cannot delete an active key unless it is the last registered finalizer key, has 2 keys" ),
                         delete_finalizer_key(bob, finalizer_key_2) );
 
 }
@@ -466,7 +466,7 @@ BOOST_FIXTURE_TEST_CASE(switchtosvnn_not_enough_finalizer_keys_tests, finalizer_
    register_finalizer_keys(producer_names, 20);
 
    // Have only 20 finalizer keys, short by 1
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "not enough top producers have registered finalizer keys" ),
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "not enough top producers have registered finalizer keys, has 20" ),
                         push_action( config::system_account_name, "switchtosvnn"_n, mvo()) );
 }
 FC_LOG_AND_RETHROW()
