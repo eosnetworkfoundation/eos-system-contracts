@@ -26,11 +26,8 @@ namespace eosiosystem {
 
       check(!is_savanna_consensus(), "switchtosvnn can be run only once");
 
-      using value_type = std::pair<eosio::producer_authority, uint16_t>;
-      std::vector<value_type> top_producers;
       std::vector<eosio::finalizer_authority> finalizer_authorities;
       std::vector<uint64_t> first_finalizer_key_set;
-      top_producers.reserve(21);
       finalizer_authorities.reserve(21);
       first_finalizer_key_set.reserve(21);
 
@@ -38,7 +35,7 @@ namespace eosiosystem {
       // for being a proposer and also have an active finalizer key
       uint32_t i = 0;
       auto idx = _producers.get_index<"prototalvote"_n>();
-      for( auto it = idx.cbegin(); it != idx.cend() && top_producers.size() < 21 && 0 < it->total_votes && it->active() && i < 30; ++it, ++i ) {
+      for( auto it = idx.cbegin(); it != idx.cend() && finalizer_authorities.size() < 21 && 0 < it->total_votes && it->active() && i < 30; ++it, ++i ) {
          auto finalizer = _finalizers.find( it->owner.value );
          if( finalizer == _finalizers.end() ) {
             // The producer is not in finalizers table, indicating it does not have an
@@ -50,15 +47,6 @@ namespace eosiosystem {
          if( finalizer->active_finalizer_key_binary.empty() ) {
             continue;
          }
-
-         // builds up producer_authority
-         top_producers.emplace_back(
-            eosio::producer_authority{
-               .producer_name = it->owner,
-               .authority     = it->get_producer_authority()
-            },
-            it->location
-         );
 
          // stores finalizer_key_id
          first_finalizer_key_set.emplace_back(finalizer->active_finalizer_key_id);
@@ -73,28 +61,10 @@ namespace eosiosystem {
          );
       }
 
-      check( top_producers.size() > 0 && top_producers.size() >= _gstate.last_producer_schedule_size, "not enough top producers have registered finalizer keys" );
+      check( finalizer_authorities.size() > 0 && finalizer_authorities.size() >= _gstate.last_producer_schedule_size, "not enough top producers have registered finalizer keys" );
 
-      std::sort( top_producers.begin(), top_producers.end(), []( const value_type& lhs, const value_type& rhs ) {
-         return lhs.first.producer_name < rhs.first.producer_name; // sort by producer name
-         // return lhs.second < rhs.second; // sort by location
-      } );
-
-      std::vector<eosio::producer_authority> producers;
-
-      producers.reserve(top_producers.size());
-      for( auto& item : top_producers )
-         producers.push_back( std::move(item.first) );
-
-      // Should set_finalizers() be called before set_proposed_producers()
-      // during transition?
       set_finalizers(std::move(finalizer_authorities), first_finalizer_key_set, {});
       check( is_savanna_consensus(), "switching to Savanna failed" );
-
-      if( set_proposed_producers( producers ) >= 0 ) {
-         _gstate.last_producer_schedule_update = eosio::current_time_point();
-         _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( producers.size() );
-      }
    }
 
    // This function may never fail, as it can be called by update_elected_producers,
@@ -152,7 +122,7 @@ namespace eosiosystem {
       const auto fin_key_g1 = eosio::decode_bls_public_key_to_g1(finalizer_key);
       const auto pop_g2 = eosio::decode_bls_signature_to_g2(proof_of_possession);
 
-      // Proof of possession check is expensive, do it last
+      // Proof of possession check
       check(eosio::bls_pop_verify(fin_key_g1, pop_g2), "proof of possession check failed");
 
       // Insert the finalizer key into finalyzer_keys table
