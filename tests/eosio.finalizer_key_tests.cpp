@@ -119,6 +119,11 @@ const std::string pop_2 = "SIG_BLS_9e1SzM60bWLdxwz4lYNQMNzMGeFuzFgJDYy7WykmynRVR
 const std::string pop_3 = "SIG_BLS_cJTQMGv1isqpcHEfhogLhlU56bKpGgo-Svi3Z4NXvWcly5TJo8hDChodIV-aEHgMqr06LuZftR7WFvgGkbOSdmwdO4t58R3RYOMSK-jjif2z-fEwCl7jsxUutASIRwIYtTI7h6NLCjARiKNi5BkES33xY8wYMWf-JkgbpsD2cGsZW4hkMW7T2j_1w89HmNwCn4V_hjlPM_kgz45RoYpKq4w2QEaLdCYTJ6xYOfc9Occc15c76dd1jjty_yT2RMAKO0mfUA";
 const std::string pop_4 = "SIG_BLS_GNlwGxjL-LCVDApTHernv8Hj6EqlsxWlZBUzOu6DcJmNNuHsfetXK14RPJ-L63wVnhPRL9aNrQAURy2wYJ1__rNiGk-nUMZ5RDTO7tO2EPTiyySq9cbzgn43vKG8FgsA4gbNlqVFeTCbo5CgGj8m9vXNV4-Cv68WW-ivcwJzDtnNA3O9PPIpRY6_HhbmwTUVrHL2v7X_arNCyAf29nucAYNOsCM-br6F6HwpSjqSxi4-KqcFfQCWbAbn_SgJNVAA4yx5fQ";
 
+const std::string finalizer_key_binary_1 = "ea3e18dcb7ec46207163e0e0beaad934c0adb477ed0503c85b00e237608c8475942e33759c6c0cd4efe710425e7eac001b85f4f67e0a76de1ad667d9d444b570b1a3428eae2cb4a5a22556e22f415213075369d5ba33f5fd4ffd8a1748dde819";
+const std::string finalizer_key_binary_2 = "82d68e8ce4dad0dcc3b7c7ad043a8ba192a57ca4e94da95c75f99b4c99272d4241d85bb80affaea1af2e9c5ddb2799057b0682cdfded8d8532344e820d2af0bd83f9370e3b63da04f71e27a8959f27290c3a8688d24273f860eb18dda765d500";
+const std::string finalizer_key_binary_3 = "093f2486f65861974e6de215f5a4e777c7d9f1b75a08bd54a52472a8d2d964ce6c76b392a4e8c34c063676b4d81af40f552db5061b43f1a70b261a86c937e3aab5a3c98e454dfa8b75c9628287d2a5ada5ac6dc5a8a54d79450b479420708318";
+const std::string finalizer_key_binary_4 = "849602f511159383f382ddcd33270868246946a4d7f08204001f3185683aa4e62c57b9fd8099d34d43b33c61fc544e053e1c6fcc9bafadbe5335e479307c088cf30c2953d81c8f9d0c5c25e4eaa3d321fdba829170caa311a159e55617df3309";
+
 BOOST_FIXTURE_TEST_CASE(register_finalizer_key_failure_tests, finalizer_key_tester) try {
    {  // bob111111111 does not have Alice's authority
       BOOST_REQUIRE_EQUAL( error( "missing authority of bob111111111" ),
@@ -174,12 +179,14 @@ BOOST_FIXTURE_TEST_CASE(register_finalizer_key_by_same_finalizer_tests, finalize
    // Register first finalizer key
    BOOST_REQUIRE_EQUAL( success(), register_finalizer_key(alice, finalizer_key_1, pop_1) );
 
+   // Make sure binary format is correct, which is important
    auto alice_info = get_finalizer_info(alice);
    BOOST_REQUIRE_EQUAL( "alice1111111", alice_info["finalizer_name"].as_string() );
    BOOST_REQUIRE_EQUAL( 1, alice_info["finalizer_key_count"].as_uint64() );
-   uint64_t active_finalizer_key_id = alice_info["active_finalizer_key_id"].as_uint64();
+   BOOST_REQUIRE_EQUAL( finalizer_key_binary_1, alice_info["active_finalizer_key_binary"].as_string() );
 
    // Cross check finalizer keys table
+   uint64_t active_finalizer_key_id = alice_info["active_finalizer_key_id"].as_uint64();
    auto fin_key_info = get_finalizer_key_info(active_finalizer_key_id);
    BOOST_REQUIRE_EQUAL( "alice1111111", fin_key_info["finalizer_name"].as_string() );
    BOOST_REQUIRE_EQUAL( finalizer_key_1, fin_key_info["finalizer_key"].as_string() );
@@ -224,6 +231,7 @@ BOOST_FIXTURE_TEST_CASE(register_finalizer_key_by_different_finalizers_tests, fi
 
    auto alice_info = get_finalizer_info(alice);
    BOOST_REQUIRE_EQUAL( "alice1111111", alice_info["finalizer_name"].as_string() );
+   BOOST_REQUIRE_EQUAL( finalizer_key_binary_1, alice_info["active_finalizer_key_binary"].as_string() );
    BOOST_REQUIRE_EQUAL( 2, alice_info["finalizer_key_count"].as_uint64() );
 
    // bob111111111 registers another finalizer key
@@ -232,6 +240,7 @@ BOOST_FIXTURE_TEST_CASE(register_finalizer_key_by_different_finalizers_tests, fi
 
    auto bob_info = get_finalizer_info(bob);
    BOOST_REQUIRE_EQUAL( 2, bob_info["finalizer_key_count"].as_uint64() );
+   BOOST_REQUIRE_EQUAL( finalizer_key_binary_3, bob_info["active_finalizer_key_binary"].as_string() );
 }
 FC_LOG_AND_RETHROW() // register_finalizer_key_by_different_finalizers_tests
 
@@ -316,6 +325,9 @@ BOOST_FIXTURE_TEST_CASE(activate_finalizer_key_success_tests, finalizer_key_test
    finalizer_key_info = get_finalizer_key_info(active_finalizer_key_id);
    BOOST_REQUIRE_EQUAL( "alice1111111", finalizer_key_info["finalizer_name"].as_string() );
    BOOST_REQUIRE_EQUAL( finalizer_key_2, finalizer_key_info["finalizer_key"].as_string() );
+
+   // Make sure active_finalizer_key_binary is correct. This test is important.
+   BOOST_REQUIRE_EQUAL( finalizer_key_binary_2, alice_info["active_finalizer_key_binary"].as_string() );
 }
 FC_LOG_AND_RETHROW() // activate_finalizer_key_success_tests
 
@@ -537,55 +549,13 @@ FC_LOG_AND_RETHROW()
 
 // An active finalizer deletes its only key. It is replaced by another finalizer in next round.
 BOOST_FIXTURE_TEST_CASE(update_elected_producers_finalizers_replaced_test, finalizer_key_tester) try {
-   // creat voters
-   const asset net = core_sym::from_string("80.0000");
-   const asset cpu = core_sym::from_string("80.0000");
-   const std::vector<account_name> voters = { "producvotera"_n, "producvoterb"_n, "producvoterc"_n, "producvoterd"_n };
-   for (const auto& v: voters) {
-      create_account_with_resources( v, config::system_account_name, core_sym::from_string("1.0000"), false, net, cpu );
-      transfer( config::system_account_name, v, core_sym::from_string("100000000.0000"), config::system_account_name );
-      BOOST_REQUIRE_EQUAL(success(), stake(v, core_sym::from_string("30000000.0000"), core_sym::from_string("30000000.0000")) );
-   }
+   // Create and vote 26 producers
+   auto producer_names = active_and_vote_producers(26);
 
-   // create accounts {defproducera, defproducerb, ..., defproducerz, abcproducera, ..., defproducern} and register as producers
-   std::vector<account_name> producer_names;
-   {
-      producer_names.reserve('z' - 'a' + 1);
-      {
-         const std::string root("defproducer");
-         for ( char c = 'a'; c <= 'z'; ++c ) {
-            producer_names.emplace_back(root + std::string(1, c));
-         }
-      }
-      {
-         const std::string root("abcproducer");
-         for ( char c = 'a'; c <= 'n'; ++c ) {
-            producer_names.emplace_back(root + std::string(1, c));
-         }
-      }
-      setup_producer_accounts(producer_names);
-      for (const auto& p: producer_names) {
-         BOOST_REQUIRE_EQUAL( success(), regproducer(p) );
-         produce_blocks(1);
-         BOOST_TEST(0 == get_producer_info(p)["total_votes"].as<double>());
-      }
-   }
-
-   produce_blocks( 2 * 21 * 1 );
-
-   // producvotera votes for defproducera ... defproducerj
-   // producvoterb votes for defproducera ... defproduceru
-   // producvoterc votes for defproducera ... defproducerz
-   // producvoterd votes for abcproducera ... abcproducern
-   {
-      BOOST_REQUIRE_EQUAL(success(), vote("producvotera"_n, vector<account_name>(producer_names.begin(), producer_names.begin()+10)));
-      BOOST_REQUIRE_EQUAL(success(), vote("producvoterb"_n, vector<account_name>(producer_names.begin(), producer_names.begin()+21)));
-      BOOST_REQUIRE_EQUAL(success(), vote("producvoterc"_n, vector<account_name>(producer_names.begin(), producer_names.begin()+26)));
-      BOOST_REQUIRE_EQUAL(success(), vote("producvoterd"_n, vector<account_name>(producer_names.begin()+26, producer_names.end())));
-   }
-
-   // Register 21 finalizer keys
+   // But only the first 21 producers (defproducera .. defproduceru) register finalizer
+   // keys at the beginning
    register_finalizer_keys(producer_names, 21);
+
    // Transition to Savanna
    BOOST_REQUIRE_EQUAL(success(),  push_action( config::system_account_name, "switchtosvnn"_n, mvo()) );
 
@@ -602,8 +572,8 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_finalizers_replaced_test, final
       BOOST_REQUIRE_EQUAL( true, last_finkey_ids.contains(active_finalizer_key_id) );
    }
 
-   const auto new_prod_name = producer_names[21];
-   BOOST_REQUIRE_EQUAL( success(), regproducer(new_prod_name) );
+   // defproducerv registers its first finalizer key and is marked active
+   account_name  new_prod_name = "defproducerv"_n;
    BOOST_REQUIRE_EQUAL( success(), register_finalizer_key(new_prod_name, finalizer_key_1, pop_1) );
    auto prod_info = get_finalizer_info(new_prod_name);
    uint64_t new_id = prod_info["active_finalizer_key_id"].as_uint64();
@@ -611,7 +581,7 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_finalizers_replaced_test, final
    // Wait for two rounds of producer schedule so new finalizer policy takes effect
    produce_block( fc::minutes(2) );
 
-   // Delete an active finalizer key
+   // Delete defproducera's finalizer key
    name deleted_prod_name = producer_names[0];
    auto p_info = get_finalizer_info(deleted_prod_name);
    uint64_t deleted_id = p_info["active_finalizer_key_id"].as_uint64();
@@ -619,7 +589,8 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_finalizers_replaced_test, final
    auto deleted_key = k_info["finalizer_key"].as_string();
    BOOST_REQUIRE_EQUAL( success(), delete_finalizer_key(deleted_prod_name, deleted_key) );
 
-   // Wait for two rounds of producer schedule so new finalizer policy takes effect
+   // Wait for two rounds of producer schedule so defproducera is replaced by defproducerv
+   // because defproducera does not have an active finalizer key
    produce_blocks(504);
 
    // find new last_finkey_ids
@@ -627,7 +598,7 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_finalizers_replaced_test, final
    // Make sure new_id is in the new last_finkey_ids
    BOOST_REQUIRE_EQUAL( true, last_finkey_ids_2.contains(new_id) );
 
-   // After replace the deleted_id with new_id in last_finkey_ids,
+   // After replace the deleted_id with new_id in the old last_finkey_ids,
    // last_finkey_ids should be the same as last_finkey_ids_2
    last_finkey_ids.erase(deleted_id);
    last_finkey_ids.insert(new_id);
