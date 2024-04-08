@@ -572,22 +572,24 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_finalizers_replaced_test, final
       BOOST_REQUIRE_EQUAL( true, last_finkey_ids.contains(active_finalizer_key_id) );
    }
 
+   // Test delete the first finalizer key
+
    // defproducerv registers its first finalizer key and is marked active
-   account_name  new_prod_name = "defproducerv"_n;
-   BOOST_REQUIRE_EQUAL( success(), register_finalizer_key(new_prod_name, finalizer_key_1, pop_1) );
-   auto prod_info = get_finalizer_info(new_prod_name);
-   uint64_t new_id = prod_info["active_finalizer_key_id"].as_uint64();
+   account_name  producerv_name = "defproducerv"_n;
+   BOOST_REQUIRE_EQUAL( success(), register_finalizer_key(producerv_name, finalizer_key_1, pop_1) );
+   auto producerv_info = get_finalizer_info(producerv_name);
+   uint64_t producerv_id = producerv_info["active_finalizer_key_id"].as_uint64();
 
    // Wait for two rounds of producer schedule so new finalizer policy takes effect
    produce_block( fc::minutes(2) );
 
    // Delete defproducera's finalizer key
-   name deleted_prod_name = producer_names[0];
-   auto p_info = get_finalizer_info(deleted_prod_name);
+   name producera_name = "defproducera"_n;
+   auto p_info = get_finalizer_info(producera_name);
    uint64_t deleted_id = p_info["active_finalizer_key_id"].as_uint64();
    auto k_info = get_finalizer_key_info(deleted_id);
-   auto deleted_key = k_info["finalizer_key"].as_string();
-   BOOST_REQUIRE_EQUAL( success(), delete_finalizer_key(deleted_prod_name, deleted_key) );
+   auto producera_id = k_info["finalizer_key"].as_string();
+   BOOST_REQUIRE_EQUAL( success(), delete_finalizer_key(producera_name, producera_id) );
 
    // Wait for two rounds of producer schedule so defproducera is replaced by defproducerv
    // because defproducera does not have an active finalizer key
@@ -596,13 +598,42 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_finalizers_replaced_test, final
    // find new last_finkey_ids
    auto last_finkey_ids_2 = get_last_finkey_ids();
    // Make sure new_id is in the new last_finkey_ids
-   BOOST_REQUIRE_EQUAL( true, last_finkey_ids_2.contains(new_id) );
+   BOOST_REQUIRE_EQUAL( true, last_finkey_ids_2.contains(producerv_id) );
 
    // After replace the deleted_id with new_id in the old last_finkey_ids,
    // last_finkey_ids should be the same as last_finkey_ids_2
    last_finkey_ids.erase(deleted_id);
-   last_finkey_ids.insert(new_id);
+   last_finkey_ids.insert(producerv_id);
    BOOST_REQUIRE_EQUAL( true, last_finkey_ids == last_finkey_ids_2 );
+
+   // Test delete last finalizer key
+
+   // defproducerw registers its first finalizer key and is marked active
+   account_name  producerw_name = "defproducerw"_n;
+   BOOST_REQUIRE_EQUAL( success(), register_finalizer_key(producerw_name, finalizer_key_2, pop_2) );
+   auto producerw_info = get_finalizer_info(producerw_name);
+   uint64_t producerw_id = producerw_info["active_finalizer_key_id"].as_uint64();
+
+   // Wait for two rounds of producer schedule so new finalizer policy takes effect
+   produce_block( fc::minutes(2) );
+
+   // Delete defproducerv's finalizer key
+   BOOST_REQUIRE_EQUAL( success(), delete_finalizer_key(producerv_name, finalizer_key_1) );
+
+   // Wait for two rounds of producer schedule so defproducera is replaced by defproducerv
+   // because defproducera does not have an active finalizer key
+   produce_blocks(504);
+
+   // find new last_finkey_ids
+   auto last_finkey_ids_3 = get_last_finkey_ids();
+   // Make sure producerw_id is in the new last_finkey_ids
+   BOOST_REQUIRE_EQUAL( true, last_finkey_ids_3.contains(producerw_id) );
+
+   // After replace producerv_id wth producerw_id in the old last_finkey_ids_2,
+   // last_finkey_ids should be the same as last_finkey_ids_3
+   last_finkey_ids_2.erase(producerv_id);
+   last_finkey_ids_2.insert(producerw_id);
+   BOOST_REQUIRE_EQUAL( true, last_finkey_ids_2 == last_finkey_ids_3 );
 }
 FC_LOG_AND_RETHROW()
 
