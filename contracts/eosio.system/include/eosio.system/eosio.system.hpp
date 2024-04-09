@@ -290,11 +290,15 @@ namespace eosiosystem {
       name              finalizer_name;       // name of the finalizer owning the key
       std::string       finalizer_key;        // finalizer key in base64url format
       std::vector<char> finalizer_key_binary; // finalizer key in binary format in Affine little endian non-montgomery g1
-      checksum256       finalizer_key_hash;   // hash of finalizer key, cached to avoid re-computing
 
       uint64_t    primary_key() const { return id; }
       uint64_t    by_fin_name() const { return finalizer_name.value; }
-      checksum256 by_fin_key()  const { return finalizer_key_hash; }
+      // Use binary format to hash. It is more robust and less likely to change
+      // than the base64url text encoding of it.
+      // There is no need to store the hash key to avoid re-computation,
+      // which only happens if the table row is modified. There won't be any
+      // modification of the table rows of; it may only be removed.
+      checksum256 by_fin_key()  const { return eosio::sha256(finalizer_key_binary.data(), finalizer_key_binary.size()); }
    };
    typedef eosio::multi_index<
       "finkeys"_n, finalizer_key_info,

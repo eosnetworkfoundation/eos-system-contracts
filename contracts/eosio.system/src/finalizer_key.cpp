@@ -11,7 +11,8 @@ namespace eosiosystem {
 
    // Rteurns hash of finalizer_key
    static eosio::checksum256 get_finalizer_key_hash(const std::string& finalizer_key) {
-      return eosio::sha256(finalizer_key.data(), finalizer_key.size());
+      const auto fin_key_g1 = eosio::decode_bls_public_key_to_g1(finalizer_key);
+      return eosio::sha256(fin_key_g1.data(), fin_key_g1.size());
    }
 
    /**
@@ -114,14 +115,14 @@ namespace eosiosystem {
       check(finalizer_key.compare(0, 7, "PUB_BLS") == 0, "finalizer key does not start with PUB_BLS: " + finalizer_key);
       check(proof_of_possession.compare(0, 7, "SIG_BLS") == 0, "proof of possession signature does not start with SIG_BLS: " + proof_of_possession);
 
-      // Duplication check across all registered keys
-      auto idx = _finalizer_keys.get_index<"byfinkey"_n>();
-      auto hash = get_finalizer_key_hash(finalizer_key);
-      check(idx.find(hash) == idx.end(), "duplicate finalizer key: " + finalizer_key);
-
       // Convert to binary form. The validity will be checked during conversion.
       const auto fin_key_g1 = eosio::decode_bls_public_key_to_g1(finalizer_key);
       const auto pop_g2 = eosio::decode_bls_signature_to_g2(proof_of_possession);
+
+      // Duplication check across all registered keys
+      auto idx = _finalizer_keys.get_index<"byfinkey"_n>();
+      auto hash = eosio::sha256(fin_key_g1.data(), fin_key_g1.size());
+      check(idx.find(hash) == idx.end(), "duplicate finalizer key: " + finalizer_key);
 
       // Proof of possession check
       check(eosio::bls_pop_verify(fin_key_g1, pop_g2), "proof of possession check failed");
@@ -132,7 +133,6 @@ namespace eosiosystem {
          k.finalizer_name       = finalizer_name;
          k.finalizer_key        = finalizer_key;
          k.finalizer_key_binary = { fin_key_g1.begin(), fin_key_g1.end() };
-         k.finalizer_key_hash   = get_finalizer_key_hash(finalizer_key);
       });
 
       // Update finalizers table
