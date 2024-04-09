@@ -466,7 +466,7 @@ BOOST_FIXTURE_TEST_CASE(switchtosvnn_not_enough_finalizer_keys_tests, finalizer_
    register_finalizer_keys(producer_names, 20);
 
    // Have only 20 finalizer keys, short by 1
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "not enough top producers have registered finalizer keys, has 20" ),
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "not enough top producers have registered finalizer keys, has 20, require 21" ),
                         push_action( config::system_account_name, "switchtosvnn"_n, mvo()) );
 }
 FC_LOG_AND_RETHROW()

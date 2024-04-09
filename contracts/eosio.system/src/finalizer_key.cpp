@@ -28,14 +28,15 @@ namespace eosiosystem {
 
       std::vector<eosio::finalizer_authority> finalizer_authorities;
       std::vector<uint64_t> first_finalizer_key_set;
-      finalizer_authorities.reserve(21);
-      first_finalizer_key_set.reserve(21);
+      finalizer_authorities.reserve(_gstate.last_producer_schedule_size);
+      first_finalizer_key_set.reserve(_gstate.last_producer_schedule_size);
 
-      // From up to 30 top producers, find 21 producers that meet all the normal requirements
-      // for being a proposer and also have an active finalizer key
-      uint32_t i = 0;
+      // Find a set of producers that meet all the normal requirements for
+      // being a proposer and also have an active finalizer key.
+      // The number of the producers must be equal to the number of producers
+      // in the last_producer_schedule.
       auto idx = _producers.get_index<"prototalvote"_n>();
-      for( auto it = idx.cbegin(); it != idx.cend() && finalizer_authorities.size() < 21 && 0 < it->total_votes && it->active() && i < 30; ++it, ++i ) {
+      for( auto it = idx.cbegin(); it != idx.cend() && finalizer_authorities.size() < _gstate.last_producer_schedule_size && 0 < it->total_votes && it->active(); ++it ) {
          auto finalizer = _finalizers.find( it->owner.value );
          if( finalizer == _finalizers.end() ) {
             // The producer is not in finalizers table, indicating it does not have an
@@ -61,7 +62,7 @@ namespace eosiosystem {
          );
       }
 
-      check( finalizer_authorities.size() > 0 && finalizer_authorities.size() >= _gstate.last_producer_schedule_size, "not enough top producers have registered finalizer keys, has " + std::to_string(finalizer_authorities.size()) );
+      check( finalizer_authorities.size() == _gstate.last_producer_schedule_size, "not enough top producers have registered finalizer keys, has " + std::to_string(finalizer_authorities.size()) + ", require " + std::to_string(_gstate.last_producer_schedule_size) );
 
       set_finalizers(std::move(finalizer_authorities), first_finalizer_key_set, {});
       check( is_savanna_consensus(), "switching to Savanna failed" );
