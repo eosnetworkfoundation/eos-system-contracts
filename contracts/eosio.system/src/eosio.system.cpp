@@ -22,11 +22,12 @@ namespace eosiosystem {
     _producers2(get_self(), get_self().value),
     _finalizer_keys(get_self(), get_self().value),
     _finalizers(get_self(), get_self().value),
-    _last_fin_keys(get_self(), get_self().value),
     _global(get_self(), get_self().value),
     _global2(get_self(), get_self().value),
     _global3(get_self(), get_self().value),
     _global4(get_self(), get_self().value),
+    _global5(get_self(), get_self().value),
+    _global_a(get_self(), get_self().value),
     _rammarket(get_self(), get_self().value),
     _rexpool(get_self(), get_self().value),
     _rexretpool(get_self(), get_self().value),
@@ -39,6 +40,8 @@ namespace eosiosystem {
       _gstate2 = _global2.exists() ? _global2.get() : eosio_global_state2{};
       _gstate3 = _global3.exists() ? _global3.get() : eosio_global_state3{};
       _gstate4 = _global4.exists() ? _global4.get() : get_default_inflation_parameters();
+      _gstate5 = _global5.exists() ? _global5.get() : eosio_global_state5{};
+      _gstate_a = _global_a.exists() ? _global_a.get() : eosio_global_state_a{};
    }
 
    eosio_global_state system_contract::get_default_parameters() {
@@ -65,6 +68,8 @@ namespace eosiosystem {
       _global2.set( _gstate2, get_self() );
       _global3.set( _gstate3, get_self() );
       _global4.set( _gstate4, get_self() );
+      _global5.set( _gstate5, get_self() );
+      _global_a.set( _gstate_a, get_self() );
    }
 
    void system_contract::setram( uint64_t max_ram_size ) {

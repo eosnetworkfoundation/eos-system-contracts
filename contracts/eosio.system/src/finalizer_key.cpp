@@ -6,7 +6,7 @@ namespace eosiosystem {
 
    // Returns true if nodeos has transitioned to Savanna (last finalizer set not empty)
    bool system_contract::is_savanna_consensus() const {
-      return _last_fin_keys.begin() != _last_fin_keys.end();
+      return !_gstate_a.last_proposed_keys.empty();
    }
 
    // Rteurns hash of finalizer_key
@@ -27,17 +27,15 @@ namespace eosiosystem {
 
       check(!is_savanna_consensus(), "switchtosvnn can be run only once");
 
-      std::vector<eosio::finalizer_authority> finalizer_authorities;
-      std::vector<uint64_t> first_finalizer_key_set;
-      finalizer_authorities.reserve(_gstate.last_producer_schedule_size);
-      first_finalizer_key_set.reserve(_gstate.last_producer_schedule_size);
+      std::vector< proposed_finalizer_key_t > proposed_fin_keys;
+      proposed_fin_keys.reserve(_gstate.last_producer_schedule_size);
 
       // Find a set of producers that meet all the normal requirements for
       // being a proposer and also have an active finalizer key.
       // The number of the producers must be equal to the number of producers
       // in the last_producer_schedule.
       auto idx = _producers.get_index<"prototalvote"_n>();
-      for( auto it = idx.cbegin(); it != idx.cend() && finalizer_authorities.size() < _gstate.last_producer_schedule_size && 0 < it->total_votes && it->active(); ++it ) {
+      for( auto it = idx.cbegin(); it != idx.cend() && proposed_fin_keys.size() < _gstate.last_producer_schedule_size && 0 < it->total_votes && it->active(); ++it ) {
          auto finalizer = _finalizers.find( it->owner.value );
          if( finalizer == _finalizers.end() ) {
             // The producer is not in finalizers table, indicating it does not have an
@@ -50,51 +48,84 @@ namespace eosiosystem {
             continue;
          }
 
-         // stores finalizer_key_id
-         first_finalizer_key_set.emplace_back(finalizer->active_finalizer_key_id);
-
-         // builds up finalizer_authorities
-         finalizer_authorities.emplace_back(
-            eosio::finalizer_authority{
+         proposed_fin_keys.emplace_back( proposed_finalizer_key_t {
+            .key_id        = finalizer->active_finalizer_key_id,
+            .fin_authority = eosio::finalizer_authority{
                .description = finalizer->finalizer_name.to_string(),
                .weight      = 1,
                .public_key  = finalizer->active_finalizer_key_binary
-            }
+            }}
          );
       }
 
-      check( finalizer_authorities.size() == _gstate.last_producer_schedule_size, "not enough top producers have registered finalizer keys, has " + std::to_string(finalizer_authorities.size()) + ", require " + std::to_string(_gstate.last_producer_schedule_size) );
+      check( proposed_fin_keys.size() == _gstate.last_producer_schedule_size,
+            "not enough top producers have registered finalizer keys, has " + std::to_string(proposed_fin_keys.size()) + ", require " + std::to_string(_gstate.last_producer_schedule_size) );
 
-      set_finalizers(std::move(finalizer_authorities), first_finalizer_key_set, {});
+      set_proposed_finalizers_unsorted(proposed_fin_keys);
       check( is_savanna_consensus(), "switching to Savanna failed" );
    }
 
-   // This function may never fail, as it can be called by update_elected_producers,
-   // and in turn by onblock
-   void system_contract::set_finalizers( std::vector<eosio::finalizer_authority>&& finalizer_authorities, const std::vector<uint64_t>& new_ids, const std::unordered_set<uint64_t>& kept_ids ) {
+   // This function may never fail, as it can be called by onblock indirectly.
+   // Establish finalizer policy from `proposed_fin_keys` and calls
+   // eosio::set_finalizers host function
+   void system_contract::set_proposed_finalizers( const std::vector<proposed_finalizer_key_t>& proposed_fin_keys ) {
+      // Construct finalizer authorities
+      std::vector<eosio::finalizer_authority> finalizer_authorities;
+      for( const auto& k: proposed_fin_keys ) {
+         finalizer_authorities.emplace_back(k.fin_authority);
+      }
+
       // Establish finalizer policy
       eosio::finalizer_policy fin_policy {
          .threshold  = ( finalizer_authorities.size() * 2 ) / 3 + 1,
          .finalizers = std::move(finalizer_authorities)
       };
+
       // call host function
       eosio::set_finalizers(std::move(fin_policy)); // call host function
+   }
 
-      // Purge any IDs not in kept_ids from _last_fin_keys table
-      for (auto itr = _last_fin_keys.begin(); itr != _last_fin_keys.end(); /* intentionally empty */ ) {
-         if( !kept_ids.contains(itr->id) ) {
-            itr = _last_fin_keys.erase(itr);
-         } else {
-            ++itr;
+   // Sort `proposed_fin_keys` and calls set_proposed_finalizers()
+   void system_contract::set_proposed_finalizers_unsorted( std::vector<proposed_finalizer_key_t>& proposed_fin_keys ) {
+      std::sort( proposed_fin_keys.begin(), proposed_fin_keys.end(), []( const proposed_finalizer_key_t& lhs, const proposed_finalizer_key_t& rhs ) {
+         return lhs.key_id < rhs.key_id;
+      } );
+
+      set_proposed_finalizers(proposed_fin_keys);
+
+      // store last proposed policy
+      _gstate_a.last_proposed_keys = proposed_fin_keys;
+   }
+
+   // This function may never fail, as it can be called by update_elected_producers,
+   // and in turn by onblock
+   // Sort `proposed_fin_keys`. If it is the same as last proposed finalizer
+   // policy, do not proceed. Otherwise, call set_proposed_finalizers()
+   void system_contract::set_proposed_finalizers_if_changed( std::vector<proposed_finalizer_key_t>& proposed_fin_keys ) {
+      std::sort( proposed_fin_keys.begin(), proposed_fin_keys.end(), []( const proposed_finalizer_key_t& lhs, const proposed_finalizer_key_t& rhs ) {
+         return lhs.key_id < rhs.key_id;
+      } );
+
+      if( proposed_fin_keys.size() == _gstate_a.last_proposed_keys.size() ) {
+         bool new_fin_policy = false;
+         for( auto i = 0; i < proposed_fin_keys.size(); ++i ) {
+            if( proposed_fin_keys[i].key_id != _gstate_a.last_proposed_keys[i].key_id ||
+                proposed_fin_keys[i].fin_authority.public_key != _gstate_a.last_proposed_keys[i].fin_authority.public_key ) {
+               new_fin_policy = true;
+               break;
+            }
+         }
+
+         // Finalizer policy has not changed. Do not proceed.
+         if( !new_fin_policy ) {
+            return;
          }
       }
 
-      // Add IDs in new_ids to _last_fin_keys table
-      for (auto id: new_ids ) {
-         _last_fin_keys.emplace( get_self(), [&]( auto& f ) {
-            f.id = id;
-         });
-      }
+      set_proposed_finalizers(proposed_fin_keys);
+
+      // store last proposed policy
+      _gstate_a.last_proposed_keys = proposed_fin_keys;
    }
 
    /*
@@ -129,7 +160,7 @@ namespace eosiosystem {
 
       // Insert the finalizer key into finalyzer_keys table
       auto finalizer_key_itr = _finalizer_keys.emplace( finalizer_name, [&]( auto& k ) {
-         k.id                   = _finalizer_keys.available_primary_key();
+         k.id                   = _gstate5.get_next_finalizer_key_id();
          k.finalizer_name       = finalizer_name;
          k.finalizer_key        = finalizer_key;
          k.finalizer_key_binary = { fin_key_g1.begin(), fin_key_g1.end() };
@@ -186,54 +217,25 @@ namespace eosiosystem {
       // Check if the finalizer key is not already active
       check( finalizer_key_itr->id != finalizer->active_finalizer_key_id, "finalizer key was already active: " + finalizer_key );
 
-      auto old_active_finalizer_key_id = finalizer->active_finalizer_key_id;
+      auto prev_fin_key_id = finalizer->active_finalizer_key_id;
 
       _finalizers.modify( finalizer, same_payer, [&]( auto& f ) {
          f.active_finalizer_key_id      = finalizer_key_itr->id;
          f.active_finalizer_key_binary  = finalizer_key_itr->finalizer_key_binary;
       });
 
-      // Replace the finalizer policy immediately if the finalizer key is
-      // used in last finalizer policy
-      const auto old_key_itr = _last_fin_keys.find(old_active_finalizer_key_id);
-      if( old_key_itr != _last_fin_keys.end() ) {
-         // Delete old key
-         _last_fin_keys.erase(old_key_itr);
+      // Do a binary search to see if the finalizer is in last proposed policy
+      auto itr = std::lower_bound(_gstate_a.last_proposed_keys.begin(), _gstate_a.last_proposed_keys.end(), prev_fin_key_id, [](const proposed_finalizer_key_t& key, uint64_t id) {
+         return key.key_id < id;
+      });
 
-         // Replace the old key with finalizer key just activated
-         _last_fin_keys.emplace( get_self(), [&]( auto& f ) {
-            f.id = finalizer_key_itr->id;  // new active finalizer key id
-         });
+      if( itr != _gstate_a.last_proposed_keys.end() && itr->key_id == prev_fin_key_id ) {
+         // Replace the previous finalizer key with finalizer key just activated
+         itr->fin_authority.public_key = finalizer_key_itr->finalizer_key_binary;
 
-         generate_finalizer_policy_and_set_finalizers();
+         // Call set_finalizers immediately
+         set_proposed_finalizers(_gstate_a.last_proposed_keys);
       }
-   }
-
-   // Generate a new finalizer policy from keys in _last_fin_keys table and
-   // call set_finalizers host function immediately
-   void system_contract::generate_finalizer_policy_and_set_finalizers() {
-      std::vector<eosio::finalizer_authority> finalizer_authorities;
-
-      // Build a new finalizer_authority by going over all keys in _last_fin_keys table
-      for (auto itr = _last_fin_keys.begin(); itr != _last_fin_keys.end(); ++itr) {
-         auto fin_key_itr = _finalizer_keys.find(itr->id);
-         check( fin_key_itr != _finalizer_keys.end(), "last finalizer key not found in finalizer keys table, key id: " + std::to_string(itr->id) );
-         finalizer_authorities.emplace_back(
-            eosio::finalizer_authority{
-               .description = fin_key_itr->finalizer_name.to_string(),
-               .weight      = 1,
-               .public_key  = fin_key_itr->finalizer_key_binary
-            }
-         );
-      }
-
-      eosio::finalizer_policy fin_policy {
-         .threshold  = ( finalizer_authorities.size() * 2 ) / 3 + 1,
-         .finalizers = std::move(finalizer_authorities)
-      };
-
-      // _last_fin_keys table is up to date. Call set_finalizers host function directly
-      eosio::set_finalizers(std::move(fin_policy));
    }
 
    /*
@@ -274,12 +276,6 @@ namespace eosiosystem {
       if( finalizer->finalizer_key_count == 1 ) {
          // The finalizer does not have any registered keys. Remove it from finalizers table.
          _finalizers.erase( finalizer );
-
-         // Remove it from _last_fin_keys in case ID is reused
-         const auto itr = _last_fin_keys.find(fin_key_itr->id);
-         if( itr != _last_fin_keys.end() ) {
-            _last_fin_keys.erase(itr);
-         }
       } else {
          // Decrement finalizer_key_count finalizers table
          _finalizers.modify( finalizer, same_payer, [&]( auto& f ) {

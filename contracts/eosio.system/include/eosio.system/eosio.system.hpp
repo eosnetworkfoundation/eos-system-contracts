@@ -199,6 +199,33 @@ namespace eosiosystem {
       EOSLIB_SERIALIZE( eosio_global_state4, (continuous_rate)(inflation_pay_factor)(votepay_factor) )
    };
 
+   // Defines new global state parameter to store next available
+   // finalizer key_id to make sure key_id in eosio_global_state_a will
+   // never be reused.
+   struct [[eosio::table("global5"), eosio::contract("eosio.system")]] eosio_global_state5 {
+      eosio_global_state5() { }
+      uint64_t get_next_finalizer_key_id() { return next_finalizer_key_id++; };
+
+      uint64_t next_finalizer_key_id = 0;
+
+      EOSLIB_SERIALIZE( eosio_global_state5, (next_finalizer_key_id) )
+   };
+
+   // Defines new global state parameter to store last proposed finalizer set.
+   // It is also used as an indicator Savanna consensus has been switched over.
+   struct proposed_finalizer_key_t {
+      uint64_t                   key_id;
+      eosio::finalizer_authority fin_authority;
+
+      EOSLIB_SERIALIZE( proposed_finalizer_key_t, (key_id)(fin_authority) )
+   };
+   struct [[eosio::table("globala"), eosio::contract("eosio.system")]] eosio_global_state_a { // name can only contain digits '1' to '5'.
+      eosio_global_state_a() { }
+      std::vector<proposed_finalizer_key_t> last_proposed_keys; // sorted by ascending finalizer key id
+
+      EOSLIB_SERIALIZE( eosio_global_state_a, (last_proposed_keys) )
+   };
+
    inline eosio::block_signing_authority convert_to_block_signing_authority( const eosio::public_key& producer_key ) {
       return eosio::block_signing_authority_v0{ .threshold = 1, .keys = {{producer_key, 1}} };
    }
@@ -317,14 +344,6 @@ namespace eosiosystem {
    };
    typedef eosio::multi_index< "finalizers"_n, finalizer_info > finalizers_table;
 
-   // last_fin_key_info stores information about a finalizer key used in last finalizer policy.
-   struct [[eosio::table("lastfinkeys"), eosio::contract("eosio.system")]] last_fin_key_info {
-      uint64_t          id;  // finalizer key's id in finalizer_keys_table
-
-      uint64_t primary_key() const { return id; }
-   };
-   typedef eosio::multi_index< "lastfinkeys"_n, last_fin_key_info > last_fin_keys_table;
-
    // Voter info. Voter info stores information about the voter:
    // - `owner` the voter
    // - `proxy` the proxy set by the voter, if any
@@ -379,6 +398,10 @@ namespace eosiosystem {
    typedef eosio::singleton< "global3"_n, eosio_global_state3 > global_state3_singleton;
 
    typedef eosio::singleton< "global4"_n, eosio_global_state4 > global_state4_singleton;
+
+   typedef eosio::singleton< "global5"_n, eosio_global_state5 > global_state5_singleton;
+
+   typedef eosio::singleton< "globala"_n, eosio_global_state_a > global_state_a_singleton;
 
    struct [[eosio::table, eosio::contract("eosio.system")]] user_resources {
       name          owner;
@@ -726,15 +749,18 @@ namespace eosiosystem {
          producers_table2         _producers2;
          finalizer_keys_table     _finalizer_keys;
          finalizers_table         _finalizers;
-         last_fin_keys_table      _last_fin_keys;
          global_state_singleton   _global;
          global_state2_singleton  _global2;
          global_state3_singleton  _global3;
          global_state4_singleton  _global4;
+         global_state5_singleton  _global5;
+         global_state_a_singleton  _global_a;
          eosio_global_state       _gstate;
          eosio_global_state2      _gstate2;
          eosio_global_state3      _gstate3;
          eosio_global_state4      _gstate4;
+         eosio_global_state5      _gstate5;
+         eosio_global_state_a     _gstate_a;
          rammarket                _rammarket;
          rex_pool_table           _rexpool;
          rex_return_pool_table    _rexretpool;
@@ -1619,8 +1645,9 @@ namespace eosiosystem {
 
          // defined in finalizer_key.cpp
          bool is_savanna_consensus() const;
-         void set_finalizers( std::vector<eosio::finalizer_authority>&& finalizer_authorities, const std::vector<uint64_t>& finalizer_key_ids, const std::unordered_set<uint64_t>& kept_key_ids );
-         void generate_finalizer_policy_and_set_finalizers();
+         void set_proposed_finalizers( const std::vector<proposed_finalizer_key_t>& proposed_fin_keys );
+         void set_proposed_finalizers_if_changed( std::vector<proposed_finalizer_key_t>& proposed_fin_keys );
+         void set_proposed_finalizers_unsorted( std::vector<proposed_finalizer_key_t>& proposed_fin_keys );
 
          template <auto system_contract::*...Ptrs>
          class registration {

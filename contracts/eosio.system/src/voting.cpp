@@ -110,13 +110,9 @@ namespace eosiosystem {
 
       using value_type = std::pair<eosio::producer_authority, uint16_t>;
       std::vector< value_type > top_producers;
-      std::vector< eosio::finalizer_authority > next_finalizer_authorities;
-      std::vector< uint64_t > new_finalizer_key_ids;
-      std::unordered_set< uint64_t > kept_finalizer_key_ids;
+      std::vector< proposed_finalizer_key_t > proposed_fin_keys;
       top_producers.reserve(21);
-      next_finalizer_authorities.reserve(21);
-      new_finalizer_key_ids.reserve(21);
-      bool new_finalizer_keys_found = false;
+      proposed_fin_keys.reserve(21);
 
       for( auto it = idx.cbegin(); it != idx.cend() && top_producers.size() < 21 && 0 < it->total_votes && it->active(); ++it ) {
          if( is_savanna_consensus() ) {
@@ -132,22 +128,13 @@ namespace eosiosystem {
                continue;
             }
 
-            if( _last_fin_keys.find(finalizer->active_finalizer_key_id) == _last_fin_keys.end() ) {
-               // If any producer's active finalizer_key_id is not in
-               // last_finalizer_key_ids, it means a new finalizer policy is needed.
-               new_finalizer_key_ids.emplace_back(finalizer->active_finalizer_key_id);
-            } else {
-               // the active_key is the same as last round for the producer
-               kept_finalizer_key_ids.insert(finalizer->active_finalizer_key_id);
-            }
-
-            // Pre-build next_finalizer_authorities in case it is needed.
-            next_finalizer_authorities.emplace_back(
-               eosio::finalizer_authority{
-                  .description = it->owner.to_string(),
+            proposed_fin_keys.emplace_back( proposed_finalizer_key_t {
+               .key_id        = finalizer->active_finalizer_key_id,
+               .fin_authority = eosio::finalizer_authority{
+                  .description = finalizer->finalizer_name.to_string(),
                   .weight      = 1,
                   .public_key  = finalizer->active_finalizer_key_binary
-               }
+               }}
             );
          }
 
@@ -179,9 +166,10 @@ namespace eosiosystem {
          _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( producers.size() );
       }
 
-      // Only set a new finalizer policy if it has changed.
-      if( is_savanna_consensus() && !new_finalizer_key_ids.empty() ) {
-         set_finalizers( std::move(next_finalizer_authorities), new_finalizer_key_ids, kept_finalizer_key_ids );
+      // set_proposed_finalizers() checks if last proposed finalizer policy
+      // has not changed, it will not call set_finalizers() host function.
+      if( is_savanna_consensus() ) {
+         set_proposed_finalizers_if_changed( proposed_fin_keys );
       }
    }
 
