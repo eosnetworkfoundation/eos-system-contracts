@@ -188,15 +188,11 @@ namespace eosiosystem {
    /*
     * Action to activate a finalizer key
     *
-    * @pre `finalizer_name` must be a registered producer
     * @pre `finalizer_key` must be a registered finalizer key in base64url format
     * @pre Authority of `finalizer_name`
     */
    void system_contract::actfinkey( const name& finalizer_name, const std::string& finalizer_key ) {
       require_auth( finalizer_name );
-
-      auto producer = _producers.find( finalizer_name.value );
-      check( producer != _producers.end(), "finalizer " + finalizer_name.to_string() + " is not a registered producer");
 
       // Check finalizer has registered keys
       auto finalizer = _finalizers.find(finalizer_name.value);
@@ -241,16 +237,12 @@ namespace eosiosystem {
    /*
     * Action to delete a registered finalizer key
     *
-    * @pre `finalizer_name` must be a registered producer
     * @pre `finalizer_key` must be a registered finalizer key in base64url format
     * @pre `finalizer_key` must not be active, unless it is the last registered finalizer key
     * @pre Authority of `finalizer_name`
     * */
    void system_contract::delfinkey( const name& finalizer_name, const std::string& finalizer_key ) {
       require_auth( finalizer_name );
-
-      auto producer = _producers.find( finalizer_name.value );
-      check( producer != _producers.end(), "finalizer " + finalizer_name.to_string() + " is not a registered producer");
 
       // Check finalizer has registered keys
       auto finalizer = _finalizers.find(finalizer_name.value);

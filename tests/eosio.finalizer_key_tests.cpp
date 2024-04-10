@@ -246,10 +246,6 @@ BOOST_FIXTURE_TEST_CASE(activate_finalizer_key_failure_tests, finalizer_key_test
                            ("finalizer_key",  finalizer_key_1 )
                         ) );
 
-   // attempt to activate finalizer_key for an unregistered producer
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer alice1111111 is not a registered producer" ),
-                        activate_finalizer_key(alice, finalizer_key_1) );
-
    // Register producers
    BOOST_REQUIRE_EQUAL( success(), regproducer(alice) );
    BOOST_REQUIRE_EQUAL( success(), regproducer(bob) );
@@ -314,10 +310,6 @@ BOOST_FIXTURE_TEST_CASE(delete_finalizer_key_failure_tests, finalizer_key_tester
                            ("finalizer_name", "bob111111111")
                            ("finalizer_key",  finalizer_key_1 )
                         ) );
-
-   // attempt to delete finalizer_key for an unregistered producer
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer alice1111111 is not a registered producer" ),
-                        delete_finalizer_key(alice, finalizer_key_1) );
 
    // Register producers
    BOOST_REQUIRE_EQUAL( success(), regproducer(alice) );

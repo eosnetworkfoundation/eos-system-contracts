@@ -1284,7 +1284,6 @@ namespace eosiosystem {
           * @param finalizer_name - account activating `finalizer_key`,
           * @param finalizer_key - key to be activated.
           *
-          * @pre `finalizer_name` must be a registered producer
           * @pre `finalizer_key` must be a registered finalizer key in base64url format
           * @pre Authority of `finalizer_name`
           */
@@ -1299,7 +1298,6 @@ namespace eosiosystem {
           * @param finalizer_name - account deleting `finalizer_key`,
           * @param finalizer_key - key to be deleted.
           *
-          * @pre `finalizer_name` must be a registered producer
           * @pre `finalizer_key` must be a registered finalizer key in base64url format
           * @pre `finalizer_key` must not be active, unless it is the last registered finalizer key
           * @pre Authority of `finalizer_name`
