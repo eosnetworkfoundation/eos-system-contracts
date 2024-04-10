@@ -217,8 +217,16 @@ namespace eosiosystem {
       uint64_t                   key_id;
       eosio::finalizer_authority fin_authority;
 
+      bool operator==(const proposed_finalizer_key_t& other) const {
+         // Weight and description can never be changed by a user.
+         // They are not considered here.
+         return key_id == other.key_id &&
+                fin_authority.public_key == other.fin_authority.public_key;
+      };
+
       EOSLIB_SERIALIZE( proposed_finalizer_key_t, (key_id)(fin_authority) )
    };
+
    struct [[eosio::table("globala"), eosio::contract("eosio.system")]] eosio_global_state_a { // name can only contain digits '1' to '5'.
       eosio_global_state_a() { }
       std::vector<proposed_finalizer_key_t> last_proposed_keys; // sorted by ascending finalizer key id
@@ -1645,7 +1653,7 @@ namespace eosiosystem {
          bool is_savanna_consensus() const;
          void set_proposed_finalizers( const std::vector<proposed_finalizer_key_t>& proposed_fin_keys );
          void set_proposed_finalizers_if_changed( std::vector<proposed_finalizer_key_t>& proposed_fin_keys );
-         void set_proposed_finalizers_unsorted( std::vector<proposed_finalizer_key_t>& proposed_fin_keys );
+         void set_proposed_finalizers_sorted( std::vector<proposed_finalizer_key_t>& proposed_fin_keys );
 
          template <auto system_contract::*...Ptrs>
          class registration {

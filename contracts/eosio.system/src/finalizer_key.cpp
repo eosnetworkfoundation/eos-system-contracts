@@ -61,7 +61,7 @@ namespace eosiosystem {
       check( proposed_fin_keys.size() == _gstate.last_producer_schedule_size,
             "not enough top producers have registered finalizer keys, has " + std::to_string(proposed_fin_keys.size()) + ", require " + std::to_string(_gstate.last_producer_schedule_size) );
 
-      set_proposed_finalizers_unsorted(proposed_fin_keys);
+      set_proposed_finalizers_sorted(proposed_fin_keys);
       check( is_savanna_consensus(), "switching to Savanna failed" );
    }
 
@@ -71,6 +71,7 @@ namespace eosiosystem {
    void system_contract::set_proposed_finalizers( const std::vector<proposed_finalizer_key_t>& proposed_fin_keys ) {
       // Construct finalizer authorities
       std::vector<eosio::finalizer_authority> finalizer_authorities;
+      finalizer_authorities.reserve(proposed_fin_keys.size());
       for( const auto& k: proposed_fin_keys ) {
          finalizer_authorities.emplace_back(k.fin_authority);
       }
@@ -86,7 +87,7 @@ namespace eosiosystem {
    }
 
    // Sort `proposed_fin_keys` and calls set_proposed_finalizers()
-   void system_contract::set_proposed_finalizers_unsorted( std::vector<proposed_finalizer_key_t>& proposed_fin_keys ) {
+   void system_contract::set_proposed_finalizers_sorted( std::vector<proposed_finalizer_key_t>& proposed_fin_keys ) {
       std::sort( proposed_fin_keys.begin(), proposed_fin_keys.end(), []( const proposed_finalizer_key_t& lhs, const proposed_finalizer_key_t& rhs ) {
          return lhs.key_id < rhs.key_id;
       } );
@@ -106,20 +107,9 @@ namespace eosiosystem {
          return lhs.key_id < rhs.key_id;
       } );
 
-      if( proposed_fin_keys.size() == _gstate_a.last_proposed_keys.size() ) {
-         bool new_fin_policy = false;
-         for( auto i = 0; i < proposed_fin_keys.size(); ++i ) {
-            if( proposed_fin_keys[i].key_id != _gstate_a.last_proposed_keys[i].key_id ||
-                proposed_fin_keys[i].fin_authority.public_key != _gstate_a.last_proposed_keys[i].fin_authority.public_key ) {
-               new_fin_policy = true;
-               break;
-            }
-         }
-
+      if( proposed_fin_keys == _gstate_a.last_proposed_keys ) {
          // Finalizer policy has not changed. Do not proceed.
-         if( !new_fin_policy ) {
-            return;
-         }
+         return;
       }
 
       set_proposed_finalizers(proposed_fin_keys);
