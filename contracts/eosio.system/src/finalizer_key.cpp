@@ -225,8 +225,9 @@ namespace eosiosystem {
       // Check if the finalizer key is not already active
       check( finalizer_key_itr->id != finalizer->active_finalizer_key_id, "finalizer key was already active: " + finalizer_key );
 
-      auto prev_fin_key_id = finalizer->active_finalizer_key_id;
+      auto active_key_id = finalizer->active_finalizer_key_id;
 
+      // Update finalizer's information in _finalizers table
       _finalizers.modify( finalizer, same_payer, [&]( auto& f ) {
          f.active_finalizer_key_id      = finalizer_key_itr->id;
          f.active_finalizer_key_binary  = finalizer_key_itr->finalizer_key_binary;
@@ -237,13 +238,17 @@ namespace eosiosystem {
          return;
       }
 
-      // Do a binary search to see if the finalizer is in last proposed policy
-      auto itr = std::lower_bound(last_proposed_finalizers.begin(), last_proposed_finalizers.end(), prev_fin_key_id, [](const finalizer_auth_info& key, uint64_t id) {
+      // Search last_proposed_finalizers for active_key_id
+      auto itr = std::lower_bound(last_proposed_finalizers.begin(), last_proposed_finalizers.end(), active_key_id, [](const finalizer_auth_info& key, uint64_t id) {
          return key.key_id < id;
       });
 
-      if( itr != last_proposed_finalizers.end() && itr->key_id == prev_fin_key_id ) {
-         // Replace the previous finalizer key with finalizer key just activated
+      // If active_key_id is in last_proposed_finalizers, it means the finalizer is
+      // active. Replace the existing entry in last_proposed_finalizers with
+      // the information of finalizer_key just activated and call set_proposed_finalizers
+      if( itr != last_proposed_finalizers.end() && itr->key_id == active_key_id ) {
+         // Update last_proposed_finalizers
+         itr->key_id = finalizer_key_itr->id;
          itr->fin_authority.public_key = finalizer_key_itr->finalizer_key_binary;
 
          // Call set_finalizers immediately
