@@ -17,10 +17,29 @@ namespace eosiosystem {
       return !get_last_proposed_finalizers().empty();
    }
 
-   // Returns hash of finalizer_key
+   eosio::bls_g1 to_binary(const std::string& finalizer_key) {
+      check(finalizer_key.compare(0, 7, "PUB_BLS") == 0, "finalizer key does not start with PUB_BLS: " + finalizer_key);
+      return eosio::decode_bls_public_key_to_g1(finalizer_key);
+   }
+
+   // Returns hash of finalizer_key in binary format
+   static eosio::checksum256 get_finalizer_key_hash(const eosio::bls_g1& finalizer_key_binary) {
+      return eosio::sha256(finalizer_key_binary.data(), finalizer_key_binary.size());
+   }
+
+   // Returns hash of finalizer_key in text format
    static eosio::checksum256 get_finalizer_key_hash(const std::string& finalizer_key) {
-      const auto fin_key_g1 = eosio::decode_bls_public_key_to_g1(finalizer_key);
-      return eosio::sha256(fin_key_g1.data(), fin_key_g1.size());
+      const auto fin_key_g1 = to_binary(finalizer_key);
+      return get_finalizer_key_hash(fin_key_g1);
+   }
+
+   finalizers_table::const_iterator system_contract::get_finalizer_itr( const name& finalizer_name ) const {
+      // Check finalizer has registered keys
+      auto finalizer_itr = _finalizers.find(finalizer_name.value);
+      check( finalizer_itr != _finalizers.end(), "finalizer " + finalizer_name.to_string() + " has not registered any finalizer keys" );
+      check( finalizer_itr->finalizer_key_count > 0, "finalizer " + finalizer_name.to_string() + "  must have at least one registered finalizer keys, has " + std::to_string(finalizer_itr->finalizer_key_count) );
+
+      return finalizer_itr;
    }
 
    // This function may never fail, as it can be called by update_elected_producers,
@@ -140,7 +159,6 @@ namespace eosiosystem {
       check( is_savanna_consensus(), "switching to Savanna failed" );
    }
 
-
    /*
     * Action to register a finalizer key
     *
@@ -156,16 +174,15 @@ namespace eosiosystem {
       check( producer != _producers.end(), "finalizer " + finalizer_name.to_string() + " is not a registered producer");
 
       // Basic key and signature format check
-      check(finalizer_key.compare(0, 7, "PUB_BLS") == 0, "finalizer key does not start with PUB_BLS: " + finalizer_key);
       check(proof_of_possession.compare(0, 7, "SIG_BLS") == 0, "proof of possession signature does not start with SIG_BLS: " + proof_of_possession);
 
       // Convert to binary form. The validity will be checked during conversion.
-      const auto fin_key_g1 = eosio::decode_bls_public_key_to_g1(finalizer_key);
+      const auto fin_key_g1 = to_binary(finalizer_key);
       const auto pop_g2 = eosio::decode_bls_signature_to_g2(proof_of_possession);
 
       // Duplication check across all registered keys
       auto idx = _finalizer_keys.get_index<"byfinkey"_n>();
-      auto hash = eosio::sha256(fin_key_g1.data(), fin_key_g1.size());
+      auto hash = get_finalizer_key_hash(fin_key_g1);
       check(idx.find(hash) == idx.end(), "duplicate finalizer key: " + finalizer_key);
 
       // Proof of possession check
@@ -207,12 +224,7 @@ namespace eosiosystem {
    void system_contract::actfinkey( const name& finalizer_name, const std::string& finalizer_key ) {
       require_auth( finalizer_name );
 
-      // Check finalizer has registered keys
-      auto finalizer = _finalizers.find(finalizer_name.value);
-      check( finalizer != _finalizers.end(), "finalizer has not registered any finalizer keys" );
-
-      // Basic format check
-      check(finalizer_key.compare(0, 7, "PUB_BLS") == 0, "finalizer key does not start with PUB_BLS: " + finalizer_key);
+      auto finalizer = get_finalizer_itr(finalizer_name);
 
       // Check the key is registered
       auto idx = _finalizer_keys.get_index<"byfinkey"_n>();
@@ -267,12 +279,7 @@ namespace eosiosystem {
    void system_contract::delfinkey( const name& finalizer_name, const std::string& finalizer_key ) {
       require_auth( finalizer_name );
 
-      // Check finalizer has registered keys
-      auto finalizer = _finalizers.find(finalizer_name.value);
-      check( finalizer != _finalizers.end(), "finalizer " + finalizer_name.to_string() + " has not registered any finalizer keys" );
-      check( finalizer->finalizer_key_count > 0, "finalizer " + finalizer_name.to_string() + "  must have at least one registered finalizer keys, has " + std::to_string(finalizer->finalizer_key_count) );
-
-      check(finalizer_key.compare(0, 7, "PUB_BLS") == 0, "finalizer key does not start with PUB_BLS: " + finalizer_key);
+      auto finalizer = get_finalizer_itr(finalizer_name);
 
       // Check the key is registered
       auto idx = _finalizer_keys.get_index<"byfinkey"_n>();

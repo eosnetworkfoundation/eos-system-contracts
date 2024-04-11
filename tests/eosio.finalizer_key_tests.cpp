@@ -251,7 +251,7 @@ BOOST_FIXTURE_TEST_CASE(activate_finalizer_key_failure_tests, finalizer_key_test
    BOOST_REQUIRE_EQUAL( success(), regproducer(bob) );
 
    // finalizer has not registered any finalizer keys yet.
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer has not registered any finalizer keys" ),
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "finalizer alice1111111 has not registered any finalizer keys" ),
                         activate_finalizer_key(alice, finalizer_key_1) );
 
    // Alice registers a finalizer key
