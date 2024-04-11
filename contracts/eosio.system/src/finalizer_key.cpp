@@ -72,6 +72,23 @@ namespace eosiosystem {
       return *_last_prop_finalizers_cached;
    }
 
+   uint64_t system_contract::get_next_finalizer_key_id() {
+      uint64_t next_id = 0;
+
+      if( _fin_key_id_generator.begin() == _fin_key_id_generator.end() ) {
+         _fin_key_id_generator.emplace( get_self(), [&]( auto& f ) {
+            f.next_finalizer_key_id = next_id;
+         });
+      } else {
+         next_id = _fin_key_id_generator.begin()->next_finalizer_key_id  + 1;
+         _fin_key_id_generator.modify(_fin_key_id_generator.begin(), same_payer, [&]( auto& f ) {
+            f.next_finalizer_key_id = next_id;
+         });
+      }
+
+      return next_id;
+   }
+
    /**
    * Action to switch to Savanna
    *
@@ -155,7 +172,7 @@ namespace eosiosystem {
 
       // Insert the finalizer key into finalyzer_keys table
       auto finalizer_key_itr = _finalizer_keys.emplace( finalizer_name, [&]( auto& k ) {
-         k.id                   = _gstate5.get_next_finalizer_key_id();
+         k.id                   = get_next_finalizer_key_id();
          k.finalizer_name       = finalizer_name;
          k.finalizer_key        = finalizer_key;
          k.finalizer_key_binary = { fin_key_g1.begin(), fin_key_g1.end() };

@@ -199,17 +199,6 @@ namespace eosiosystem {
       EOSLIB_SERIALIZE( eosio_global_state4, (continuous_rate)(inflation_pay_factor)(votepay_factor) )
    };
 
-   // Defines new global state parameter to store next available
-   // finalizer key_id to make sure key_id in eosio_global_state_a will
-   // never be reused.
-   struct [[eosio::table("global5"), eosio::contract("eosio.system")]] eosio_global_state5 {
-      eosio_global_state5() { }
-      uint64_t get_next_finalizer_key_id() { return next_finalizer_key_id++; };
-
-      uint64_t next_finalizer_key_id = 0;
-
-      EOSLIB_SERIALIZE( eosio_global_state5, (next_finalizer_key_id) )
-   };
 
 
    inline eosio::block_signing_authority convert_to_block_signing_authority( const eosio::public_key& producer_key ) {
@@ -345,9 +334,9 @@ namespace eosiosystem {
       EOSLIB_SERIALIZE( finalizer_auth_info, (key_id)(fin_authority) )
    };
 
-   // Stores information about last proposed finalizers.
-   // It contains only one entry. Should not continue using the global
-   // singleton pattern as it unnecessarily serializes data at construction
+   // A single entry storing information about last proposed finalizers.
+   // Should avoid  using the global singleton pattern as it unnecessarily
+   // serializes data at construction/desstruction of system_contract,
    // even the data is not used.
    struct [[eosio::table("lastpropfins"), eosio::contract("eosio.system")]] last_prop_finalizers_info {
       std::vector<finalizer_auth_info> last_proposed_finalizers; // sorted by ascending finalizer key id
@@ -357,7 +346,18 @@ namespace eosiosystem {
       EOSLIB_SERIALIZE( last_prop_finalizers_info, (last_proposed_finalizers) )
    };
 
-   typedef eosio::multi_index< "lastpropfins"_n, last_prop_finalizers_info >  last_prop_finalizers_table;
+   typedef eosio::multi_index< "lastpropfins"_n, last_prop_finalizers_info >  last_prop_fins_table;
+
+   // A single entry storing next available finalizer key_id to make sure
+   // key_id in finalizers_table will never be reused.
+   struct [[eosio::table("finkeyidgen"), eosio::contract("eosio.system")]] fin_key_id_generator_info {
+      uint64_t next_finalizer_key_id = 0;
+      uint64_t primary_key()const { return 0; }
+
+      EOSLIB_SERIALIZE( fin_key_id_generator_info, (next_finalizer_key_id) )
+   };
+
+   typedef eosio::multi_index< "finkeyidgen"_n, fin_key_id_generator_info >  fin_key_id_gen_table;
 
    // Voter info. Voter info stores information about the voter:
    // - `owner` the voter
@@ -413,8 +413,6 @@ namespace eosiosystem {
    typedef eosio::singleton< "global3"_n, eosio_global_state3 > global_state3_singleton;
 
    typedef eosio::singleton< "global4"_n, eosio_global_state4 > global_state4_singleton;
-
-   typedef eosio::singleton< "global5"_n, eosio_global_state5 > global_state5_singleton;
 
    struct [[eosio::table, eosio::contract("eosio.system")]] user_resources {
       name          owner;
@@ -762,18 +760,17 @@ namespace eosiosystem {
          producers_table2         _producers2;
          finalizer_keys_table     _finalizer_keys;
          finalizers_table         _finalizers;
-         last_prop_finalizers_table  _last_prop_finalizers;
+         last_prop_fins_table     _last_prop_finalizers;
          std::optional<std::vector<finalizer_auth_info>> _last_prop_finalizers_cached;
+         fin_key_id_gen_table     _fin_key_id_generator;
          global_state_singleton   _global;
          global_state2_singleton  _global2;
          global_state3_singleton  _global3;
          global_state4_singleton  _global4;
-         global_state5_singleton  _global5;
          eosio_global_state       _gstate;
          eosio_global_state2      _gstate2;
          eosio_global_state3      _gstate3;
          eosio_global_state4      _gstate4;
-         eosio_global_state5      _gstate5;
          rammarket                _rammarket;
          rex_pool_table           _rexpool;
          rex_return_pool_table    _rexretpool;
@@ -1658,6 +1655,7 @@ namespace eosiosystem {
          bool is_savanna_consensus();
          void set_proposed_finalizers( std::vector<finalizer_auth_info>& finalizers);
          std::vector<finalizer_auth_info> get_last_proposed_finalizers();
+         uint64_t get_next_finalizer_key_id();
 
          template <auto system_contract::*...Ptrs>
          class registration {
