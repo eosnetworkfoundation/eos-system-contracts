@@ -3,6 +3,14 @@
 #include <eosio/eosio.hpp>
 
 namespace eosiosystem {
+   finalizer_auth_info::finalizer_auth_info(const finalizer_info& finalizer)
+      : key_id(finalizer.active_finalizer_key_id)
+      , fin_authority( eosio::finalizer_authority{
+         .description = finalizer.finalizer_name.to_string(),
+         .weight      = 1,
+         .public_key  = finalizer.active_finalizer_key_binary })
+   {
+   }
 
    // Returns true if nodeos has transitioned to Savanna (last finalizer set not empty)
    bool system_contract::is_savanna_consensus() {
@@ -122,14 +130,7 @@ namespace eosiosystem {
             continue;
          }
 
-         proposed_finalizers.emplace_back( finalizer_auth_info {
-            .key_id        = finalizer->active_finalizer_key_id,
-            .fin_authority = eosio::finalizer_authority{
-               .description = finalizer->finalizer_name.to_string(),
-               .weight      = 1,
-               .public_key  = finalizer->active_finalizer_key_binary
-            }}
-         );
+         proposed_finalizers.emplace_back(*finalizer);
       }
 
       check( proposed_finalizers.size() == _gstate.last_producer_schedule_size,

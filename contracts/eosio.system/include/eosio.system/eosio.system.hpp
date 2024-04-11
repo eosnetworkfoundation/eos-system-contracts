@@ -321,6 +321,9 @@ namespace eosiosystem {
 
    // finalizer_auth_info stores a finalizer's key id and its finalizer authority
    struct finalizer_auth_info {
+      finalizer_auth_info() = default;
+      explicit finalizer_auth_info(const finalizer_info& finalizer);
+
       uint64_t                   key_id;        // A finalizer's key ID in finalizer_keys_table
       eosio::finalizer_authority fin_authority; // The finalizer's finalizer_authority
 

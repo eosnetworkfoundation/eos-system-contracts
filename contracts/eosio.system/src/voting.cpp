@@ -130,14 +130,7 @@ namespace eosiosystem {
                continue;
             }
 
-            proposed_finalizers.emplace_back( finalizer_auth_info {
-               .key_id        = finalizer->active_finalizer_key_id,
-               .fin_authority = eosio::finalizer_authority{
-                  .description = finalizer->finalizer_name.to_string(),
-                  .weight      = 1,
-                  .public_key  = finalizer->active_finalizer_key_binary
-               }}
-            );
+            proposed_finalizers.emplace_back(*finalizer);
          }
 
          top_producers.emplace_back(
