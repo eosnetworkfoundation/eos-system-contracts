@@ -110,12 +110,14 @@ namespace eosiosystem {
 
       using value_type = std::pair<eosio::producer_authority, uint16_t>;
       std::vector< value_type > top_producers;
-      std::vector< proposed_finalizer_key_t > proposed_fin_keys;
+      std::vector< finalizer_auth_info > proposed_finalizers;
       top_producers.reserve(21);
-      proposed_fin_keys.reserve(21);
+      proposed_finalizers.reserve(21);
+
+      bool is_savanna = is_savanna_consensus();
 
       for( auto it = idx.cbegin(); it != idx.cend() && top_producers.size() < 21 && 0 < it->total_votes && it->active(); ++it ) {
-         if( is_savanna_consensus() ) {
+         if( is_savanna ) {
             auto finalizer = _finalizers.find( it->owner.value );
             if( finalizer == _finalizers.end() ) {
                // The producer is not in finalizers table, indicating it does not have an
@@ -128,7 +130,7 @@ namespace eosiosystem {
                continue;
             }
 
-            proposed_fin_keys.emplace_back( proposed_finalizer_key_t {
+            proposed_finalizers.emplace_back( finalizer_auth_info {
                .key_id        = finalizer->active_finalizer_key_id,
                .fin_authority = eosio::finalizer_authority{
                   .description = finalizer->finalizer_name.to_string(),
@@ -168,8 +170,8 @@ namespace eosiosystem {
 
       // set_proposed_finalizers() checks if last proposed finalizer policy
       // has not changed, it will not call set_finalizers() host function.
-      if( is_savanna_consensus() ) {
-         set_proposed_finalizers_if_changed( proposed_fin_keys );
+      if( is_savanna ) {
+         set_proposed_finalizers( proposed_finalizers );
       }
    }
 
