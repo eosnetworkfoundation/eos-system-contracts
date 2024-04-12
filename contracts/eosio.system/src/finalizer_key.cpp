@@ -46,12 +46,12 @@ namespace eosiosystem {
    // and in turn by onblock
    // Establish finalizer policy from `proposed_fin_keys` and calls
    // eosio::set_finalizers host function
-   void system_contract::set_proposed_finalizers( std::vector<finalizer_auth_info>& proposed_finalizers ) {
+   void system_contract::set_proposed_finalizers( std::vector<finalizer_auth_info> proposed_finalizers ) {
       std::sort( proposed_finalizers.begin(), proposed_finalizers.end(), []( const finalizer_auth_info& lhs, const finalizer_auth_info& rhs ) {
          return lhs.key_id < rhs.key_id;
       } );
 
-      const auto last_proposed_finalizers = get_last_proposed_finalizers();
+      const auto& last_proposed_finalizers = get_last_proposed_finalizers();
       if( proposed_finalizers == last_proposed_finalizers ) {
          // Finalizer policy has not changed. Do not proceed.
          return;
@@ -156,7 +156,7 @@ namespace eosiosystem {
       check( proposed_finalizers.size() == _gstate.last_producer_schedule_size,
             "not enough top producers have registered finalizer keys, has " + std::to_string(proposed_finalizers.size()) + ", require " + std::to_string(_gstate.last_producer_schedule_size) );
 
-      set_proposed_finalizers(proposed_finalizers);
+      set_proposed_finalizers(std::move(proposed_finalizers));
       check( is_savanna_consensus(), "switching to Savanna failed" );
    }
 

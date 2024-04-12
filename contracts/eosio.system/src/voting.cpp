@@ -164,7 +164,7 @@ namespace eosiosystem {
       // set_proposed_finalizers() checks if last proposed finalizer policy
       // has not changed, it will not call set_finalizers() host function.
       if( is_savanna ) {
-         set_proposed_finalizers( proposed_finalizers );
+         set_proposed_finalizers( std::move(proposed_finalizers) );
       }
    }
 
