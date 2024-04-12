@@ -12,11 +12,12 @@ namespace eosiosystem {
    {
    }
 
-   // Returns true if nodeos has transitioned to Savanna (last finalizer set not empty)
+   // Returns true if nodeos has transitioned to Savanna (having last proposed finalizers)
    bool system_contract::is_savanna_consensus() {
       return !get_last_proposed_finalizers().empty();
    }
 
+   // Validates finalizer_key in text form and returns a binary form
    eosio::bls_g1 to_binary(const std::string& finalizer_key) {
       check(finalizer_key.compare(0, 7, "PUB_BLS") == 0, "finalizer key does not start with PUB_BLS: " + finalizer_key);
       return eosio::decode_bls_public_key_to_g1(finalizer_key);
@@ -33,6 +34,7 @@ namespace eosiosystem {
       return get_finalizer_key_hash(fin_key_g1);
    }
 
+   // Validates finalizer and returns the iterator to finalizers table
    finalizers_table::const_iterator system_contract::get_finalizer_itr( const name& finalizer_name ) const {
       // Check finalizer has registered keys
       auto finalizer_itr = _finalizers.find(finalizer_name.value);
@@ -42,15 +44,17 @@ namespace eosiosystem {
       return finalizer_itr;
    }
 
-   // This function may never fail, as it can be called by update_elected_producers,
-   // and in turn by onblock
-   // Establish finalizer policy from `proposed_fin_keys` and calls
-   // eosio::set_finalizers host function
+   // If finalizers have changed since last round, establishs finalizer policy
+   // from `proposed_finalizers` and calls eosio::set_finalizers host function
+   // Note: this function may never fail, as it can be called by update_elected_producers,
+   // and in turn by onblock.
    void system_contract::set_proposed_finalizers( std::vector<finalizer_auth_info> proposed_finalizers ) {
+      // Sort proposed_finalizers by finalizer key ID
       std::sort( proposed_finalizers.begin(), proposed_finalizers.end(), []( const finalizer_auth_info& lhs, const finalizer_auth_info& rhs ) {
          return lhs.key_id < rhs.key_id;
       } );
 
+      // Compare with last_proposed_finalizers to see if finalizers have changed.
       const auto& last_proposed_finalizers = get_last_proposed_finalizers();
       if( proposed_finalizers == last_proposed_finalizers ) {
          // Finalizer policy has not changed. Do not proceed.
@@ -64,16 +68,16 @@ namespace eosiosystem {
          finalizer_authorities.emplace_back(k.fin_authority);
       }
 
-      // Establish finalizer policy
+      // Establish new finalizer policy
       eosio::finalizer_policy fin_policy {
          .threshold  = ( finalizer_authorities.size() * 2 ) / 3 + 1,
          .finalizers = std::move(finalizer_authorities)
       };
 
-      // call host function
+      // Call host function
       eosio::set_finalizers(std::move(fin_policy)); // call host function
 
-      // store last proposed policy in both cache and DB table
+      // Store last proposed policy in both cache and DB table
       auto itr = _last_prop_finalizers.begin();
       if( itr == _last_prop_finalizers.end() ) {
          _last_prop_finalizers.emplace( get_self(), [&]( auto& f ) {
@@ -93,6 +97,7 @@ namespace eosiosystem {
       }
    }
 
+   // Returns last proposed finalizers
    const std::vector<finalizer_auth_info>& system_contract::get_last_proposed_finalizers() {
       if( !_last_prop_finalizers_cached.has_value() ) {
          const auto finalizers_itr = _last_prop_finalizers.begin();
@@ -106,6 +111,8 @@ namespace eosiosystem {
       return *_last_prop_finalizers_cached;
    }
 
+   // Generates an ID for a new finalizer key to be used in finalizer_keys table.
+   // It may never be reused.
    uint64_t system_contract::get_next_finalizer_key_id() {
       uint64_t next_id = 0;
       auto itr = _fin_key_id_generator.begin();
@@ -181,7 +188,7 @@ namespace eosiosystem {
       auto producer = _producers.find( finalizer_name.value );
       check( producer != _producers.end(), "finalizer " + finalizer_name.to_string() + " is not a registered producer");
 
-      // Basic key and signature format check
+      // Basic signature format check
       check(proof_of_possession.compare(0, 7, "SIG_BLS") == 0, "proof of possession signature does not start with SIG_BLS: " + proof_of_possession);
 
       // Convert to binary form. The validity will be checked during conversion.
@@ -189,15 +196,15 @@ namespace eosiosystem {
       const auto pop_g2 = eosio::decode_bls_signature_to_g2(proof_of_possession);
 
       // Duplication check across all registered keys
-      auto idx = _finalizer_keys.get_index<"byfinkey"_n>();
-      auto hash = get_finalizer_key_hash(fin_key_g1);
+      const auto idx = _finalizer_keys.get_index<"byfinkey"_n>();
+      const auto hash = get_finalizer_key_hash(fin_key_g1);
       check(idx.find(hash) == idx.end(), "duplicate finalizer key: " + finalizer_key);
 
       // Proof of possession check
       check(eosio::bls_pop_verify(fin_key_g1, pop_g2), "proof of possession check failed");
 
       // Insert the finalizer key into finalyzer_keys table
-      auto finalizer_key_itr = _finalizer_keys.emplace( finalizer_name, [&]( auto& k ) {
+      const auto finalizer_key_itr = _finalizer_keys.emplace( finalizer_name, [&]( auto& k ) {
          k.id                   = get_next_finalizer_key_id();
          k.finalizer_name       = finalizer_name;
          k.finalizer_key        = finalizer_key;
@@ -232,23 +239,23 @@ namespace eosiosystem {
    void system_contract::actfinkey( const name& finalizer_name, const std::string& finalizer_key ) {
       require_auth( finalizer_name );
 
-      auto finalizer = get_finalizer_itr(finalizer_name);
+      const auto finalizer = get_finalizer_itr(finalizer_name);
 
       // Check the key is registered
-      auto idx = _finalizer_keys.get_index<"byfinkey"_n>();
-      auto hash = get_finalizer_key_hash(finalizer_key);
-      auto finalizer_key_itr = idx.find(hash);
+      const auto idx = _finalizer_keys.get_index<"byfinkey"_n>();
+      const auto hash = get_finalizer_key_hash(finalizer_key);
+      const auto finalizer_key_itr = idx.find(hash);
       check(finalizer_key_itr != idx.end(), "finalizer key was not registered: " + finalizer_key);
 
       // Check the key belongs to finalizer
       check(finalizer_key_itr->finalizer_name == name(finalizer_name), "finalizer key was not registered by the finalizer: " + finalizer_key);
 
       // Check if the finalizer key is not already active
-      check( finalizer_key_itr->id != finalizer->active_key_id, "finalizer key was already active: " + finalizer_key );
+      check( !finalizer_key_itr->is_active(finalizer->active_key_id), "finalizer key was already active: " + finalizer_key );
 
-      auto active_key_id = finalizer->active_key_id;
+      const auto active_key_id = finalizer->active_key_id;
 
-      // Update finalizer's information in _finalizers table
+      // Mark the finalizer key as active by updating finalizer's information in finalizers table
       _finalizers.modify( finalizer, same_payer, [&]( auto& f ) {
          f.active_key_id      = finalizer_key_itr->id;
          f.active_key_binary  = finalizer_key_itr->finalizer_key_binary;
@@ -256,6 +263,7 @@ namespace eosiosystem {
 
       const auto& last_proposed_finalizers = get_last_proposed_finalizers();
       if( last_proposed_finalizers.empty() ) {
+         // prior to switching to Savanna
          return;
       }
 
@@ -266,8 +274,7 @@ namespace eosiosystem {
 
       // If active_key_id is in last_proposed_finalizers, it means the finalizer is
       // active. Replace the existing entry in last_proposed_finalizers with
-      // the information of finalizer_key just activated and call
-      // set_proposed_finalizers immediately
+      // the information of finalizer_key just activated and call set_proposed_finalizers immediately
       if( itr != last_proposed_finalizers.end() && itr->key_id == active_key_id ) {
          auto proposed_finalizers = last_proposed_finalizers;
          auto& matching_entry = proposed_finalizers[itr - last_proposed_finalizers.begin()];
@@ -300,7 +307,7 @@ namespace eosiosystem {
       // Check the key belongs to the finalizer
       check(fin_key_itr->finalizer_name == name(finalizer_name), "finalizer key " + finalizer_key + " was not registered by the finalizer " + finalizer_name.to_string() );
       
-      if( fin_key_itr->id == finalizer->active_key_id ) {
+      if( fin_key_itr->is_active(finalizer->active_key_id) ) {
          check( finalizer->finalizer_key_count == 1, "cannot delete an active key unless it is the last registered finalizer key, has " + std::to_string(finalizer->finalizer_key_count) + " keys");
       }
 

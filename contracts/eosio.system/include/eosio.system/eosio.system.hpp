@@ -301,6 +301,8 @@ namespace eosiosystem {
       // which only happens if the table row is modified. There won't be any
       // modification of the table rows of; it may only be removed.
       checksum256 by_fin_key()  const { return eosio::sha256(finalizer_key_binary.data(), finalizer_key_binary.size()); }
+
+      bool is_active(uint64_t finalizer_active_key_id) const { return id == finalizer_active_key_id ; }
    };
    typedef eosio::multi_index<
       "finkeys"_n, finalizer_key_info,
