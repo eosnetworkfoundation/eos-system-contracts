@@ -471,6 +471,69 @@ BOOST_FIXTURE_TEST_CASE(switchtosvnn_success_tests, finalizer_key_tester) try {
 }
 FC_LOG_AND_RETHROW()
 
+// Activate 3 keys after transition to Savanna
+BOOST_FIXTURE_TEST_CASE(multi_activation_tests, finalizer_key_tester) try {
+   // Register and vote 26 producers
+   auto producer_names = active_and_vote_producers();
+   // Register 21 finalizer keys for the first 21 producers
+   register_finalizer_keys(producer_names, 21);
+   BOOST_REQUIRE_EQUAL(success(),  push_action( config::system_account_name, "switchtosvnn"_n, mvo()) );
+
+   // Verify last proposed finalizer IDs contains active ID of each finalizer
+   auto last_proposed_finalizer_ids = get_last_prop_fin_ids();
+   for( auto& p : producer_names ) {
+      auto finalizer_info = get_finalizer_info(p);
+      uint64_t active_finalizer_key_id = finalizer_info["active_finalizer_key_id"].as_uint64();
+      BOOST_REQUIRE_EQUAL( true, last_proposed_finalizer_ids.contains(active_finalizer_key_id) );
+   }
+
+   // Produce enough blocks so transition to Savanna finishes
+   produce_blocks(504); // 21 Producers * 12 Blocks per producer * 2 rounds to reach Legacy finality
+
+   // If head_finality_data has value, it means we are at least after or on
+   // Savanna Genesis Block
+   BOOST_REQUIRE_EQUAL( true, control->head_finality_data().has_value() );
+
+   // Register two more key for defproducera
+   account_name producera = "defproducera"_n;
+   BOOST_REQUIRE_EQUAL( success(), register_finalizer_key(producera, finalizer_key_1, pop_1) );
+   BOOST_REQUIRE_EQUAL( success(), register_finalizer_key(producera, finalizer_key_2, pop_2) );
+
+   auto producera_info = get_finalizer_info(producera);
+   auto active_key_id_before = producera_info["active_finalizer_key_id"].as_uint64();
+   auto last_prop_fin_ids_before = get_last_prop_fin_ids();
+
+   // Activate finalizer_key_1
+   BOOST_REQUIRE_EQUAL( success(), activate_finalizer_key(producera, finalizer_key_1) );
+   produce_block();
+
+   // Make sure last proposed finalizers set has changed
+   producera_info = get_finalizer_info(producera);
+   auto active_key_id_after = producera_info["active_finalizer_key_id"].as_uint64();
+   auto last_prop_fin_ids_after = get_last_prop_fin_ids();
+
+   last_prop_fin_ids_before.erase(active_key_id_before);
+   last_prop_fin_ids_before.insert(active_key_id_after);
+   BOOST_REQUIRE_EQUAL( true, last_prop_fin_ids_before == last_prop_fin_ids_after );
+
+   // Activate finalizer_key_2
+   last_prop_fin_ids_before = last_prop_fin_ids_after;
+   active_key_id_before = active_key_id_after;
+
+   BOOST_REQUIRE_EQUAL( success(), activate_finalizer_key(producera, finalizer_key_2) );
+   produce_block();
+
+   // Make sure last proposed finalizers set has changed
+   producera_info = get_finalizer_info(producera);
+   active_key_id_after = producera_info["active_finalizer_key_id"].as_uint64();
+   last_prop_fin_ids_after = get_last_prop_fin_ids();
+
+   last_prop_fin_ids_before.erase(active_key_id_before);
+   last_prop_fin_ids_before.insert(active_key_id_after);
+   BOOST_REQUIRE_EQUAL( true, last_prop_fin_ids_before == last_prop_fin_ids_after );
+}
+FC_LOG_AND_RETHROW()
+
 BOOST_FIXTURE_TEST_CASE(switchtosvnn_missing_authority_tests, finalizer_key_tester) try {
    BOOST_REQUIRE_EQUAL( error( "missing authority of eosio" ),
                         push_action( alice, "switchtosvnn"_n, mvo()) );
