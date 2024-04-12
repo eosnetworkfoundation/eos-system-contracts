@@ -74,15 +74,22 @@ namespace eosiosystem {
       eosio::set_finalizers(std::move(fin_policy)); // call host function
 
       // store last proposed policy in both cache and DB table
-      _last_prop_finalizers_cached = proposed_finalizers;
-      if( _last_prop_finalizers.begin() == _last_prop_finalizers.end() ) {
+      auto itr = _last_prop_finalizers.begin();
+      if( itr == _last_prop_finalizers.end() ) {
          _last_prop_finalizers.emplace( get_self(), [&]( auto& f ) {
             f.last_proposed_finalizers = proposed_finalizers;
          });
       } else {
-         _last_prop_finalizers.modify(_last_prop_finalizers.begin(), same_payer, [&]( auto& f ) {
+         _last_prop_finalizers.modify(itr, same_payer, [&]( auto& f ) {
             f.last_proposed_finalizers = proposed_finalizers;
          });
+      }
+      // Ensure not invalidate anyone holding the references to the vector
+      // that was returned earlier by get_last_proposed_finalizer
+      if (_last_prop_finalizers_cached.has_value()) {
+         std::swap(*_last_prop_finalizers_cached, proposed_finalizers);
+      } else {
+         _last_prop_finalizers_cached.emplace(std::move(proposed_finalizers));
       }
    }
 
@@ -247,7 +254,7 @@ namespace eosiosystem {
          f.active_finalizer_key_binary  = finalizer_key_itr->finalizer_key_binary;
       });
 
-      auto last_proposed_finalizers = get_last_proposed_finalizers();
+      const auto& last_proposed_finalizers = get_last_proposed_finalizers();
       if( last_proposed_finalizers.empty() ) {
          return;
       }
@@ -259,14 +266,16 @@ namespace eosiosystem {
 
       // If active_key_id is in last_proposed_finalizers, it means the finalizer is
       // active. Replace the existing entry in last_proposed_finalizers with
-      // the information of finalizer_key just activated and call set_proposed_finalizers
+      // the information of finalizer_key just activated and call
+      // set_proposed_finalizers immediately
       if( itr != last_proposed_finalizers.end() && itr->key_id == active_key_id ) {
-         // Update last_proposed_finalizers
-         itr->key_id = finalizer_key_itr->id;
-         itr->fin_authority.public_key = finalizer_key_itr->finalizer_key_binary;
+         auto proposed_finalizers = last_proposed_finalizers;
+         auto& matching_entry = proposed_finalizers[itr - last_proposed_finalizers.begin()];
 
-         // Call set_finalizers immediately
-         set_proposed_finalizers(last_proposed_finalizers);
+         matching_entry.key_id = finalizer_key_itr->id;
+         matching_entry.fin_authority.public_key = finalizer_key_itr->finalizer_key_binary;
+
+         set_proposed_finalizers(std::move(proposed_finalizers));
       }
    }
 
