@@ -86,14 +86,14 @@ namespace eosiosystem {
       }
    }
 
-   std::vector<finalizer_auth_info> system_contract::get_last_proposed_finalizers() {
+   const std::vector<finalizer_auth_info>& system_contract::get_last_proposed_finalizers() {
       if( !_last_prop_finalizers_cached.has_value() ) {
          const auto finalizers_itr = _last_prop_finalizers.begin();
          if( finalizers_itr == _last_prop_finalizers.end() ) {
-            return {};
+            _last_prop_finalizers_cached = {};
+         } else {
+            _last_prop_finalizers_cached = finalizers_itr->last_proposed_finalizers;
          }
-
-         _last_prop_finalizers_cached = finalizers_itr->last_proposed_finalizers;
       }
 
       return *_last_prop_finalizers_cached;
