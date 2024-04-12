@@ -452,6 +452,7 @@ BOOST_FIXTURE_TEST_CASE(switchtosvnn_success_tests, finalizer_key_tester) try {
 
    // Verify last proposed finalizer IDs contains active ID of each finalizer
    auto last_proposed_finalizer_ids = get_last_prop_fin_ids();
+   BOOST_REQUIRE_EQUAL( 21, last_proposed_finalizer_ids.size() );
    for( auto& p : producer_names ) {
       auto finalizer_info = get_finalizer_info(p);
       uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
@@ -481,6 +482,7 @@ BOOST_FIXTURE_TEST_CASE(multi_activation_tests, finalizer_key_tester) try {
 
    // Verify last proposed finalizer IDs contains active ID of each finalizer
    auto last_proposed_finalizer_ids = get_last_prop_fin_ids();
+   BOOST_REQUIRE_EQUAL( 21, last_proposed_finalizer_ids.size() );
    for( auto& p : producer_names ) {
       auto finalizer_info = get_finalizer_info(p);
       uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
@@ -502,6 +504,7 @@ BOOST_FIXTURE_TEST_CASE(multi_activation_tests, finalizer_key_tester) try {
    auto producera_info = get_finalizer_info(producera);
    auto active_key_id_before = producera_info["active_key_id"].as_uint64();
    auto last_prop_fin_ids_before = get_last_prop_fin_ids();
+   BOOST_REQUIRE_EQUAL( 21, last_prop_fin_ids_before.size() );
 
    // Activate finalizer_key_1
    BOOST_REQUIRE_EQUAL( success(), activate_finalizer_key(producera, finalizer_key_1) );
@@ -511,6 +514,7 @@ BOOST_FIXTURE_TEST_CASE(multi_activation_tests, finalizer_key_tester) try {
    producera_info = get_finalizer_info(producera);
    auto active_key_id_after = producera_info["active_key_id"].as_uint64();
    auto last_prop_fin_ids_after = get_last_prop_fin_ids();
+   BOOST_REQUIRE_EQUAL( 21, last_prop_fin_ids_after.size() );
 
    last_prop_fin_ids_before.erase(active_key_id_before);
    last_prop_fin_ids_before.insert(active_key_id_after);
@@ -527,6 +531,7 @@ BOOST_FIXTURE_TEST_CASE(multi_activation_tests, finalizer_key_tester) try {
    producera_info = get_finalizer_info(producera);
    active_key_id_after = producera_info["active_key_id"].as_uint64();
    last_prop_fin_ids_after = get_last_prop_fin_ids();
+   BOOST_REQUIRE_EQUAL( 21, last_prop_fin_ids_after.size() );
 
    last_prop_fin_ids_before.erase(active_key_id_before);
    last_prop_fin_ids_before.insert(active_key_id_after);
@@ -566,6 +571,7 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_no_finalizers_changed_test, fin
 
    // Verify last finalizer key id table contains all finalzer keys
    auto last_finkey_ids = get_last_prop_fin_ids();
+   BOOST_REQUIRE_EQUAL( 21, last_finkey_ids.size() );
    for( auto& p : producer_names ) {
       auto finalizer_info = get_finalizer_info(p);
       uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
@@ -577,6 +583,7 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_no_finalizers_changed_test, fin
 
    // Since finalizer keys have not changed, last_finkey_ids should be the same
    auto last_finkey_ids_2 = get_last_prop_fin_ids();
+   BOOST_REQUIRE_EQUAL( 21, last_finkey_ids_2.size() );
    BOOST_REQUIRE_EQUAL( true, last_finkey_ids == last_finkey_ids_2 );
 }
 FC_LOG_AND_RETHROW()
@@ -595,6 +602,7 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_finalizers_changed_test, finali
 
    // Verify last finalizer key id table contains all finalzer keys
    auto last_finkey_ids = get_last_prop_fin_ids();
+   BOOST_REQUIRE_EQUAL( 21, last_finkey_ids.size() );
    for( auto& p : producer_names ) {
       auto finalizer_info = get_finalizer_info(p);
       uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
@@ -615,6 +623,7 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_finalizers_changed_test, finali
    // Since producer is an active producer, the finalizer key change takes effective
    // immediately.
    auto last_finkey_ids_2 = get_last_prop_fin_ids();
+   BOOST_REQUIRE_EQUAL( 21, last_finkey_ids_2.size() );
 
    // Take a note of new active_key_id
    auto p_info_2 = get_finalizer_info(test_producer);
@@ -647,6 +656,7 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_finalizers_replaced_test, final
 
    // Verify last finalizer key id table contains all finalzer keys
    auto last_finkey_ids = get_last_prop_fin_ids();
+   BOOST_REQUIRE_EQUAL( 21, last_finkey_ids.size() );
    for( auto i = 0; i < 21; ++i ) {
       auto finalizer_info = get_finalizer_info(producer_names[i]);
       uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
@@ -678,6 +688,7 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_finalizers_replaced_test, final
 
    // find new last_finkey_ids
    auto last_finkey_ids_2 = get_last_prop_fin_ids();
+   BOOST_REQUIRE_EQUAL( 21, last_finkey_ids_2.size() );
    // Make sure new_id is in the new last_finkey_ids
    BOOST_REQUIRE_EQUAL( true, last_finkey_ids_2.contains(producerv_id) );
 
@@ -707,6 +718,7 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_finalizers_replaced_test, final
 
    // find new last_finkey_ids
    auto last_finkey_ids_3 = get_last_prop_fin_ids();
+   BOOST_REQUIRE_EQUAL( 21, last_finkey_ids_3.size() );
    // Make sure producerw_id is in the new last_finkey_ids
    BOOST_REQUIRE_EQUAL( true, last_finkey_ids_3.contains(producerw_id) );
 
