@@ -101,14 +101,15 @@ namespace eosiosystem {
 
    uint64_t system_contract::get_next_finalizer_key_id() {
       uint64_t next_id = 0;
+      auto itr = _fin_key_id_generator.begin();
 
-      if( _fin_key_id_generator.begin() == _fin_key_id_generator.end() ) {
+      if( itr == _fin_key_id_generator.end() ) {
          _fin_key_id_generator.emplace( get_self(), [&]( auto& f ) {
             f.next_finalizer_key_id = next_id;
          });
       } else {
-         next_id = _fin_key_id_generator.begin()->next_finalizer_key_id  + 1;
-         _fin_key_id_generator.modify(_fin_key_id_generator.begin(), same_payer, [&]( auto& f ) {
+         next_id = itr->next_finalizer_key_id  + 1;
+         _fin_key_id_generator.modify(itr, same_payer, [&]( auto& f ) {
             f.next_finalizer_key_id = next_id;
          });
       }
