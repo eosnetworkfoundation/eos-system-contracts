@@ -4,11 +4,11 @@
 
 namespace eosiosystem {
    finalizer_auth_info::finalizer_auth_info(const finalizer_info& finalizer)
-      : key_id(finalizer.active_finalizer_key_id)
+      : key_id(finalizer.active_key_id)
       , fin_authority( eosio::finalizer_authority{
          .description = finalizer.finalizer_name.to_string(),
          .weight      = 1,
-         .public_key  = finalizer.active_finalizer_key_binary })
+         .public_key  = finalizer.active_key_binary })
    {
    }
 
@@ -153,7 +153,7 @@ namespace eosiosystem {
          }
 
          // This should never happen. Double check the finalizer has an active key just in case
-         if( finalizer->active_finalizer_key_binary.empty() ) {
+         if( finalizer->active_key_binary.empty() ) {
             continue;
          }
 
@@ -210,10 +210,10 @@ namespace eosiosystem {
          // This is the first time the finalizer registering a finalizer key,
          // mark the key active
          _finalizers.emplace( finalizer_name, [&]( auto& f ) {
-            f.finalizer_name              = finalizer_name;
-            f.active_finalizer_key_id     = finalizer_key_itr->id;
-            f.active_finalizer_key_binary = finalizer_key_itr->finalizer_key_binary;
-            f.finalizer_key_count         = 1;
+            f.finalizer_name       = finalizer_name;
+            f.active_key_id        = finalizer_key_itr->id;
+            f.active_key_binary    = finalizer_key_itr->finalizer_key_binary;
+            f.finalizer_key_count  = 1;
          });
       } else {
          // Update finalizer_key_count
@@ -244,14 +244,14 @@ namespace eosiosystem {
       check(finalizer_key_itr->finalizer_name == name(finalizer_name), "finalizer key was not registered by the finalizer: " + finalizer_key);
 
       // Check if the finalizer key is not already active
-      check( finalizer_key_itr->id != finalizer->active_finalizer_key_id, "finalizer key was already active: " + finalizer_key );
+      check( finalizer_key_itr->id != finalizer->active_key_id, "finalizer key was already active: " + finalizer_key );
 
-      auto active_key_id = finalizer->active_finalizer_key_id;
+      auto active_key_id = finalizer->active_key_id;
 
       // Update finalizer's information in _finalizers table
       _finalizers.modify( finalizer, same_payer, [&]( auto& f ) {
-         f.active_finalizer_key_id      = finalizer_key_itr->id;
-         f.active_finalizer_key_binary  = finalizer_key_itr->finalizer_key_binary;
+         f.active_key_id      = finalizer_key_itr->id;
+         f.active_key_binary  = finalizer_key_itr->finalizer_key_binary;
       });
 
       const auto& last_proposed_finalizers = get_last_proposed_finalizers();
@@ -300,7 +300,7 @@ namespace eosiosystem {
       // Check the key belongs to the finalizer
       check(fin_key_itr->finalizer_name == name(finalizer_name), "finalizer key " + finalizer_key + " was not registered by the finalizer " + finalizer_name.to_string() );
       
-      if( fin_key_itr->id == finalizer->active_finalizer_key_id ) {
+      if( fin_key_itr->id == finalizer->active_key_id ) {
          check( finalizer->finalizer_key_count == 1, "cannot delete an active key unless it is the last registered finalizer key, has " + std::to_string(finalizer->finalizer_key_count) + " keys");
       }
 

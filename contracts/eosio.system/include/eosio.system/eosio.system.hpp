@@ -310,10 +310,10 @@ namespace eosiosystem {
 
    // finalizer_info stores information about a finalizer.
    struct [[eosio::table("finalizers"), eosio::contract("eosio.system")]] finalizer_info {
-      name              finalizer_name;              // finalizer's name
-      uint64_t          active_finalizer_key_id;     // finalizer's active finalizer key's id in finalizer_keys_table, for fast finding key information
-      std::vector<char> active_finalizer_key_binary; // finalizer's active finalizer key's binary format in Affine little endian non-montgomery g1
-      uint32_t          finalizer_key_count = 0;     // number of finalizer keys registered by this finalizer
+      name              finalizer_name;           // finalizer's name
+      uint64_t          active_key_id;            // finalizer's active finalizer key's id in finalizer_keys_table, for fast finding key information
+      std::vector<char> active_key_binary;        // finalizer's active finalizer key's binary format in Affine little endian non-montgomery g1
+      uint32_t          finalizer_key_count = 0;  // number of finalizer keys registered by this finalizer
 
       uint64_t primary_key() const { return finalizer_name.value; }
    };

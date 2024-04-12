@@ -126,7 +126,7 @@ namespace eosiosystem {
             }
 
             // This should never happen. Double check just in case
-            if( finalizer->active_finalizer_key_binary.empty() ) {
+            if( finalizer->active_key_binary.empty() ) {
                continue;
             }
 
