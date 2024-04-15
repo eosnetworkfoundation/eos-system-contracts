@@ -41,7 +41,7 @@ struct finalizer_key_tester : eosio_system_tester {
       return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "finalizer_info", data, abi_serializer::create_yield_function(abi_serializer_max_time) );
    }
 
-   std::unordered_set<uint64_t> get_last_prop_fin_ids() {
+   std::vector<finalizer_auth_info> get_last_prop_finalizers_info() {
       const auto* table_id_itr = control->db().find<eosio::chain::table_id_object, eosio::chain::by_code_scope_table>(
          boost::make_tuple(config::system_account_name, config::system_account_name, "lastpropfins"_n));
 
@@ -62,6 +62,12 @@ struct finalizer_key_tester : eosio_system_tester {
       memcpy( data.data(), itr->value.data(), data.size() );
       fc::variant fins_info = data.empty() ? fc::variant() : abi_ser.binary_to_variant( "last_prop_finalizers_info", data, abi_serializer::create_yield_function(abi_serializer_max_time) );
       std::vector<finalizer_auth_info> finalizers = fins_info["last_proposed_finalizers"].as<std::vector<finalizer_auth_info>>();
+
+      return finalizers;
+   };
+
+   std::unordered_set<uint64_t> get_last_prop_fin_ids() {
+      auto finalizers = get_last_prop_finalizers_info();
 
       std::unordered_set<uint64_t> last_prop_fin_ids;
       for(auto f: finalizers) {
@@ -99,6 +105,21 @@ struct finalizer_key_tester : eosio_system_tester {
          if ( i  == num_keys_to_register ) {
             break;
          }
+      }
+   }
+
+   // Verify finalizers_table and last_prop_fins_table match
+   void verify_last_proposed_finalizers(const std::vector<name>& producer_names) {
+      auto last_finalizers = get_last_prop_finalizers_info();
+      BOOST_REQUIRE_EQUAL( 21, last_finalizers.size() );
+      for( auto& p : producer_names ) {
+         auto finalizer_info = get_finalizer_info(p);
+         uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
+         auto itr = std::find_if(last_finalizers.begin(), last_finalizers.end(), [&active_key_id](const finalizer_auth_info& f) { return f.key_id == active_key_id; });
+         // finalizer's active key id is in last proposed finalizers table
+         BOOST_REQUIRE_EQUAL( true, itr != last_finalizers.end() );
+         // finalizer's active key matches one in last proposed finalizers table
+         BOOST_REQUIRE_EQUAL( true, itr->fin_authority.public_key == finalizer_info["active_key_binary"].as<std::vector<char>>() );
       }
    }
 };
@@ -450,14 +471,8 @@ BOOST_FIXTURE_TEST_CASE(switchtosvnn_success_tests, finalizer_key_tester) try {
    register_finalizer_keys(producer_names, 21);
    BOOST_REQUIRE_EQUAL(success(),  push_action( config::system_account_name, "switchtosvnn"_n, mvo()) );
 
-   // Verify last proposed finalizer IDs contains active ID of each finalizer
-   auto last_proposed_finalizer_ids = get_last_prop_fin_ids();
-   BOOST_REQUIRE_EQUAL( 21, last_proposed_finalizer_ids.size() );
-   for( auto& p : producer_names ) {
-      auto finalizer_info = get_finalizer_info(p);
-      uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
-      BOOST_REQUIRE_EQUAL( true, last_proposed_finalizer_ids.contains(active_key_id) );
-   }
+   // Verify finalizers_table and last_prop_fins_table match
+   verify_last_proposed_finalizers(producer_names);
 
    // Produce enough blocks so transition to Savanna finishes
    produce_blocks(504); // 21 Producers * 12 Blocks per producer * 2 rounds to reach Legacy finality
@@ -480,14 +495,8 @@ BOOST_FIXTURE_TEST_CASE(multi_activation_tests, finalizer_key_tester) try {
    register_finalizer_keys(producer_names, 21);
    BOOST_REQUIRE_EQUAL(success(),  push_action( config::system_account_name, "switchtosvnn"_n, mvo()) );
 
-   // Verify last proposed finalizer IDs contains active ID of each finalizer
-   auto last_proposed_finalizer_ids = get_last_prop_fin_ids();
-   BOOST_REQUIRE_EQUAL( 21, last_proposed_finalizer_ids.size() );
-   for( auto& p : producer_names ) {
-      auto finalizer_info = get_finalizer_info(p);
-      uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
-      BOOST_REQUIRE_EQUAL( true, last_proposed_finalizer_ids.contains(active_key_id) );
-   }
+   // Verify finalizers_table and last_prop_fins_table match
+   verify_last_proposed_finalizers(producer_names);
 
    // Produce enough blocks so transition to Savanna finishes
    produce_blocks(504); // 21 Producers * 12 Blocks per producer * 2 rounds to reach Legacy finality
@@ -569,14 +578,10 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_no_finalizers_changed_test, fin
    // head_finality_data is available when nodoes is in Savanna
    BOOST_REQUIRE_EQUAL( true, control->head_finality_data().has_value() );
 
-   // Verify last finalizer key id table contains all finalzer keys
+   // Verify finalizers_table and last_prop_fins_table match
+   verify_last_proposed_finalizers(producer_names);
+
    auto last_finkey_ids = get_last_prop_fin_ids();
-   BOOST_REQUIRE_EQUAL( 21, last_finkey_ids.size() );
-   for( auto& p : producer_names ) {
-      auto finalizer_info = get_finalizer_info(p);
-      uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
-      BOOST_REQUIRE_EQUAL( true, last_finkey_ids.contains(active_key_id) );
-   }
 
    // Produce for one round
    produce_block( fc::minutes(2) );
@@ -600,14 +605,10 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_finalizers_changed_test, finali
    // head_finality_data is available when nodoes is in Savanna
    BOOST_REQUIRE_EQUAL( true, control->head_finality_data().has_value() );
 
+   // Verify finalizers_table and last_prop_fins_table match
+   verify_last_proposed_finalizers(producer_names);
    // Verify last finalizer key id table contains all finalzer keys
    auto last_finkey_ids = get_last_prop_fin_ids();
-   BOOST_REQUIRE_EQUAL( 21, last_finkey_ids.size() );
-   for( auto& p : producer_names ) {
-      auto finalizer_info = get_finalizer_info(p);
-      uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
-      BOOST_REQUIRE_EQUAL( true, last_finkey_ids.contains(active_key_id) );
-   }
 
    // Pick a producer
    name test_producer = producer_names.back();
@@ -649,19 +650,16 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_finalizers_replaced_test, final
    // Transition to Savanna
    BOOST_REQUIRE_EQUAL(success(),  push_action( config::system_account_name, "switchtosvnn"_n, mvo()) );
 
+   auto last_finkey_ids = get_last_prop_fin_ids();
+
    // Produce enough blocks so transition to Savanna finishes
    produce_blocks(2 * 21 * 12);
    // head_finality_data is available when nodoes is in Savanna
    BOOST_REQUIRE_EQUAL( true, control->head_finality_data().has_value() );
 
-   // Verify last finalizer key id table contains all finalzer keys
-   auto last_finkey_ids = get_last_prop_fin_ids();
-   BOOST_REQUIRE_EQUAL( 21, last_finkey_ids.size() );
-   for( auto i = 0; i < 21; ++i ) {
-      auto finalizer_info = get_finalizer_info(producer_names[i]);
-      uint64_t active_key_id = finalizer_info["active_key_id"].as_uint64();
-      BOOST_REQUIRE_EQUAL( true, last_finkey_ids.contains(active_key_id) );
-   }
+   // Verify finalizers_table and last_prop_fins_table match
+   std::vector<name> producer_names_first_21(producer_names.begin(), producer_names.begin() + 21);
+   verify_last_proposed_finalizers(producer_names_first_21);
 
    // Test delete the first finalizer key
 
