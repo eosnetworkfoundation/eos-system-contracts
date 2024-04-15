@@ -342,7 +342,7 @@ namespace eosiosystem {
    // A single entry storing information about last proposed finalizers.
    // Should avoid  using the global singleton pattern as it unnecessarily
    // serializes data at construction/desstruction of system_contract,
-   // even the data is not used.
+   // even if the data is not used.
    struct [[eosio::table("lastpropfins"), eosio::contract("eosio.system")]] last_prop_finalizers_info {
       std::vector<finalizer_auth_info> last_proposed_finalizers; // sorted by ascending finalizer key id
 

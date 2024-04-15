@@ -44,7 +44,7 @@ namespace eosiosystem {
       return finalizer_itr;
    }
 
-   // If finalizers have changed since last round, establishs finalizer policy
+   // If finalizers have changed since last round, establishes finalizer policy
    // from `proposed_finalizers` and calls eosio::set_finalizers host function
    // Note: this function may never fail, as it can be called by update_elected_producers,
    // and in turn by onblock.
