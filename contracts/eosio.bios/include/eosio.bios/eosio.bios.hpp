@@ -5,6 +5,7 @@
 #include <eosio/eosio.hpp>
 #include <eosio/fixed_bytes.hpp>
 #include <eosio/privileged.hpp>
+#include <eosio/instant_finality.hpp>
 #include <eosio/producer_schedule.hpp>
 
 namespace eosiobios {
@@ -64,6 +65,38 @@ namespace eosiobios {
       // explicit serialization macro is not necessary, used here only to improve compilation time
       EOSLIB_SERIALIZE(block_header, (timestamp)(producer)(confirmed)(previous)(transaction_mroot)(action_mroot)
                                      (schedule_version)(new_producers))
+   };
+
+   /**
+    * finalizer_authority
+    *
+    * The public bls key and proof of possession of private key signature,
+    * and vote weight of a finalizer.
+    */
+   constexpr size_t max_finalizers = 64*1024;
+   constexpr size_t max_finalizer_description_size = 256;
+
+   struct finalizer_authority {
+      std::string   description;
+      uint64_t      weight = 0;  // weight that this finalizer's vote has for meeting threshold
+      std::string   public_key;  // public key of the finalizer in base64 format
+      std::string   pop;         // proof of possession of private key in base64 format
+
+      // explicit serialization macro is not necessary, used here only to improve compilation time
+      EOSLIB_SERIALIZE(finalizer_authority, (description)(weight)(public_key)(pop))
+   };
+
+   /**
+    * finalizer_policy
+    *
+    * List of finalizer authorties along with the threshold
+    */
+   struct finalizer_policy {
+      uint64_t                         threshold = 0; // quorum threshold
+      std::vector<finalizer_authority> finalizers;
+
+      // explicit serialization macro is not necessary, used here only to improve compilation time
+      EOSLIB_SERIALIZE(finalizer_policy, (threshold)(finalizers));
    };
 
    /**
@@ -189,6 +222,15 @@ namespace eosiobios {
           */
          [[eosio::action]]
          void onerror( ignore<uint128_t> sender_id, ignore<std::vector<char>> sent_trx );
+
+         /**
+          * Propose new finalizer policy that, unless superseded by a later
+          * finalizer policy, will eventually become the active finalizer policy.
+          *
+          * @param finalizer_policy - proposed finalizer policy
+          */
+         [[eosio::action]]
+         void setfinalizer( const finalizer_policy& finalizer_policy );
 
          /**
           * Set privilege action allows to set privilege status for an account (turn it on/off).

@@ -82,6 +82,7 @@ jobs:
           container-package: experimental-binaries
       - name: Install packages
         run: |
+          sudo apt-get update && sudo apt-get upgrade -y
           sudo apt install ./*.deb
           sudo apt-get install cmake
           rm ./*.deb
