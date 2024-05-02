@@ -32,11 +32,12 @@ public:
       produce_blocks( 2 );
 
       create_accounts({ "eosio.token"_n, "eosio.ram"_n, "eosio.ramfee"_n, "eosio.stake"_n,
-               "eosio.bpay"_n, "eosio.vpay"_n, "eosio.saving"_n, "eosio.names"_n, "eosio.rex"_n });
+               "eosio.bpay"_n, "eosio.vpay"_n, "eosio.saving"_n, "eosio.names"_n, "eosio.rex"_n, "eosio.fees"_n });
 
 
       produce_blocks( 100 );
       set_code( "eosio.token"_n, contracts::token_wasm());
+      set_code( "eosio.fees"_n, contracts::fees_wasm());
       set_abi( "eosio.token"_n, contracts::token_abi().data() );
       {
          const auto& accnt = control->db().get<account_object,by_name>( "eosio.token"_n );
@@ -80,7 +81,7 @@ public:
       create_account_with_resources( "bob111111111"_n, config::system_account_name, core_sym::from_string("0.4500"), false );
       create_account_with_resources( "carol1111111"_n, config::system_account_name, core_sym::from_string("1.0000"), false );
 
-      BOOST_REQUIRE_EQUAL( core_sym::from_string("1000000000.0000"), get_balance("eosio")  + get_balance("eosio.ramfee") + get_balance("eosio.stake") + get_balance("eosio.ram") );
+      BOOST_REQUIRE_EQUAL( core_sym::from_string("1000000000.0000"), get_balance("eosio")  + get_balance("eosio.ramfee") + get_balance("eosio.stake") + get_balance("eosio.ram") + get_balance("eosio.fees") );
    }
 
    enum class setup_level {
@@ -259,7 +260,11 @@ public:
                  {
                      "name": "ram_bytes",
                      "type": "int64"
-                 }
+                 },
+                 {
+                      "name": "fee",
+                      "type": "asset"
+                  }
              ]
          },
          {
@@ -307,7 +312,11 @@ public:
                  {
                      "name": "ram_bytes",
                      "type": "int64"
-                 }
+                 },
+                 {
+                      "name": "fee",
+                      "type": "asset"
+                  }
              ]
          },
       ],
@@ -426,6 +435,11 @@ public:
    action_result ramburn(std::string_view owner, uint32_t bytes, const std::string& memo)
    {
       return ramburn(account_name(owner), bytes, memo);
+   }
+
+   action_result buyramburn( const name& payer, const asset& quantity, const std::string& memo)
+   {
+      return push_action(payer, "buyramburn"_n, mvo()("payer", payer)("quantity", quantity)("memo", memo));
    }
 
    void validate_ramburn_return(const account_name& owner, uint32_t bytes, const std::string& memo,
@@ -872,6 +886,14 @@ public:
 
    action_result closerex( const account_name& owner ) {
       return push_action( name(owner), "closerex"_n, mvo()("owner", owner) );
+   }
+
+   action_result donatetorex( const account_name& payer, const asset& quantity, const std::string& memo ) {
+      return push_action( name(payer), "donatetorex"_n, mvo()
+                          ("payer", payer)
+                          ("quantity", quantity)
+                          ("memo", memo)
+      );
    }
 
    fc::variant get_last_loan(bool cpu) {

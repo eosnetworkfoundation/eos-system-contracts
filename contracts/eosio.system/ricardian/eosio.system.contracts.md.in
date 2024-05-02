@@ -454,6 +454,21 @@ Burn {{bytes}} bytes of unused RAM from account {{owner}}.
 {{memo}}
 {{/if}}
 
+<h1 class="contract">buyramburn</h1>
+
+---
+spec_version: "0.2.0"
+title: Buy and Burn RAM
+summary: 'Buy and immediately Burn {{quantity}} of RAM from {{nowrap payer}}'
+icon: @ICON_BASE_URL@/@RESOURCE_ICON_URI@
+---
+
+Buy and Burn {{quantity}} of RAM from account {{payer}}.
+
+{{#if memo}}There is a memo attached to the action stating:
+{{memo}}
+{{/if}}
+
 <h1 class="contract">sellrex</h1>
 
 ---

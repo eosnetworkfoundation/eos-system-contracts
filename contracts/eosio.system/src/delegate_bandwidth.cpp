@@ -56,12 +56,12 @@ namespace eosiosystem {
       check( quant.symbol == core_symbol(), "must buy ram with core token" );
       check( quant.amount > 0, "must purchase a positive amount" );
 
-      auto fee = quant;
+      asset fee = quant;
       fee.amount = ( fee.amount + 199 ) / 200; /// .5% fee (round up)
       // fee.amount cannot be 0 since that is only possible if quant.amount is 0 which is not allowed by the assert above.
       // If quant.amount == 1, then fee.amount == 1,
       // otherwise if quant.amount > 1, then 0 < fee.amount < quant.amount.
-      auto quant_after_fee = quant;
+      asset quant_after_fee = quant;
       quant_after_fee.amount -= fee.amount;
       // quant_after_fee.amount should be > 0 if quant.amount > 1.
       // If quant.amount == 1, then quant_after_fee.amount == 0 and the next inline transfer will fail causing the buyram action to fail.
@@ -72,7 +72,7 @@ namespace eosiosystem {
       if ( fee.amount > 0 ) {
          token::transfer_action transfer_act{ token_account, { {payer, active_permission} } };
          transfer_act.send( payer, ramfee_account, fee, "ram fee" );
-         channel_to_rex( ramfee_account, fee );
+         channel_to_system_fees( ramfee_account, fee );
       }
 
       int64_t bytes_out;
@@ -91,13 +91,16 @@ namespace eosiosystem {
 
       // logging
       system_contract::logbuyram_action logbuyram_act{ get_self(), { {get_self(), active_permission} } };
-      logbuyram_act.send( payer, receiver, quant, bytes_out, ram_bytes );
+      system_contract::logsystemfee_action logsystemfee_act{ get_self(), { {get_self(), active_permission} } };
+
+      logbuyram_act.send( payer, receiver, quant, bytes_out, ram_bytes, fee );
+      logsystemfee_act.send( ram_account, fee, "buy ram" );
 
       // action return value
-      return action_return_buyram{ payer, receiver, quant, bytes_out, ram_bytes };
+      return action_return_buyram{ payer, receiver, quant, bytes_out, ram_bytes, fee };
    }
 
-   void system_contract::logbuyram( const name& payer, const name& receiver, const asset& quantity, int64_t bytes, int64_t ram_bytes ) {
+   void system_contract::logbuyram( const name& payer, const name& receiver, const asset& quantity, int64_t bytes, int64_t ram_bytes, const asset& fee ) {
       require_auth( get_self() );
       require_recipient(payer);
       require_recipient(receiver);
@@ -134,23 +137,26 @@ namespace eosiosystem {
          token::transfer_action transfer_act{ token_account, { {ram_account, active_permission}, {account, active_permission} } };
          transfer_act.send( ram_account, account, asset(tokens_out), "sell ram" );
       }
-      auto fee = ( tokens_out.amount + 199 ) / 200; /// .5% fee (round up)
+      const int64_t fee = ( tokens_out.amount + 199 ) / 200; /// .5% fee (round up)
       // since tokens_out.amount was asserted to be at least 2 earlier, fee.amount < tokens_out.amount
       if ( fee > 0 ) {
          token::transfer_action transfer_act{ token_account, { {account, active_permission} } };
          transfer_act.send( account, ramfee_account, asset(fee, core_symbol()), "sell ram fee" );
-         channel_to_rex( ramfee_account, asset(fee, core_symbol() ));
+         channel_to_system_fees( ramfee_account, asset(fee, core_symbol() ));
       }
 
       // logging
       system_contract::logsellram_action logsellram_act{ get_self(), { {get_self(), active_permission} } };
-      logsellram_act.send( account, tokens_out, bytes, ram_bytes );
+      system_contract::logsystemfee_action logsystemfee_act{ get_self(), { {get_self(), active_permission} } };
+
+      logsellram_act.send( account, tokens_out, bytes, ram_bytes, asset(fee, core_symbol() ) );
+      logsystemfee_act.send( ram_account, asset(fee, core_symbol() ), "sell ram" );
 
       // action return value
-      return action_return_sellram{ account, tokens_out, bytes, ram_bytes };
+      return action_return_sellram{ account, tokens_out, bytes, ram_bytes, asset(fee, core_symbol() ) };
    }
 
-   void system_contract::logsellram( const name& account, const asset& quantity, int64_t bytes, int64_t ram_bytes ) {
+   void system_contract::logsellram( const name& account, const asset& quantity, int64_t bytes, int64_t ram_bytes, const asset& fee ) {
       require_auth( get_self() );
       require_recipient(account);
    }
@@ -177,6 +183,20 @@ namespace eosiosystem {
    action_return_ramtransfer system_contract::ramburn( const name& owner, int64_t bytes, const std::string& memo ) {
       require_auth( owner );
       return ramtransfer( owner, null_account, bytes, memo );
+   }
+
+   /**
+    * This action will buy and then burn the purchased RAM bytes.
+    */
+   action_return_buyram system_contract::buyramburn( const name& payer, const asset& quantity, const std::string& memo ) {
+      require_auth( payer );
+      check( quantity.symbol == core_symbol(), "quantity must be core token" );
+      check( quantity.amount > 0, "quantity must be positive" );
+
+      const auto return_buyram = buyram( payer, payer, quantity );
+      ramburn( payer, return_buyram.bytes_purchased, memo );
+
+      return return_buyram;
    }
 
    [[eosio::action]]

@@ -19,7 +19,7 @@ using mvo = fc::mutable_variant_object;
 class eosio_msig_tester : public tester {
 public:
    eosio_msig_tester() {
-      create_accounts( { "eosio.msig"_n, "eosio.stake"_n, "eosio.ram"_n, "eosio.ramfee"_n, "alice"_n, "bob"_n, "carol"_n } );
+      create_accounts( { "eosio.msig"_n, "eosio.stake"_n, "eosio.ram"_n, "eosio.ramfee"_n, "eosio.fees"_n, "alice"_n, "bob"_n, "carol"_n } );
       produce_block();
 
       auto trace = base_tester::push_action(config::system_account_name, "setpriv"_n,
@@ -448,7 +448,8 @@ BOOST_FIXTURE_TEST_CASE( update_system_contract_all_approve, eosio_msig_tester )
    create_account_with_resources( "carol1111111"_n, "eosio"_n, core_sym::from_string("1.0000"), false );
 
    BOOST_REQUIRE_EQUAL( core_sym::from_string("1000000000.0000"),
-                        get_balance(config::system_account_name) + get_balance("eosio.ramfee"_n) + get_balance("eosio.stake"_n) + get_balance("eosio.ram"_n) );
+                        get_balance(config::system_account_name) + get_balance("eosio.ramfee"_n) + get_balance("eosio.stake"_n)
+                        + get_balance("eosio.ram"_n) + get_balance("eosio.fees"_n) );
 
    vector<permission_level> perm = { { "alice"_n, config::active_name }, { "bob"_n, config::active_name },
       {"carol"_n, config::active_name} };
@@ -568,7 +569,8 @@ BOOST_FIXTURE_TEST_CASE( update_system_contract_major_approve, eosio_msig_tester
    create_account_with_resources( "carol1111111"_n, "eosio"_n, core_sym::from_string("1.0000"), false );
 
    BOOST_REQUIRE_EQUAL( core_sym::from_string("1000000000.0000"),
-                        get_balance(config::system_account_name) + get_balance("eosio.ramfee"_n) + get_balance("eosio.stake"_n) + get_balance("eosio.ram"_n) );
+                        get_balance(config::system_account_name) + get_balance("eosio.ramfee"_n) + get_balance("eosio.stake"_n)
+                        + get_balance("eosio.ram"_n) + get_balance("eosio.fees"_n) );
 
    vector<permission_level> perm = { { "alice"_n, config::active_name }, { "bob"_n, config::active_name },
       {"carol"_n, config::active_name}, {"apple"_n, config::active_name}};
