@@ -1612,7 +1612,7 @@ BOOST_FIXTURE_TEST_CASE(producer_pay, eosio_system_tester, * boost::unit_test::t
 
    // defproducerb tries to claim rewards but he's not on the list
    {
-      BOOST_REQUIRE_EQUAL(wasm_assert_msg("unable to find key"),
+      BOOST_REQUIRE_EQUAL(wasm_assert_msg("producer not registered"),
                           push_action("defproducerb"_n, "claimrewards"_n, mvo()("owner", "defproducerb")));
    }
 
@@ -1638,6 +1638,27 @@ BOOST_FIXTURE_TEST_CASE(producer_pay, eosio_system_tester, * boost::unit_test::t
       BOOST_REQUIRE(500 * 10000 > int64_t(double(initial_supply.get_amount()) * double(0.05)) - (supply.get_amount() - initial_supply.get_amount()));
       BOOST_REQUIRE(500 * 10000 > int64_t(double(initial_supply.get_amount()) * double(0.04)) - (savings - initial_savings));
    }
+
+   // test claimrewards when max supply is reached
+   {
+      produce_block(fc::hours(24));
+
+      const asset before_supply = get_token_supply();
+      const asset before_system_balance = get_balance(config::system_account_name);
+      const asset before_producer_balance = get_balance("defproducera"_n);
+
+      setmaxsupply( before_supply );
+      BOOST_REQUIRE_EQUAL(success(), push_action("defproducera"_n, "claimrewards"_n, mvo()("owner", "defproducera")));
+
+      const asset after_supply = get_token_supply();
+      const asset after_system_balance = get_balance(config::system_account_name);
+      const asset after_producer_balance = get_balance("defproducera"_n);
+
+      BOOST_REQUIRE_EQUAL(after_supply.get_amount() - before_supply.get_amount(), 0);
+      BOOST_REQUIRE_EQUAL(after_system_balance.get_amount() - before_system_balance.get_amount(), -1407793756);
+      BOOST_REQUIRE_EQUAL(after_producer_balance.get_amount() - before_producer_balance.get_amount(), 281558751);
+   }
+
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE(change_inflation, eosio_system_tester) try {
@@ -1738,7 +1759,8 @@ BOOST_FIXTURE_TEST_CASE(change_inflation, eosio_system_tester) try {
 BOOST_AUTO_TEST_CASE(extreme_inflation) try {
    eosio_system_tester t(eosio_system_tester::setup_level::minimal);
    symbol core_symbol{CORE_SYM};
-   t.create_currency( "eosio.token"_n, config::system_account_name, asset((1ll << 62) - 1, core_symbol) );
+   const asset max_supply = asset((1ll << 62) - 1, core_symbol);
+   t.create_currency( "eosio.token"_n, config::system_account_name, max_supply );
    t.issue( asset(10000000000000, core_symbol) );
    t.deploy_contract();
    t.produce_block();
@@ -1752,17 +1774,22 @@ BOOST_AUTO_TEST_CASE(extreme_inflation) try {
 
    BOOST_REQUIRE_EQUAL(t.success(), t.push_action("defproducera"_n, "claimrewards"_n, mvo()("owner", "defproducera")));
    t.produce_block();
-   asset current_supply;
-   {
-      vector<char> data = t.get_row_by_account( "eosio.token"_n, name(core_symbol.to_symbol_code().value), "stat"_n, account_name(core_symbol.to_symbol_code().value) );
-      current_supply = t.token_abi_ser.binary_to_variant("currency_stats", data, abi_serializer::create_yield_function(eosio_system_tester::abi_serializer_max_time))["supply"].template as<asset>();
-   }
-   t.issue( asset((1ll << 62) - 1, core_symbol) - current_supply );
+   const asset current_supply = t.get_token_supply();
+   t.issue( max_supply - current_supply );
+
+   // empty system balance
+   // claimrewards operates by either `issue` new tokens or using the existing system balance
+   const asset system_balance = t.get_balance(config::system_account_name);
+   t.transfer( config::system_account_name, "eosio.null"_n, system_balance, config::system_account_name);
+   BOOST_REQUIRE_EQUAL(t.get_balance(config::system_account_name).get_amount(), 0);
+   BOOST_REQUIRE_EQUAL(t.get_token_supply().get_amount() - max_supply.get_amount(), 0);
+
+   // set maximum inflation
    BOOST_REQUIRE_EQUAL(t.success(), t.setinflation(std::numeric_limits<int64_t>::max(), 50000, 40000));
    t.produce_block();
 
    t.produce_block(fc::hours(10*24));
-   BOOST_REQUIRE_EQUAL(t.wasm_assert_msg("quantity exceeds available supply"), t.push_action("defproducera"_n, "claimrewards"_n, mvo()("owner", "defproducera")));
+   BOOST_REQUIRE_EQUAL(t.wasm_assert_msg("insufficient system token balance for claiming rewards"), t.push_action("defproducera"_n, "claimrewards"_n, mvo()("owner", "defproducera")));
 
    t.produce_block(fc::hours(11*24));
    BOOST_REQUIRE_EQUAL(t.wasm_assert_msg("magnitude of asset amount must be less than 2^62"), t.push_action("defproducera"_n, "claimrewards"_n, mvo()("owner", "defproducera")));
@@ -1770,7 +1797,7 @@ BOOST_AUTO_TEST_CASE(extreme_inflation) try {
    t.produce_block(fc::hours(24));
    BOOST_REQUIRE_EQUAL(t.wasm_assert_msg("overflow in calculating new tokens to be issued; inflation rate is too high"), t.push_action("defproducera"_n, "claimrewards"_n, mvo()("owner", "defproducera")));
    BOOST_REQUIRE_EQUAL(t.success(), t.setinflation(500, 50000, 40000));
-   BOOST_REQUIRE_EQUAL(t.wasm_assert_msg("quantity exceeds available supply"), t.push_action("defproducera"_n, "claimrewards"_n, mvo()("owner", "defproducera")));
+   BOOST_REQUIRE_EQUAL(t.wasm_assert_msg("insufficient system token balance for claiming rewards"), t.push_action("defproducera"_n, "claimrewards"_n, mvo()("owner", "defproducera")));
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE(multiple_producer_pay, eosio_system_tester, * boost::unit_test::tolerance(1e-10)) try {
