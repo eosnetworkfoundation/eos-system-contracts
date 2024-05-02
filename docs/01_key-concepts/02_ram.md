@@ -35,4 +35,4 @@ RAM is a very important system resource because of the following reasons:
 
 RAM is a scarce resource priced according to the unique Bancor liquidity algorithm which is implemented in the system contract [here](https://github.com/AntelopeIO/reference-contracts/blob/main/contracts/eosio.system/include/eosio.system/exchange_state.hpp).
 
-The RAM system resource must be purchased using the system token. Refer to the [cleos manual](https://github.com/AntelopeIO/leap/blob/main/docs/02_cleos/02_how-to-guides/how-to-buy-ram.md) to learn how to buy RAM via the command line interface.
+The RAM system resource must be purchased using the system token. Refer to the [cleos manual](https://github.com/AntelopeIO/spring/blob/main/docs/02_cleos/02_how-to-guides/how-to-buy-ram.md) to learn how to buy RAM via the command line interface.

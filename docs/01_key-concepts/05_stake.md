@@ -16,7 +16,7 @@ Antelope-based blockchain accounts need sufficient system resources, RAM, CPU an
 
 ### Stake NET and CPU
 
-The CPU and NET system resources are allocated by the account owner via the staking mechanism. Refer to the [cleos manual](https://github.com/AntelopeIO/leap/blob/main/docs/02_cleos/02_how-to-guides/how-to-stake-resource.md) on how to do it via the command line interface.
+The CPU and NET system resources are allocated by the account owner via the staking mechanism. Refer to the [cleos manual](https://github.com/AntelopeIO/spring/blob/main/docs/02_cleos/02_how-to-guides/how-to-stake-resource.md) on how to do it via the command line interface.
 
 You will also find that staking/unstaking is at times referred to as delegating/undelegating. The economics of staking is also to provably commit to a promise that you will hold the staked tokens, either for NET or CPU, for a pre-established period of time, in spite of inflation caused by minting new tokens in order to reward BPs for their services every 24 hours.
 
@@ -46,4 +46,4 @@ This formula has the following outcomes:
 
 ### Buy RAM
 
-The RAM resource must be bought using the system token. Refer to the [cleos manual](https://github.com/AntelopeIO/leap/blob/main/docs/02_cleos/02_how-to-guides/how-to-buy-ram.md) to learn how to do it via the command line interface. When an account consumes all its allocated RAM can not store any additional information on the blockchain database until it frees some of the occupied RAM or more RAM is allocated to the account through the RAM buying process.
+The RAM resource must be bought using the system token. Refer to the [cleos manual](https://github.com/AntelopeIO/spring/blob/main/docs/02_cleos/02_how-to-guides/how-to-buy-ram.md) to learn how to do it via the command line interface. When an account consumes all its allocated RAM can not store any additional information on the blockchain database until it frees some of the occupied RAM or more RAM is allocated to the account through the RAM buying process.

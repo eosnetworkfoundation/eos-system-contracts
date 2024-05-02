@@ -1,10 +1,10 @@
 {
-   "leap-dev":{
-      "target":"hotstuff_integration",
+   "spring-dev":{
+      "target":"main",
       "prerelease":false
    },
    "cdt":{
-      "target":"hotstuff_integration",
+      "target":"main",
       "prerelease":false
    }
 }
