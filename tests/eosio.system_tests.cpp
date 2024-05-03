@@ -5548,12 +5548,15 @@ BOOST_FIXTURE_TEST_CASE( b1_vesting, eosio_system_tester ) try {
                         unstake( b1, b1, small_amount, small_amount ) );
 
    const int64_t before = get_voter_info( b1 )["staked"].as<int64_t>();
+   const asset before_supply  = get_token_supply();
    BOOST_REQUIRE_EQUAL( before, 646703490000 );
 
    BOOST_REQUIRE_EQUAL( success(), unvest( b1, stake_amount - final_amount, stake_amount - final_amount ) );
    const int64_t after = get_voter_info( b1 )["staked"].as<int64_t>();
+   const asset after_supply  = get_token_supply();
 
    BOOST_REQUIRE_EQUAL( after, 0 );
+   BOOST_REQUIRE_EQUAL( after_supply.get_amount() - before_supply.get_amount(), -646703490000 );
 
 } FC_LOG_AND_RETHROW()
 
