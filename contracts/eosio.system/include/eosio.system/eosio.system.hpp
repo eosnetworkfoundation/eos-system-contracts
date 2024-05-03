@@ -1430,6 +1430,16 @@ namespace eosiosystem {
          void setinflation( int64_t annual_rate, int64_t inflation_pay_factor, int64_t votepay_factor );
 
          /**
+          * Facilitates the removal of vested staked tokens from an account, ensuring that these tokens are reallocated to the system's pool.
+          *
+          * @param account - the target account from which tokens are to be unvested.
+          * @param unvest_net_quantity - the amount of NET tokens to unvest.
+          * @param unvest_cpu_quantity - the amount of CPU tokens to unvest.
+          */
+         [[eosio::action]]
+         void unvest(const name account, const asset unvest_net_quantity, const asset unvest_cpu_quantity);
+
+         /**
           * Configure the `power` market. The market becomes available the first time this
           * action is invoked.
           */
@@ -1588,10 +1598,12 @@ namespace eosiosystem {
          // defined in delegate_bandwidth.cpp
          void changebw( name from, const name& receiver,
                         const asset& stake_net_quantity, const asset& stake_cpu_quantity, bool transfer );
-         void update_voting_power( const name& voter, const asset& total_update );
+         int64_t update_voting_power( const name& voter, const asset& total_update );
          void set_resource_ram_bytes_limits( const name& owner );
          int64_t reduce_ram( const name& owner, int64_t bytes );
          int64_t add_ram( const name& owner, int64_t bytes );
+         void update_stake_delegated( const name from, const name receiver, const asset stake_net_delta, const asset stake_cpu_delta );
+         void update_user_resources( const name from, const name receiver, const asset stake_net_delta, const asset stake_cpu_delta );
 
          // defined in voting.cpp
          void register_producer( const name& producer, const eosio::block_signing_authority& producer_authority, const std::string& url, uint16_t location );

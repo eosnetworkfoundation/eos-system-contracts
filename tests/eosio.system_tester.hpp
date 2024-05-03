@@ -643,6 +643,13 @@ public:
                           ("unstake_cpu_quantity", cpu)
       );
    }
+   action_result unvest( const account_name& account, const asset& net, const asset& cpu ) {
+      return push_action( "eosio"_n, "unvest"_n, mvo()
+                          ("account", account)
+                          ("unvest_net_quantity", net)
+                          ("unvest_cpu_quantity", cpu)
+      );
+   }
    action_result unstake( std::string_view from, std::string_view to, const asset& net, const asset& cpu ) {
       return unstake( account_name(from), account_name(to), net, cpu );
    }

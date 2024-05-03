@@ -5547,6 +5547,14 @@ BOOST_FIXTURE_TEST_CASE( b1_vesting, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL( wasm_assert_msg("b1 can only claim their tokens over 10 years"),
                         unstake( b1, b1, small_amount, small_amount ) );
 
+   const int64_t before = get_voter_info( b1 )["staked"].as<int64_t>();
+   BOOST_REQUIRE_EQUAL( before, 646703490000 );
+
+   BOOST_REQUIRE_EQUAL( success(), unvest( b1, stake_amount - final_amount, stake_amount - final_amount ) );
+   const int64_t after = get_voter_info( b1 )["staked"].as<int64_t>();
+
+   BOOST_REQUIRE_EQUAL( after, 0 );
+
 } FC_LOG_AND_RETHROW()
 
 
