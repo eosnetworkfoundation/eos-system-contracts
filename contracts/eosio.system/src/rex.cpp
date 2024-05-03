@@ -62,7 +62,10 @@ namespace eosiosystem {
       const asset delta_rex_stake = add_to_rex_balance( from, amount, rex_received );
       runrex(2);
       update_rex_account( from, asset( 0, core_symbol() ), delta_rex_stake );
-      mvtosavings( from, rex_received );
+
+      #if MATURED_REX_SOLD_AND_BUY_REX_TO_SAVINGS
+         mvtosavings( from, rex_received );
+      #endif
 
       // dummy action added so that amount of REX tokens purchased shows up in action trace
       rex_results::buyresult_action buyrex_act( rex_account, std::vector<eosio::permission_level>{ } );
@@ -103,6 +106,11 @@ namespace eosiosystem {
       auto rex_stake_delta = add_to_rex_balance( owner, payment, rex_received );
       runrex(2);
       update_rex_account( owner, asset( 0, core_symbol() ), rex_stake_delta - payment, true );
+
+      #if MATURED_REX_SOLD_AND_BUY_REX_TO_SAVINGS
+         mvtosavings( owner, rex_received );
+      #endif
+
       // dummy action added so that amount of REX tokens purchased shows up in action trace
       rex_results::buyresult_action buyrex_act( rex_account, std::vector<eosio::permission_level>{ } );
       buyrex_act.send( rex_received );
@@ -111,7 +119,11 @@ namespace eosiosystem {
    void system_contract::sellrex( const name& from, const asset& rex )
    {
       require_auth( from );
+      sell_rex( from, rex );
+   }
 
+   void system_contract::sell_rex( const name& from, const asset& rex )
+   {
       runrex(2);
 
       auto bitr = _rexbalance.require_find( from.value, "user must first buyrex" );
@@ -983,6 +995,11 @@ namespace eosiosystem {
             rb.matured_rex += rb.rex_maturities.front().second;
             rb.rex_maturities.erase(rb.rex_maturities.begin());
          }
+         #if MATURED_REX_SOLD_AND_BUY_REX_TO_SAVINGS
+            if ( rb.matured_rex > 0 ) {
+               sell_rex(rb.owner, asset(rb.matured_rex, rex_symbol));
+            }
+         #endif
       });
    }
 

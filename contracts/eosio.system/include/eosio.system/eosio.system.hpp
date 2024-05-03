@@ -24,6 +24,15 @@
 // be set to 0.
 #define CHANNEL_RAM_AND_NAMEBID_FEES_TO_REX 1
 
+#ifdef MATURED_REX_SOLD_AND_BUY_REX_TO_SAVINGS
+#undef MATURED_REX_SOLD_AND_BUY_REX_TO_SAVINGS
+#endif
+// MATURED_REX_SOLD_AND_BUY_REX_TO_SAVINGS macro determines whether matured REX is sold immediately and buying REX is moved immediately to REX savings.
+// In order to enable this behavior, the macro must be set to 1.
+// https://github.com/eosnetworkfoundation/eos-system-contracts/issues/134
+// https://github.com/eosnetworkfoundation/eos-system-contracts/issues/135
+#define MATURED_REX_SOLD_AND_BUY_REX_TO_SAVINGS 0
+
 namespace eosiosystem {
 
    using eosio::asset;
@@ -1588,6 +1597,7 @@ namespace eosiosystem {
          int64_t read_rex_savings( const rex_balance_table::const_iterator& bitr );
          void put_rex_savings( const rex_balance_table::const_iterator& bitr, int64_t rex );
          void update_rex_stake( const name& voter );
+         void sell_rex( const name& from, const asset& rex );
 
          void add_loan_to_rex_pool( const asset& payment, int64_t rented_tokens, bool new_loan );
          void remove_loan_from_rex_pool( const rex_loan& loan );
