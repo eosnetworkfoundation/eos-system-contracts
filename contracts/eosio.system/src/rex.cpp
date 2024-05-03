@@ -57,7 +57,6 @@ namespace eosiosystem {
 
       check( amount.symbol == core_symbol(), "asset must be core token" );
       check( 0 < amount.amount, "must use positive amount" );
-      check_voting_requirement( from );
       transfer_from_fund( from, amount );
       const asset rex_received    = add_to_rex_pool( amount );
       const asset delta_rex_stake = add_to_rex_balance( from, amount, rex_received );
@@ -75,7 +74,6 @@ namespace eosiosystem {
       check( from_net.symbol == core_symbol() && from_cpu.symbol == core_symbol(), "asset must be core token" );
       check( (0 <= from_net.amount) && (0 <= from_cpu.amount) && (0 < from_net.amount || 0 < from_cpu.amount),
              "must unstake a positive amount to buy rex" );
-      check_voting_requirement( owner );
 
       {
          del_bandwidth_table dbw_table( get_self(), owner.value );
@@ -423,19 +421,6 @@ namespace eosiosystem {
       if ( tot_itr->is_empty() ) {
          totals_tbl.erase( tot_itr );
       }
-   }
-
-   /**
-    * @brief Checks if account satisfies voting requirement (voting for a proxy or 21 producers)
-    * for buying REX
-    *
-    * @param owner - account buying or already holding REX tokens
-    * @err_msg - error message
-    */
-   void system_contract::check_voting_requirement( const name& owner, const char* error_msg )const
-   {
-      auto vitr = _voters.find( owner.value );
-      check( vitr != _voters.end() && ( vitr->proxy || 21 <= vitr->producers.size() ), error_msg );
    }
 
    /**
