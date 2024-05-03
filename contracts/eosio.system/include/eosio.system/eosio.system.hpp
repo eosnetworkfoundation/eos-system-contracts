@@ -539,6 +539,14 @@ namespace eosiosystem {
    typedef eosio::multi_index< "rexqueue"_n, rex_order,
                                indexed_by<"bytime"_n, const_mem_fun<rex_order, uint64_t, &rex_order::by_time>>> rex_order_table;
 
+   struct [[eosio::table("rexmaturity"),eosio::contract("eosio.system")]] rex_maturity {
+      uint32_t num_of_maturity_buckets = 5;
+
+      EOSLIB_SERIALIZE( rex_maturity, (num_of_maturity_buckets) )
+   };
+
+   typedef eosio::singleton<"rexmaturity"_n, rex_maturity> rex_maturity_singleton;
+
    struct rex_order_outcome {
       bool success;
       asset proceeds;
@@ -720,6 +728,7 @@ namespace eosiosystem {
          rex_fund_table           _rexfunds;
          rex_balance_table        _rexbalance;
          rex_order_table          _rexorders;
+         rex_maturity_singleton   _rexmaturity;
 
       public:
          static constexpr eosio::name active_permission{"active"_n};
@@ -1078,6 +1087,14 @@ namespace eosiosystem {
           */
          [[eosio::action]]
          void closerex( const name& owner );
+
+         /**
+          * Facilitates the modification of REX maturity buckets
+          *
+          * @param num_of_maturity_buckets - used to calculate maturity time of purchase REX tokens from end of the day UTC.
+          */
+         [[eosio::action]]
+         void rexmaturity(const uint32_t num_of_maturity_buckets);
 
          /**
           * Undelegate bandwidth action, decreases the total tokens delegated by `from` to `receiver` and/or
@@ -1569,7 +1586,7 @@ namespace eosiosystem {
          bool rex_loans_available()const;
          bool rex_system_initialized()const { return _rexpool.begin() != _rexpool.end(); }
          bool rex_available()const { return rex_system_initialized() && _rexpool.begin()->total_rex.amount > 0; }
-         static time_point_sec get_rex_maturity();
+         static time_point_sec get_rex_maturity(const name& system_account_name = "eosio"_n );
          asset add_to_rex_balance( const name& owner, const asset& payment, const asset& rex_received );
          asset add_to_rex_pool( const asset& payment );
          void add_to_rex_return_pool( const asset& fee );

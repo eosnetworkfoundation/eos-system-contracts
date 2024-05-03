@@ -8,6 +8,20 @@ namespace eosiosystem {
    using eosio::token;
    using eosio::seconds;
 
+   void system_contract::rexmaturity(const uint32_t num_of_maturity_buckets)
+   {
+      require_auth(get_self());
+
+      check(num_of_maturity_buckets > 0, "num_of_maturity_buckets must be positive");
+      check(num_of_maturity_buckets <= 30, "num_of_maturity_buckets must be less than or equal to 30");
+
+      auto state = _rexmaturity.get_or_default();
+      if ( _rexmaturity.exists() ) check(state.num_of_maturity_buckets != num_of_maturity_buckets, "num_of_maturity_buckets is the same as the current value");
+
+      state.num_of_maturity_buckets = num_of_maturity_buckets;
+      _rexmaturity.set(state, get_self());
+   }
+
    void system_contract::deposit( const name& owner, const asset& amount )
    {
       require_auth( owner );
@@ -959,9 +973,10 @@ namespace eosiosystem {
     *
     * @return time_point_sec
     */
-   time_point_sec system_contract::get_rex_maturity()
+   time_point_sec system_contract::get_rex_maturity( const name& system_account_name )
    {
-      const uint32_t num_of_maturity_buckets = 5;
+      rex_maturity_singleton _rexmaturity(system_account_name, system_account_name.value);
+      const uint32_t num_of_maturity_buckets = _rexmaturity.get_or_default().num_of_maturity_buckets; // default 5
       static const uint32_t now = current_time_point().sec_since_epoch();
       static const uint32_t r   = now % seconds_per_day;
       static const time_point_sec rms{ now - r + num_of_maturity_buckets * seconds_per_day };
