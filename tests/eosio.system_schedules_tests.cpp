@@ -54,6 +54,9 @@ BOOST_FIXTURE_TEST_CASE(set_schedules, eosio_system_tester) try {
    BOOST_REQUIRE_EQUAL( success(), execschedule(alice) );
    BOOST_REQUIRE_EQUAL( get_global_state4()["continuous_rate"].as_double(), 0.0 ); // 0% annual rate
 
+   // no more schedules
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg("no schedule to execute"), execschedule(alice) );
+
 } FC_LOG_AND_RETHROW()
 
 BOOST_AUTO_TEST_SUITE_END()
