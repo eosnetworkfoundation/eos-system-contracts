@@ -24,10 +24,11 @@ BOOST_FIXTURE_TEST_CASE(set_schedules, eosio_system_tester) try {
    BOOST_REQUIRE_EQUAL( success(), setschedule(start_time, 200) ); // allow override existing schedules
    BOOST_REQUIRE_EQUAL( success(), delschedule(start_time) );
 
-   // set 3 future schedules
+   // set 4 future schedules
    BOOST_REQUIRE_EQUAL( success(), setschedule(time_point_sec(start_time), 200) );
    BOOST_REQUIRE_EQUAL( success(), setschedule(time_point_sec(initial_start_time + YEAR * 4), 100) );
    BOOST_REQUIRE_EQUAL( success(), setschedule(time_point_sec(initial_start_time + YEAR * 8), 50) );
+   BOOST_REQUIRE_EQUAL( success(), setschedule(time_point_sec(initial_start_time + YEAR * 12), 0) );
 
    // current state prior to first schedule
    const double before = get_global_state4()["continuous_rate"].as_double();
@@ -48,6 +49,10 @@ BOOST_FIXTURE_TEST_CASE(set_schedules, eosio_system_tester) try {
    produce_block( fc::days(365 * 4) ); // advanced to year 12
    BOOST_REQUIRE_EQUAL( success(), execschedule(alice) );
    BOOST_REQUIRE_EQUAL( get_global_state4()["continuous_rate"].as_double(), 0.0049875415110390738 ); // 0.5% annual rate
+
+   produce_block( fc::days(365 * 4) ); // advanced to year 16
+   BOOST_REQUIRE_EQUAL( success(), execschedule(alice) );
+   BOOST_REQUIRE_EQUAL( get_global_state4()["continuous_rate"].as_double(), 0.0 ); // 0% annual rate
 
 } FC_LOG_AND_RETHROW()
 

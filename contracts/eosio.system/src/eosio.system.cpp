@@ -461,7 +461,8 @@ namespace eosiosystem {
    bool system_contract::execute_next_schedule()
    {
       auto itr = _schedules.begin();
-      if ( itr->annual_rate == 0 ) return false; // row is empty
+      if (itr == _schedules.end()) return false; // no schedules to execute
+
       if ( current_time_point().sec_since_epoch() >= itr->start_time.sec_since_epoch() ) {
          _gstate4.continuous_rate = get_continuous_rate(itr->annual_rate);
          _schedules.erase( itr );
