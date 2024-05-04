@@ -753,3 +753,39 @@ icon: @ICON_BASE_URL@/@RESOURCE_ICON_URI@
 ---
 
 Users may use the powerup action to reserve resources.
+
+<h1 class="contract">setschedule</h1>
+
+---
+spec_version: "0.2.0"
+title: Set Annual Rate Schedule
+summary: 'Set annual rate parameters'
+icon: @ICON_BASE_URL@/@ADMIN_ICON_URI@
+---
+
+{{$action.account}} sets a pre-determined inflation schedule to adjust parameters as follows:
+
+* Start time of the schedule: {{start_time}}
+* Annual inflation rate (in units of a hundredth of a percent): {{annual_rate}}
+
+<h1 class="contract">delschedule</h1>
+
+---
+spec_version: "0.2.0"
+title: Delete Annual Rate Schedule
+summary: 'Delete annual rate schedule'
+icon: @ICON_BASE_URL@/@ADMIN_ICON_URI@
+---
+
+{{$action.account}} to delete a pre-determined inflation schedule from {{start_time}} start time.
+
+<h1 class="contract">execschedule</h1>
+
+---
+spec_version: "0.2.0"
+title: Execute Next Annual Rate Schedule
+summary: 'Execute next annual rate schedule'
+icon: @ICON_BASE_URL@/@ADMIN_ICON_URI@
+---
+
+{{$action.account}} to execute the next upcoming annual rate schedule.

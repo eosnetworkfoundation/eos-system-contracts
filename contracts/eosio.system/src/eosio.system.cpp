@@ -24,6 +24,7 @@ namespace eosiosystem {
     _global2(get_self(), get_self().value),
     _global3(get_self(), get_self().value),
     _global4(get_self(), get_self().value),
+    _schedules(get_self(), get_self().value),
     _rammarket(get_self(), get_self().value),
     _rexpool(get_self(), get_self().value),
     _rexretpool(get_self(), get_self().value),
@@ -421,6 +422,52 @@ namespace eosiosystem {
       _gstate4.inflation_pay_factor = inflation_pay_factor;
       _gstate4.votepay_factor       = votepay_factor;
       _global4.set( _gstate4, get_self() );
+   }
+
+   void system_contract::setschedule( const time_point_sec start_time, int64_t annual_rate )
+   {
+      require_auth( get_self() );
+
+      check(annual_rate >= 0, "annual_rate can't be negative");
+
+      auto itr = _schedules.find( start_time.sec_since_epoch() );
+
+      if( itr == _schedules.end() ) {
+         _schedules.emplace( get_self(), [&]( auto& s ) {
+            s.start_time = start_time;
+            s.annual_rate = annual_rate;
+         });
+      } else {
+         _schedules.modify( itr, same_payer, [&]( auto& s ) {
+            check( annual_rate != s.annual_rate, "annual_rate was not modified");
+            s.annual_rate = annual_rate;
+         });
+      }
+   }
+
+   void system_contract::delschedule( const time_point_sec start_time )
+   {
+      require_auth( get_self() );
+
+      auto itr = _schedules.require_find( start_time.sec_since_epoch(), "schedule not found" );
+      _schedules.erase( itr );
+   }
+
+   void system_contract::execschedule()
+   {
+      check(execute_next_schedule(), "no schedule to execute");
+   }
+
+   bool system_contract::execute_next_schedule()
+   {
+      auto itr = _schedules.begin();
+      if ( itr->annual_rate == 0 ) return false; // row is empty
+      if ( current_time_point().sec_since_epoch() >= itr->start_time.sec_since_epoch() ) {
+         _gstate4.continuous_rate = get_continuous_rate(itr->annual_rate);
+         _schedules.erase( itr );
+         return true;
+      }
+      return false;
    }
 
    /**

@@ -197,6 +197,17 @@ namespace eosiosystem {
       EOSLIB_SERIALIZE( eosio_global_state4, (continuous_rate)(inflation_pay_factor)(votepay_factor) )
    };
 
+   // Defines the schedule for pre-determined annual rate changes.
+   struct [[eosio::table, eosio::contract("eosio.system")]] schedules_info {
+      time_point_sec start_time;
+      int64_t annual_rate;
+
+      uint64_t primary_key() const { return start_time.sec_since_epoch(); }
+
+      // explicit serialization macro is not necessary, used here only to improve compilation time
+      EOSLIB_SERIALIZE( schedules_info, (start_time)(annual_rate) )
+   };
+
    inline eosio::block_signing_authority convert_to_block_signing_authority( const eosio::public_key& producer_key ) {
       return eosio::block_signing_authority_v0{ .threshold = 1, .keys = {{producer_key, 1}} };
    }
@@ -329,6 +340,7 @@ namespace eosiosystem {
 
    typedef eosio::multi_index< "producers2"_n, producer_info2 > producers_table2;
 
+   typedef eosio::multi_index< "schedules"_n, schedules_info > schedules_table;
 
    typedef eosio::singleton< "global"_n, eosio_global_state >   global_state_singleton;
 
@@ -713,6 +725,7 @@ namespace eosiosystem {
          eosio_global_state2      _gstate2;
          eosio_global_state3      _gstate3;
          eosio_global_state4      _gstate4;
+         schedules_table          _schedules;
          rammarket                _rammarket;
          rex_pool_table           _rexpool;
          rex_return_pool_table    _rexretpool;
@@ -1430,6 +1443,35 @@ namespace eosiosystem {
          void setinflation( int64_t annual_rate, int64_t inflation_pay_factor, int64_t votepay_factor );
 
          /**
+          * Set the schedule for pre-determined annual rate changes.
+          *
+          * @param start_time - the time to start the schedule.
+          * @param annual_rate - the annual inflation rate of the core token supply.
+          *     (eg. For 5% Annual inflation => annual_rate=500
+          *          For 1.5% Annual inflation => annual_rate=150
+          */
+         [[eosio::action]]
+         void setschedule( const time_point_sec start_time, int64_t annual_rate );
+
+         /**
+          * Delete the schedule for pre-determined annual rate changes.
+          *
+          * @param start_time - the time to start the schedule.
+          */
+         [[eosio::action]]
+         void delschedule( const time_point_sec start_time );
+
+         /**
+          * Executes the next schedule for pre-determined annual rate changes.
+          *
+          * Start time of the schedule must be in the past.
+          *
+          * Can be executed by any account.
+          */
+         [[eosio::action]]
+         void execschedule();
+
+         /**
           * Facilitates the removal of vested staked tokens from an account, ensuring that these tokens are reallocated to the system's pool.
           *
           * @param account - the target account from which tokens are to be unvested.
@@ -1542,6 +1584,9 @@ namespace eosiosystem {
          using cfgpowerup_action = eosio::action_wrapper<"cfgpowerup"_n, &system_contract::cfgpowerup>;
          using powerupexec_action = eosio::action_wrapper<"powerupexec"_n, &system_contract::powerupexec>;
          using powerup_action = eosio::action_wrapper<"powerup"_n, &system_contract::powerup>;
+         using execschedule_action = eosio::action_wrapper<"execschedule"_n, &system_contract::execschedule>;
+         using setschedule_action = eosio::action_wrapper<"setschedule"_n, &system_contract::setschedule>;
+         using delschedule_action = eosio::action_wrapper<"delschedule"_n, &system_contract::delschedule>;
 
       private:
          // Implementation details:
@@ -1557,6 +1602,7 @@ namespace eosiosystem {
          static eosio_global_state4 get_default_inflation_parameters();
          symbol core_symbol()const;
          void update_ram_supply();
+         bool execute_next_schedule();
 
          // defined in rex.cpp
          void runrex( uint16_t max );
