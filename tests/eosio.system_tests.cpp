@@ -1654,7 +1654,7 @@ BOOST_FIXTURE_TEST_CASE(producer_pay, eosio_system_tester, * boost::unit_test::t
       const asset after_system_balance = get_balance(config::system_account_name);
       const asset after_producer_balance = get_balance("defproducera"_n);
 
-      BOOST_REQUIRE_EQUAL(after_supply.get_amount() - before_supply.get_amount(), 0);
+      BOOST_REQUIRE_EQUAL(after_supply.get_amount(), before_supply.get_amount());
       BOOST_REQUIRE_EQUAL(after_system_balance.get_amount() - before_system_balance.get_amount(), -1407793756);
       BOOST_REQUIRE_EQUAL(after_producer_balance.get_amount() - before_producer_balance.get_amount(), 281558751);
    }

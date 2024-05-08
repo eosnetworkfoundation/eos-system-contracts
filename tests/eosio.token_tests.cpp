@@ -272,7 +272,15 @@ BOOST_FIXTURE_TEST_CASE( issuefixed_tests, eosio_token_tester ) try {
    );
 
    BOOST_REQUIRE_EQUAL( wasm_assert_msg( "symbol precision mismatch" ),
-                        issuefixed( "alice"_n, asset::from_string("1 TKN"), "hola" )
+                        issuefixed( "alice"_n, asset::from_string("1 TKN"), "" )
+   );
+
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "tokens can only be issued to issuer account" ),
+                        issuefixed( "bob"_n, asset::from_string("1.000 TKN"), "" )
+   );
+
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "must issue positive quantity" ),
+                        issuefixed( "alice"_n, asset::from_string("500.000 TKN"), "" )
    );
 
 } FC_LOG_AND_RETHROW()
