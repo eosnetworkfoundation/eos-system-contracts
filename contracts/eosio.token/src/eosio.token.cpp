@@ -49,6 +49,33 @@ void token::issue( const name& to, const asset& quantity, const string& memo )
     add_balance( st.issuer, quantity, st.issuer );
 }
 
+void token::issuefixed( const name& to, const asset& supply, const string& memo )
+{
+   const asset circulating_supply = get_supply( get_self(), supply.symbol.code() );
+   check( circulating_supply.symbol == supply.symbol, "symbol precision mismatch" );
+   const asset quantity = supply - circulating_supply;
+   issue( to, quantity, memo );
+}
+
+void token::setmaxsupply( const name& issuer, const asset& maximum_supply )
+{
+   auto sym = maximum_supply.symbol;
+   check( maximum_supply.is_valid(), "invalid supply");
+   check( maximum_supply.amount > 0, "max-supply must be positive");
+
+   stats statstable( get_self(), sym.code().raw() );
+   auto & st = statstable.get( sym.code().raw(), "token supply does not exist" );
+   check( issuer == st.issuer, "only issuer can set token maximum supply" );
+   require_auth( st.issuer );
+
+   check( maximum_supply.symbol == st.supply.symbol, "symbol precision mismatch" );
+   check( maximum_supply.amount >= st.supply.amount, "max supply is less than available supply");
+
+   statstable.modify( st, same_payer, [&]( auto& s ) {
+      s.max_supply = maximum_supply;
+   });
+}
+
 void token::retire( const asset& quantity, const string& memo )
 {
     auto sym = quantity.symbol;
