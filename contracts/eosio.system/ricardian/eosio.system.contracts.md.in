@@ -766,7 +766,7 @@ icon: @ICON_BASE_URL@/@ADMIN_ICON_URI@
 {{$action.account}} sets a pre-determined inflation schedule to adjust parameters as follows:
 
 * Start time of the schedule: {{start_time}}
-* Annual inflation rate (in units of a hundredth of a percent): {{annual_rate}}
+* The continuous rate of inflation: {{continuous_rate}}
 
 <h1 class="contract">delschedule</h1>
 

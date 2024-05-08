@@ -1411,10 +1411,10 @@ public:
       );
    }
 
-   action_result setschedule( const time_point_sec start_time, int64_t annual_rate ) {
+   action_result setschedule( const time_point_sec start_time, double continuous_rate ) {
       return push_action( "eosio"_n, "setschedule"_n, mvo()
                ("start_time", start_time)
-               ("annual_rate",     annual_rate)
+               ("continuous_rate",     continuous_rate)
       );
    }
 
@@ -1426,6 +1426,11 @@ public:
 
    action_result execschedule( const name executor ) {
       return push_action( executor, "execschedule"_n, mvo());
+   }
+
+   fc::variant get_vesting_schedule( uint64_t time ) {
+      vector<char> data = get_row_by_account( "eosio"_n, "eosio"_n, "schedules"_n, account_name(time) );
+      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "schedules_info", data, abi_serializer::create_yield_function(abi_serializer_max_time) );
    }
 
    abi_serializer abi_ser;

@@ -200,12 +200,12 @@ namespace eosiosystem {
    // Defines the schedule for pre-determined annual rate changes.
    struct [[eosio::table, eosio::contract("eosio.system")]] schedules_info {
       time_point_sec start_time;
-      int64_t annual_rate;
+      double   continuous_rate;
 
       uint64_t primary_key() const { return start_time.sec_since_epoch(); }
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( schedules_info, (start_time)(annual_rate) )
+      EOSLIB_SERIALIZE( schedules_info, (start_time)(continuous_rate) )
    };
 
    inline eosio::block_signing_authority convert_to_block_signing_authority( const eosio::public_key& producer_key ) {
@@ -1451,7 +1451,7 @@ namespace eosiosystem {
           *          For 1.5% Annual inflation => annual_rate=150
           */
          [[eosio::action]]
-         void setschedule( const time_point_sec start_time, int64_t annual_rate );
+         void setschedule( const time_point_sec start_time, double continuous_rate );
 
          /**
           * Delete the schedule for pre-determined annual rate changes.
@@ -1587,6 +1587,7 @@ namespace eosiosystem {
          using execschedule_action = eosio::action_wrapper<"execschedule"_n, &system_contract::execschedule>;
          using setschedule_action = eosio::action_wrapper<"setschedule"_n, &system_contract::setschedule>;
          using delschedule_action = eosio::action_wrapper<"delschedule"_n, &system_contract::delschedule>;
+         using unvest_action = eosio::action_wrapper<"unvest"_n, &system_contract::unvest>;
 
       private:
          // Implementation details:

@@ -424,23 +424,24 @@ namespace eosiosystem {
       _global4.set( _gstate4, get_self() );
    }
 
-   void system_contract::setschedule( const time_point_sec start_time, int64_t annual_rate )
+   void system_contract::setschedule( const time_point_sec start_time, double continuous_rate )
    {
       require_auth( get_self() );
 
-      check(annual_rate >= 0, "annual_rate can't be negative");
+      check(continuous_rate >= 0, "continuous_rate can't be negative");
+      check(continuous_rate <= 1, "continuous_rate can't be over 100%");
+      check(start_time.sec_since_epoch() >= current_time_point().sec_since_epoch(), "start_time cannot be in the past");
 
       auto itr = _schedules.find( start_time.sec_since_epoch() );
 
       if( itr == _schedules.end() ) {
          _schedules.emplace( get_self(), [&]( auto& s ) {
             s.start_time = start_time;
-            s.annual_rate = annual_rate;
+            s.continuous_rate = continuous_rate;
          });
       } else {
          _schedules.modify( itr, same_payer, [&]( auto& s ) {
-            check( annual_rate != s.annual_rate, "annual_rate was not modified");
-            s.annual_rate = annual_rate;
+            s.continuous_rate = continuous_rate;
          });
       }
    }
@@ -464,7 +465,7 @@ namespace eosiosystem {
       if (itr == _schedules.end()) return false; // no schedules to execute
 
       if ( current_time_point().sec_since_epoch() >= itr->start_time.sec_since_epoch() ) {
-         _gstate4.continuous_rate = get_continuous_rate(itr->annual_rate);
+         _gstate4.continuous_rate = itr->continuous_rate;
          _schedules.erase( itr );
          return true;
       }
