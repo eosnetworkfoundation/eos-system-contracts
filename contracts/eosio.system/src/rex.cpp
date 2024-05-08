@@ -71,12 +71,7 @@ namespace eosiosystem {
       if ( rex_maturity_state.buy_rex_to_savings ) {
          mvtosavings( from, rex_received );
       }
-
-      // sell any matured REX
-      // https://github.com/eosnetworkfoundation/eos-system-contracts/issues/134
-      if ( rex_maturity_state.sell_matured_rex ) {
-         process_sell_matured_rex( from );
-      }
+      process_sell_matured_rex( from );
 
       // dummy action added so that amount of REX tokens purchased shows up in action trace
       rex_results::buyresult_action buyrex_act( rex_account, std::vector<eosio::permission_level>{ } );
@@ -124,12 +119,7 @@ namespace eosiosystem {
       if ( rex_maturity_state.buy_rex_to_savings ) {
          mvtosavings( owner, rex_received );
       }
-
-      // sell any matured REX
-      // https://github.com/eosnetworkfoundation/eos-system-contracts/issues/134
-      if ( rex_maturity_state.sell_matured_rex ) {
-         process_sell_matured_rex( owner );
-      }
+      process_sell_matured_rex( owner );
 
       // dummy action added so that amount of REX tokens purchased shows up in action trace
       rex_results::buyresult_action buyrex_act( rex_account, std::vector<eosio::permission_level>{ } );
@@ -140,13 +130,7 @@ namespace eosiosystem {
    {
       require_auth( from );
       sell_rex( from, rex );
-
-      // sell any remaining matured REX
-      // https://github.com/eosnetworkfoundation/eos-system-contracts/issues/134
-      const auto rex_maturity_state = _rexmaturity.get_or_default();
-      if ( rex_maturity_state.sell_matured_rex ) {
-         process_sell_matured_rex( from );
-      }
+      process_sell_matured_rex( from );
    }
 
    void system_contract::sell_rex( const name& from, const asset& rex )
@@ -1033,6 +1017,9 @@ namespace eosiosystem {
     */
    void system_contract::process_sell_matured_rex( const name owner )
    {
+      const auto rex_maturity_state = _rexmaturity.get_or_default();
+      if ( rex_maturity_state.sell_matured_rex == false ) return; // skip selling matured REX
+
       const auto itr = _rexbalance.find( owner.value );
       if ( itr->matured_rex > 0 ) {
          sell_rex(owner, asset(itr->matured_rex, rex_symbol));
