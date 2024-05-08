@@ -8,17 +8,19 @@ namespace eosiosystem {
    using eosio::token;
    using eosio::seconds;
 
-   void system_contract::rexmaturity(const uint32_t num_of_maturity_buckets)
+   void system_contract::rexmaturity(const std::optional<uint32_t> num_of_maturity_buckets, const std::optional<bool> sell_matured_rex, const std::optional<bool> buy_rex_to_savings )
    {
       require_auth(get_self());
 
-      check(num_of_maturity_buckets > 0, "num_of_maturity_buckets must be positive");
-      check(num_of_maturity_buckets <= 30, "num_of_maturity_buckets must be less than or equal to 30");
-
       auto state = _rexmaturity.get_or_default();
-      if ( _rexmaturity.exists() ) check(state.num_of_maturity_buckets != num_of_maturity_buckets, "num_of_maturity_buckets is the same as the current value");
 
-      state.num_of_maturity_buckets = num_of_maturity_buckets;
+      check(*num_of_maturity_buckets > 0, "num_of_maturity_buckets must be positive");
+      check(*num_of_maturity_buckets <= 30, "num_of_maturity_buckets must be less than or equal to 30");
+      if ( _rexmaturity.exists() && num_of_maturity_buckets ) check(state.num_of_maturity_buckets != *num_of_maturity_buckets, "num_of_maturity_buckets is the same as the current value");
+
+      if ( num_of_maturity_buckets ) state.num_of_maturity_buckets = *num_of_maturity_buckets;
+      if ( sell_matured_rex ) state.sell_matured_rex = *sell_matured_rex;
+      if ( buy_rex_to_savings ) state.buy_rex_to_savings = *buy_rex_to_savings;
       _rexmaturity.set(state, get_self());
    }
 
@@ -63,9 +65,18 @@ namespace eosiosystem {
       runrex(2);
       update_rex_account( from, asset( 0, core_symbol() ), delta_rex_stake );
 
-      #if MATURED_REX_SOLD_AND_BUY_REX_TO_SAVINGS
+      // buying REX immediately moves to REX savings
+      // https://github.com/eosnetworkfoundation/eos-system-contracts/issues/135
+      const auto rex_maturity_state = _rexmaturity.get_or_default();
+      if ( rex_maturity_state.buy_rex_to_savings ) {
          mvtosavings( from, rex_received );
-      #endif
+      }
+
+      // sell any matured REX
+      // https://github.com/eosnetworkfoundation/eos-system-contracts/issues/134
+      if ( rex_maturity_state.sell_matured_rex ) {
+         process_sell_matured_rex( from );
+      }
 
       // dummy action added so that amount of REX tokens purchased shows up in action trace
       rex_results::buyresult_action buyrex_act( rex_account, std::vector<eosio::permission_level>{ } );
@@ -107,9 +118,18 @@ namespace eosiosystem {
       runrex(2);
       update_rex_account( owner, asset( 0, core_symbol() ), rex_stake_delta - payment, true );
 
-      #if MATURED_REX_SOLD_AND_BUY_REX_TO_SAVINGS
+      // unstake to REX immediately moves to REX savings
+      // https://github.com/eosnetworkfoundation/eos-system-contracts/issues/135
+      const auto rex_maturity_state = _rexmaturity.get_or_default();
+      if ( rex_maturity_state.buy_rex_to_savings ) {
          mvtosavings( owner, rex_received );
-      #endif
+      }
+
+      // sell any matured REX
+      // https://github.com/eosnetworkfoundation/eos-system-contracts/issues/134
+      if ( rex_maturity_state.sell_matured_rex ) {
+         process_sell_matured_rex( owner );
+      }
 
       // dummy action added so that amount of REX tokens purchased shows up in action trace
       rex_results::buyresult_action buyrex_act( rex_account, std::vector<eosio::permission_level>{ } );
@@ -120,6 +140,13 @@ namespace eosiosystem {
    {
       require_auth( from );
       sell_rex( from, rex );
+
+      // sell any remaining matured REX
+      // https://github.com/eosnetworkfoundation/eos-system-contracts/issues/134
+      const auto rex_maturity_state = _rexmaturity.get_or_default();
+      if ( rex_maturity_state.sell_matured_rex ) {
+         process_sell_matured_rex( from );
+      }
    }
 
    void system_contract::sell_rex( const name& from, const asset& rex )
@@ -995,12 +1022,21 @@ namespace eosiosystem {
             rb.matured_rex += rb.rex_maturities.front().second;
             rb.rex_maturities.erase(rb.rex_maturities.begin());
          }
-         #if MATURED_REX_SOLD_AND_BUY_REX_TO_SAVINGS
-            if ( rb.matured_rex > 0 ) {
-               sell_rex(rb.owner, asset(rb.matured_rex, rex_symbol));
-            }
-         #endif
       });
+   }
+
+   /**
+    * @brief Sells matured REX tokens
+    *        https://github.com/eosnetworkfoundation/eos-system-contracts/issues/134
+    *
+    * @param owner - owner account name
+    */
+   void system_contract::process_sell_matured_rex( const name owner )
+   {
+      const auto itr = _rexbalance.find( owner.value );
+      if ( itr->matured_rex > 0 ) {
+         sell_rex(owner, asset(itr->matured_rex, rex_symbol));
+      }
    }
 
    /**

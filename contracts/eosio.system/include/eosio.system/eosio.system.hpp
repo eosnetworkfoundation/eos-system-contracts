@@ -24,15 +24,6 @@
 // be set to 0.
 #define CHANNEL_RAM_AND_NAMEBID_FEES_TO_REX 1
 
-#ifdef MATURED_REX_SOLD_AND_BUY_REX_TO_SAVINGS
-#undef MATURED_REX_SOLD_AND_BUY_REX_TO_SAVINGS
-#endif
-// MATURED_REX_SOLD_AND_BUY_REX_TO_SAVINGS macro determines whether matured REX is sold immediately and buying REX is moved immediately to REX savings.
-// In order to enable this behavior, the macro must be set to 1.
-// https://github.com/eosnetworkfoundation/eos-system-contracts/issues/134
-// https://github.com/eosnetworkfoundation/eos-system-contracts/issues/135
-#define MATURED_REX_SOLD_AND_BUY_REX_TO_SAVINGS 0
-
 namespace eosiosystem {
 
    using eosio::asset;
@@ -550,8 +541,8 @@ namespace eosiosystem {
 
    struct [[eosio::table("rexmaturity"),eosio::contract("eosio.system")]] rex_maturity {
       uint32_t num_of_maturity_buckets = 5;
-
-      EOSLIB_SERIALIZE( rex_maturity, (num_of_maturity_buckets) )
+      bool sell_matured_rex = false;
+      bool buy_rex_to_savings = false;
    };
 
    typedef eosio::singleton<"rexmaturity"_n, rex_maturity> rex_maturity_singleton;
@@ -1095,9 +1086,13 @@ namespace eosiosystem {
           * Facilitates the modification of REX maturity buckets
           *
           * @param num_of_maturity_buckets - used to calculate maturity time of purchase REX tokens from end of the day UTC.
+          * @param sell_matured_rex - if true, matured REX is sold immediately.
+          *                           https://github.com/eosnetworkfoundation/eos-system-contracts/issues/134
+          * @param buy_rex_to_savings - if true, buying REX is moved immediately to REX savings.
+          *                             https://github.com/eosnetworkfoundation/eos-system-contracts/issues/135
           */
          [[eosio::action]]
-         void rexmaturity(const uint32_t num_of_maturity_buckets);
+         void rexmaturity(const std::optional<uint32_t> num_of_maturity_buckets, const std::optional<bool> sell_matured_rex, const std::optional<bool> buy_rex_to_savings );
 
          /**
           * Undelegate bandwidth action, decreases the total tokens delegated by `from` to `receiver` and/or
@@ -1592,6 +1587,7 @@ namespace eosiosystem {
          asset add_to_rex_pool( const asset& payment );
          void add_to_rex_return_pool( const asset& fee );
          void process_rex_maturities( const rex_balance_table::const_iterator& bitr );
+         void process_sell_matured_rex( const name owner );
          void consolidate_rex_balance( const rex_balance_table::const_iterator& bitr,
                                        const asset& rex_in_sell_order );
          int64_t read_rex_savings( const rex_balance_table::const_iterator& bitr );
