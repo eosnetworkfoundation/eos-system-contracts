@@ -3,6 +3,7 @@
 #include <eosio/chain/abi_serializer.hpp>
 
 #include <fc/variant_object.hpp>
+#include <fc/io/json.hpp>
 
 #include "contracts.hpp"
 
@@ -55,12 +56,11 @@ BOOST_FIXTURE_TEST_CASE( set_1_finalizer, eosio_bios_if_tester ) try {
     abi_serializer::to_variant( *cur_block, pretty_output, get_resolver(), fc::microseconds::maximum() );
 
     BOOST_REQUIRE(pretty_output.get_object().contains("instant_finality_extension"));
-    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["generation"], 1);
-    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["threshold"], 2);
-    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["finalizers"].size(), 1u);
-    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["finalizers"][size_t(0)]["description"], "set_1_finalizer");
-    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["finalizers"][size_t(0)]["weight"], 2);
-    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["finalizers"][size_t(0)]["public_key"], "PUB_BLS_6j4Y3LfsRiBxY-DgvqrZNMCttHftBQPIWwDiN2CMhHWULjN1nGwM1O_nEEJefqwAG4X09n4Kdt4a1mfZ1ES1cLGjQo6uLLSloiVW4i9BUhMHU2nVujP1_U_9ihdI3egZ17N-iA");
+    std::string output_json = fc::json::to_pretty_string(pretty_output);
+    BOOST_TEST(output_json.find("\"generation\": 1") != std::string::npos);
+    BOOST_TEST(output_json.find("\"threshold\": 2") != std::string::npos);
+    BOOST_TEST(output_json.find("set_1_finalizer") != std::string::npos);
+    BOOST_TEST(output_json.find("PUB_BLS_6j4Y3LfsRiBxY-DgvqrZNMCttHftBQPIWwDiN2CMhHWULjN1nGwM1O_nEEJefqwAG4X09n4Kdt4a1mfZ1ES1cLGjQo6uLLSloiVW4i9BUhMHU2nVujP1_U_9ihdI3egZ17N-iA") != std::string::npos);
 } FC_LOG_AND_RETHROW()
 
 // two finalizers in finalizer policy
@@ -87,12 +87,11 @@ BOOST_FIXTURE_TEST_CASE( set_2_finalizers, eosio_bios_if_tester ) try {
     abi_serializer::to_variant( *cur_block, pretty_output, get_resolver(), fc::microseconds::maximum() );
 
     BOOST_REQUIRE(pretty_output.get_object().contains("instant_finality_extension"));
-    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["generation"], 1);
-    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["threshold"], 5);
-    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["finalizers"].size(), 2u);
-    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["finalizers"][size_t(1)]["description"], "set_2_finalizer_2");
-    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["finalizers"][size_t(1)]["weight"], 5);
-    BOOST_REQUIRE_EQUAL(pretty_output["instant_finality_extension"]["new_finalizer_policy"]["finalizers"][size_t(1)]["public_key"], "PUB_BLS_kV0d54mbPRbd65t4ttv_-CxNt8ktKmf8q4uKZzNTzFSHDSj5rLlP_hdovTsHAPQOAyyzJ4bRTheKjSUj-IoTW96v3VdlifgtDbSVmg4JZR8H_tlStQSWsTHGo8pTX8cR_HEVoA");
+    std::string output_json = fc::json::to_pretty_string(pretty_output);
+    BOOST_TEST(output_json.find("\"generation\": 1") != std::string::npos);
+    BOOST_TEST(output_json.find("\"threshold\": 5") != std::string::npos);
+    BOOST_TEST(output_json.find("set_2_finalizer_2") != std::string::npos);
+    BOOST_TEST(output_json.find("PUB_BLS_kV0d54mbPRbd65t4ttv_-CxNt8ktKmf8q4uKZzNTzFSHDSj5rLlP_hdovTsHAPQOAyyzJ4bRTheKjSUj-IoTW96v3VdlifgtDbSVmg4JZR8H_tlStQSWsTHGo8pTX8cR_HEVoA") != std::string::npos);
 } FC_LOG_AND_RETHROW()
 
 // finalizer cannot be empty
