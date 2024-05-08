@@ -74,16 +74,16 @@ BOOST_FIXTURE_TEST_CASE(set_schedules, eosio_system_tester) try {
    BOOST_REQUIRE_EQUAL( wasm_assert_msg("no schedule to execute"), execschedule(alice) );
 
    // Can execute this schedule 1 second after, as that is its time
-   produce_block( fc::seconds(1) ); // advance to year 8
+   produce_block( fc::seconds(1) ); // advance to year 4
    BOOST_REQUIRE_EQUAL( control->pending_block_time().sec_since_epoch(), initial_start_time + YEAR * 4 ); // 2024-01-01T00:00
    BOOST_REQUIRE_EQUAL( success(), execschedule(alice) );
    BOOST_REQUIRE_EQUAL( get_global_state4()["continuous_rate"].as_double(), 0.01 ); // 1% continuous rate
 
-   produce_block( fc::days(365 * 4) ); // advanced to year 12
+   produce_block( fc::days(365 * 4) ); // advanced to year 8
    BOOST_REQUIRE_EQUAL( success(), execschedule(alice) );
    BOOST_REQUIRE_EQUAL( get_global_state4()["continuous_rate"].as_double(), 0.005 ); // 0.5% continuous rate
 
-   produce_block( fc::days(365 * 4) ); // advanced to year 16
+   produce_block( fc::days(365 * 4) ); // advanced to year 12
    BOOST_REQUIRE_EQUAL( success(), execschedule(alice) );
    BOOST_REQUIRE_EQUAL( get_global_state4()["continuous_rate"].as_double(), 0.0 ); // 0% continuous rate
 
