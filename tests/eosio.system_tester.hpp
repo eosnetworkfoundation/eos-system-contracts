@@ -874,6 +874,10 @@ public:
       return push_action( name(owner), "closerex"_n, mvo()("owner", owner) );
    }
 
+   action_result rexmaturity(const std::optional<uint32_t> num_of_maturity_buckets, const std::optional<bool> sell_matured_rex, const std::optional<bool> buy_rex_to_savings ) {
+      return push_action( "eosio"_n, "rexmaturity"_n, mvo()("num_of_maturity_buckets", num_of_maturity_buckets)("sell_matured_rex", sell_matured_rex)("buy_rex_to_savings", buy_rex_to_savings) );
+   }
+
    fc::variant get_last_loan(bool cpu) {
       vector<char> data;
       const auto& db = control->db();

@@ -16,7 +16,6 @@ namespace eosiosystem {
 
       check(*num_of_maturity_buckets > 0, "num_of_maturity_buckets must be positive");
       check(*num_of_maturity_buckets <= 30, "num_of_maturity_buckets must be less than or equal to 30");
-      if ( _rexmaturity.exists() && num_of_maturity_buckets ) check(state.num_of_maturity_buckets != *num_of_maturity_buckets, "num_of_maturity_buckets is the same as the current value");
 
       if ( num_of_maturity_buckets ) state.num_of_maturity_buckets = *num_of_maturity_buckets;
       if ( sell_matured_rex ) state.sell_matured_rex = *sell_matured_rex;
