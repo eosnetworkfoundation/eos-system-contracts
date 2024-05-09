@@ -241,13 +241,25 @@ namespace eosiosystem {
       }
    }
 
-   void validate_b1_vesting( int64_t stake ) {
+   std::pair<int64_t, int64_t> get_b1_vesting_info() {
       const int64_t base_time = 1527811200; /// Friday, June 1, 2018 12:00:00 AM UTC
       const int64_t current_time = 1638921540; /// Tuesday, December 7, 2021 11:59:00 PM UTC
-      const int64_t max_claimable = 100'000'000'0000ll;
-      const int64_t claimable = int64_t(max_claimable * double(current_time - base_time) / (10*seconds_per_year) );
+      const int64_t total_vesting = 100'000'000'0000ll;
+      const int64_t vested = int64_t(total_vesting * double(current_time - base_time) / (10*seconds_per_year) );
+      return { total_vesting, vested };
+   }
 
-      check( max_claimable - claimable <= stake, "b1 can only claim their tokens over 10 years" );
+
+   void validate_b1_vesting( int64_t new_stake, asset stake_change ) {
+      const auto [total_vesting, vested] = get_b1_vesting_info();
+      auto unvestable = total_vesting - vested;
+
+      auto hasAlreadyUnvested = new_stake < unvestable 
+            && stake_change.amount < 0 
+            && new_stake + std::abs(stake_change.amount) < unvestable;
+      if(hasAlreadyUnvested) return;
+
+      check( new_stake >= unvestable, "b1 can only claim what has already vested" ); 
    }
 
    void system_contract::changebw( name from, const name& receiver,
@@ -339,7 +351,7 @@ namespace eosiosystem {
       vote_stake_updater( from );
       const int64_t staked = update_voting_power( from, stake_net_delta + stake_cpu_delta );
       if ( from == "b1"_n ) {
-         validate_b1_vesting( staked );
+         validate_b1_vesting( staked, stake_net_delta + stake_cpu_delta );
       }
    }
 
@@ -479,26 +491,28 @@ namespace eosiosystem {
    {
       require_auth( get_self() );
 
-      const asset stake_delta = unvest_net_quantity + unvest_cpu_quantity;
-      asset zero_asset( 0, core_symbol() );
-      check( unvest_cpu_quantity >= zero_asset, "must unvest a positive amount" );
-      check( unvest_net_quantity >= zero_asset, "must unvest a positive amount" );
-      check( stake_delta.amount > 0, "must unvest a positive amount" );
       check( account == "b1"_n, "only b1 account can unvest");
 
+      check( unvest_cpu_quantity.amount >= 0, "must unvest a positive amount" );
+      check( unvest_net_quantity.amount >= 0, "must unvest a positive amount" );
+
+      const auto [total_vesting, vested] = get_b1_vesting_info();
+      const asset unvesting = unvest_net_quantity + unvest_cpu_quantity;
+      check( unvesting.amount <= total_vesting - vested , "can only unvest what is not already vested");
+
       // reduce staked from account
-      update_voting_power( account, -stake_delta );
+      update_voting_power( account, -unvesting );
       update_stake_delegated( account, account, -unvest_net_quantity, -unvest_cpu_quantity );
       update_user_resources( account, account, -unvest_net_quantity, -unvest_cpu_quantity );
       vote_stake_updater( account );
 
       // transfer unvested tokens to `eosio`
       token::transfer_action transfer_act{ token_account, { {stake_account, active_permission} } };
-      transfer_act.send( stake_account, get_self(), stake_delta, "unvest" );
+      transfer_act.send( stake_account, get_self(), unvesting, "unvest" );
 
       // retire unvested tokens
       token::retire_action retire_act{ token_account, { {"eosio"_n, active_permission} } };
-      retire_act.send( stake_delta, "unvest" );
+      retire_act.send( unvesting, "unvest" );
    } // unvest
 
 } //namespace eosiosystem

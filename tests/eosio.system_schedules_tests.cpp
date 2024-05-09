@@ -58,8 +58,10 @@ BOOST_FIXTURE_TEST_CASE(set_schedules, eosio_system_tester) try {
    check_schedule(time_point_sec(initial_start_time + YEAR * 4), 0.01);
    BOOST_REQUIRE_EQUAL( success(), setschedule(time_point_sec(initial_start_time + YEAR * 8), 0.005) );
    check_schedule(time_point_sec(initial_start_time + YEAR * 8), 0.005);
-   BOOST_REQUIRE_EQUAL( success(), setschedule(time_point_sec(initial_start_time + YEAR * 12), 0) );
-   check_schedule(time_point_sec(initial_start_time + YEAR * 12), 0);
+   BOOST_REQUIRE_EQUAL( success(), setschedule(time_point_sec(initial_start_time + YEAR * 12), 0.0005) );
+   check_schedule(time_point_sec(initial_start_time + YEAR * 12), 0.0005);
+   BOOST_REQUIRE_EQUAL( success(), setschedule(time_point_sec(initial_start_time + YEAR * 13), 0) );
+   check_schedule(time_point_sec(initial_start_time + YEAR * 13), 0);
 
    // current state prior to first schedule change execution
    const double before = get_global_state4()["continuous_rate"].as_double();
@@ -69,8 +71,9 @@ BOOST_FIXTURE_TEST_CASE(set_schedules, eosio_system_tester) try {
    BOOST_REQUIRE_EQUAL( get_global_state4()["continuous_rate"].as_double(), 0.02 );
 
    // Cannot execute schedule before its time is due
-   // we did 5 actions so we're late 2.5s late (5 blocks / 2 blocks per second)
-   produce_block( fc::seconds(YEAR * 4) - fc::milliseconds(3500) ); // advance to year 4
+   // (we did 6 actions so we're late 3s late)
+   auto late = fc::seconds(3);
+   produce_block( fc::seconds(YEAR * 4) - fc::seconds(1) - late ); // advance to year 4
    BOOST_REQUIRE_EQUAL( wasm_assert_msg("no schedule to execute"), execschedule(alice) );
 
    // Can execute this schedule 1 second after, as that is its time
@@ -84,6 +87,10 @@ BOOST_FIXTURE_TEST_CASE(set_schedules, eosio_system_tester) try {
    BOOST_REQUIRE_EQUAL( get_global_state4()["continuous_rate"].as_double(), 0.005 ); // 0.5% continuous rate
 
    produce_block( fc::days(365 * 4) ); // advanced to year 12
+   BOOST_REQUIRE_EQUAL( success(), execschedule(alice) );
+   BOOST_REQUIRE_EQUAL( get_global_state4()["continuous_rate"].as_double(), 0.0005 ); // 0.05% continuous rate
+
+   produce_block( fc::days(365 * 1) ); // advanced to year 13
    BOOST_REQUIRE_EQUAL( success(), execschedule(alice) );
    BOOST_REQUIRE_EQUAL( get_global_state4()["continuous_rate"].as_double(), 0.0 ); // 0% continuous rate
 
