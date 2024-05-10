@@ -26,11 +26,12 @@ BOOST_FIXTURE_TEST_CASE(set_schedules, eosio_system_tester) try {
    time_point_sec start_time = time_point_sec(initial_start_time);
 
 
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg("continuous_rate can't be over 100%"), setschedule(time_point_sec(0), 1.00001) );
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg("continuous_rate can't be over 100%"), setschedule(start_time, 1.00001) );
    BOOST_REQUIRE_EQUAL( wasm_assert_msg("continuous_rate can't be negative"), setschedule(start_time, -1) );
    BOOST_REQUIRE_EQUAL( wasm_assert_msg("schedule not found"), delschedule(start_time) );
 
    // action validation
+   BOOST_REQUIRE_EQUAL( success(), setschedule(time_point_sec(0), 0.05) ); 
    BOOST_REQUIRE_EQUAL( success(), setschedule(start_time, 0.05) ); 
    check_schedule(start_time, 0.05);
 
@@ -38,12 +39,10 @@ BOOST_FIXTURE_TEST_CASE(set_schedules, eosio_system_tester) try {
    BOOST_REQUIRE_EQUAL( success(), setschedule(start_time, 0.02) );
    check_schedule(start_time, 0.02);
    
-   // You should no longer be able to modify something that has passed the 
-   // execution date, or add new schedules in the past
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg("start_time cannot be in the past"), setschedule(start_time, 0.05) );
 
    // Should be able to delete schedules, even in the past
    BOOST_REQUIRE_EQUAL( success(), delschedule(start_time) );
+   BOOST_REQUIRE_EQUAL( success(), delschedule(time_point_sec(0)) );
    BOOST_REQUIRE_EQUAL( wasm_assert_msg("schedule not found"), delschedule(start_time) );
 
    // Resetting timers to make math clean

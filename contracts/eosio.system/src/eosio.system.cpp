@@ -430,7 +430,6 @@ namespace eosiosystem {
 
       check(continuous_rate >= 0, "continuous_rate can't be negative");
       check(continuous_rate <= 1, "continuous_rate can't be over 100%");
-      check(start_time.sec_since_epoch() >= current_time_point().sec_since_epoch(), "start_time cannot be in the past");
 
       auto itr = _schedules.find( start_time.sec_since_epoch() );
 
