@@ -626,6 +626,20 @@ icon: @ICON_BASE_URL@/@ADMIN_ICON_URI@
 * Fraction of inflation used to reward block producers: 10000/{{inflation_pay_factor}}
 * Fraction of block producer rewards to be distributed proportional to blocks produced: 10000/{{votepay_factor}}
 
+<h1 class="contract">setpayfactor</h1>
+
+---
+spec_version: "0.2.0"
+title: Set Pay Factors
+summary: 'Set pay factors'
+icon: @ICON_BASE_URL@/@ADMIN_ICON_URI@
+---
+
+{{$action.account}} sets the inflation parameters as follows:
+
+* Fraction of inflation used to reward block producers: 10000/{{inflation_pay_factor}}
+* Fraction of block producer rewards to be distributed proportional to blocks produced: 10000/{{votepay_factor}}
+
 <h1 class="contract">undelegatebw</h1>
 
 ---
