@@ -64,12 +64,7 @@ namespace eosiosystem {
       runrex(2);
       update_rex_account( from, asset( 0, core_symbol() ), delta_rex_stake );
 
-      // buying REX immediately moves to REX savings
-      // https://github.com/eosnetworkfoundation/eos-system-contracts/issues/135
-      const auto rex_maturity_state = _rexmaturity.get_or_default();
-      if ( rex_maturity_state.buy_rex_to_savings ) {
-         mvtosavings( from, rex_received );
-      }
+      process_buy_rex_to_savings( from, rex_received );
       process_sell_matured_rex( from );
 
       // dummy action added so that amount of REX tokens purchased shows up in action trace
@@ -112,12 +107,7 @@ namespace eosiosystem {
       runrex(2);
       update_rex_account( owner, asset( 0, core_symbol() ), rex_stake_delta - payment, true );
 
-      // unstake to REX immediately moves to REX savings
-      // https://github.com/eosnetworkfoundation/eos-system-contracts/issues/135
-      const auto rex_maturity_state = _rexmaturity.get_or_default();
-      if ( rex_maturity_state.buy_rex_to_savings ) {
-         mvtosavings( owner, rex_received );
-      }
+      process_buy_rex_to_savings( owner, rex_received );
       process_sell_matured_rex( owner );
 
       // dummy action added so that amount of REX tokens purchased shows up in action trace
@@ -1022,6 +1012,21 @@ namespace eosiosystem {
       const auto itr = _rexbalance.find( owner.value );
       if ( itr->matured_rex > 0 ) {
          sell_rex(owner, asset(itr->matured_rex, rex_symbol));
+      }
+   }
+
+   /**
+    * @brief Move new REX tokens to savings
+    *        https://github.com/eosnetworkfoundation/eos-system-contracts/issues/135
+    *
+    * @param owner - owner account name
+    * @param rex - amount of REX tokens to be moved to savings
+    */
+   void system_contract::process_buy_rex_to_savings( const name owner, const asset rex )
+   {
+      const auto rex_maturity_state = _rexmaturity.get_or_default();
+      if ( rex_maturity_state.buy_rex_to_savings && rex.amount > 0 ) {
+         mvtosavings( owner, rex );
       }
    }
 

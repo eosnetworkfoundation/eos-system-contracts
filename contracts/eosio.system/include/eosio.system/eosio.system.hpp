@@ -1588,6 +1588,7 @@ namespace eosiosystem {
          void add_to_rex_return_pool( const asset& fee );
          void process_rex_maturities( const rex_balance_table::const_iterator& bitr );
          void process_sell_matured_rex( const name owner );
+         void process_buy_rex_to_savings( const name owner, const asset rex );
          void consolidate_rex_balance( const rex_balance_table::const_iterator& bitr,
                                        const asset& rex_in_sell_order );
          int64_t read_rex_savings( const rex_balance_table::const_iterator& bitr );
