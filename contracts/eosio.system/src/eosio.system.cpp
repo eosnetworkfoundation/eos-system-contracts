@@ -478,6 +478,7 @@ namespace eosiosystem {
 
       if ( current_time_point().sec_since_epoch() >= itr->start_time.sec_since_epoch() ) {
          _gstate4.continuous_rate = itr->continuous_rate;
+         _global4.set( _gstate4, get_self() );
          _schedules.erase( itr );
          return true;
       }
