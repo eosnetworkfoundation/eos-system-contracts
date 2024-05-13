@@ -5464,10 +5464,16 @@ BOOST_FIXTURE_TEST_CASE( donate_to_rex, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL( wasm_assert_msg( "quantity must be positive" ),
                         donatetorex( bob, core_sym::from_string("-100.0000"), "") );
 
-   const asset initial_eosio_rex_balance = get_balance("eosio.rex"_n);
-   BOOST_REQUIRE_EQUAL( success(), donatetorex( bob, core_sym::from_string("500.0000"), "") );
-   BOOST_REQUIRE_EQUAL( initial_eosio_rex_balance + core_sym::from_string("500.0000"), get_balance("eosio.rex"_n) );
-
+   BOOST_REQUIRE_EQUAL( success(), donatetorex( bob, core_sym::from_string("100.0000"), "") );
+   
+   
+   for (int i = 0; i < 4; ++i) {
+      const asset rex_balance = get_balance("eosio.rex"_n);
+      const int64_t rex_proceeds = get_rex_return_pool()["proceeds"].as<int64_t>();
+      BOOST_REQUIRE_EQUAL( success(), donatetorex( bob, core_sym::from_string("100.0000"), "") );
+      BOOST_REQUIRE_EQUAL( rex_balance + core_sym::from_string("100.0000"), get_balance("eosio.rex"_n) );
+      BOOST_REQUIRE_EQUAL( rex_proceeds + 1000000, get_rex_return_pool()["proceeds"].as<int64_t>() );
+   }
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE( set_rex, eosio_system_tester ) try {
