@@ -64,7 +64,12 @@ namespace eosiosystem {
                 (current_time_point() - _gstate.thresh_activated_stake_time) > microseconds(14 * useconds_per_day)
             ) {
                _gstate.last_name_close = timestamp;
-               channel_namebid_to_rex( highest->high_bid );
+               channel_to_system_fees( names_account, asset( highest->high_bid, core_symbol() ) );
+
+               // logging
+               system_contract::logsystemfee_action logsystemfee_act{ get_self(), { {get_self(), active_permission} } };
+               logsystemfee_act.send( names_account, asset( highest->high_bid, core_symbol() ), "buy name" );
+
                idx.modify( highest, same_payer, [&]( auto& b ){
                   b.high_bid = -b.high_bid;
                });
@@ -119,7 +124,7 @@ namespace eosiosystem {
             {
                token::transfer_action transfer_act{ token_account, { {get_self(), active_permission} } };
                if( to_savings > 0 ) {
-                  transfer_act.send( get_self(), saving_account, asset(to_savings, core_symbol()), "unallocated inflation" );
+                  transfer_act.send( get_self(), saving_account, asset(to_savings, core_symbol()), "unallocated bucket" );
                }
                if( to_per_block_pay > 0 ) {
                   transfer_act.send( get_self(), bpay_account, asset(to_per_block_pay, core_symbol()), "fund per-block bucket" );

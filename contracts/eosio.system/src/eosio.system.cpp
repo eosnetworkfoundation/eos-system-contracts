@@ -54,7 +54,7 @@ namespace eosiosystem {
    }
 
    symbol system_contract::core_symbol()const {
-      const static auto sym = get_core_symbol( _rammarket );
+      const static auto sym = get_core_symbol();
       return sym;
    }
 
@@ -108,6 +108,11 @@ namespace eosiosystem {
 
       update_ram_supply();
       _gstate2.new_ram_per_block = bytes_per_block;
+   }
+
+   void system_contract::channel_to_system_fees( const name& from, const asset& amount ) {
+      token::transfer_action transfer_act{ token_account, { from, active_permission } };
+      transfer_act.send( from, fees_account, amount, "transfer from " + from.to_string() + " to " + fees_account.to_string() );
    }
 
 #ifdef SYSTEM_BLOCKCHAIN_PARAMETERS
@@ -389,6 +394,10 @@ namespace eosiosystem {
    void system_contract::activate( const eosio::checksum256& feature_digest ) {
       require_auth( get_self() );
       preactivate_feature( feature_digest );
+   }
+
+   void system_contract::logsystemfee( const name& protocol, const asset& fee, const std::string& memo ) {
+      require_auth( get_self() );
    }
 
    void system_contract::rmvproducer( const name& producer ) {

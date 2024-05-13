@@ -562,6 +562,7 @@ namespace eosiosystem {
       asset quantity;
       int64_t bytes_sold;
       int64_t ram_bytes;
+      asset fee;
    };
 
    struct action_return_buyram {
@@ -570,6 +571,7 @@ namespace eosiosystem {
       asset quantity;
       int64_t bytes_purchased;
       int64_t ram_bytes;
+      asset fee;
    };
 
    struct action_return_ramtransfer {
@@ -745,6 +747,8 @@ namespace eosiosystem {
          static constexpr eosio::name names_account{"eosio.names"_n};
          static constexpr eosio::name saving_account{"eosio.saving"_n};
          static constexpr eosio::name rex_account{"eosio.rex"_n};
+         static constexpr eosio::name fees_account{"eosio.fees"_n};
+         static constexpr eosio::name powerup_account{"eosio.powup"_n};
          static constexpr eosio::name reserve_account{"eosio.reserv"_n}; // cspell:disable-line
          static constexpr eosio::name null_account{"eosio.null"_n};
          static constexpr symbol ramcore_symbol = symbol(symbol_code("RAMCORE"), 4);
@@ -758,8 +762,21 @@ namespace eosiosystem {
           // @param system_account - the system account to get the core symbol for.
          static symbol get_core_symbol( name system_account = "eosio"_n ) {
             rammarket rm(system_account, system_account.value);
-            const static auto sym = get_core_symbol( rm );
-            return sym;
+            auto itr = rm.find(ramcore_symbol.raw());
+            check(itr != rm.end(), "system contract must first be initialized");
+            return itr->quote.balance.symbol;
+         }
+
+         // Returns true/false if the rex system is initialized
+         static bool rex_system_initialized( name system_account = "eosio"_n ) {
+            eosiosystem::rex_pool_table _rexpool( system_account, system_account.value );
+            return _rexpool.begin() != _rexpool.end();
+         }
+
+         // Returns true/false if the rex system is available
+         static bool rex_available( name system_account = "eosio"_n ) {
+            eosiosystem::rex_pool_table _rexpool( system_account, system_account.value );
+            return rex_system_initialized() && _rexpool.begin()->total_rex.amount > 0;
          }
 
          // Actions:
@@ -835,6 +852,16 @@ namespace eosiosystem {
           */
          [[eosio::action]]
          void activate( const eosio::checksum256& feature_digest );
+
+         /**
+          * Logging for actions resulting in system fees.
+          *
+          * @param protocol - name of protocol fees were earned from.
+          * @param fee - the amount of fees collected by system.
+          * @param memo - (optional) the memo associated with the action.
+          */
+         [[eosio::action]]
+         void logsystemfee( const name& protocol, const asset& fee, const std::string& memo );
 
          // functions defined in delegate_bandwidth.cpp
 
@@ -1093,6 +1120,17 @@ namespace eosiosystem {
          void closerex( const name& owner );
 
          /**
+          * Donatetorex action, donates funds to REX, increases REX pool return buckets
+          * Executes inline transfer from payer to system contract of tokens will be executed.
+          *
+          * @param payer - the payer of donated funds.
+          * @param quantity - the quantity of tokens to donated to REX with.
+          * @param memo - the memo string to accompany the transaction.
+          */
+         [[eosio::action]]
+         void donatetorex( const name& payer, const asset& quantity, const std::string& memo );
+
+         /**
           * Undelegate bandwidth action, decreases the total tokens delegated by `from` to `receiver` and/or
           * frees the memory associated with the delegation if there is nothing
           * left to delegate.
@@ -1165,9 +1203,10 @@ namespace eosiosystem {
           * @param quantity - the quantity of tokens to buy ram with.
           * @param bytes - the quantity of ram to buy specified in bytes.
           * @param ram_bytes - the ram bytes held by receiver after the action.
+          * @param fee - the fee to be paid for the ram sold.
           */
          [[eosio::action]]
-         void logbuyram( const name& payer, const name& receiver, const asset& quantity, int64_t bytes, int64_t ram_bytes );
+         void logbuyram( const name& payer, const name& receiver, const asset& quantity, int64_t bytes, int64_t ram_bytes, const asset& fee );
 
          /**
           * Sell ram action, reduces quota by bytes and then performs an inline transfer of tokens
@@ -1186,9 +1225,10 @@ namespace eosiosystem {
           * @param quantity - the quantity of tokens to sell ram with.
           * @param bytes - the quantity of ram to sell specified in bytes.
           * @param ram_bytes - the ram bytes held by account after the action.
+          * @param fee - the fee to be paid for the ram sold.
           */
          [[eosio::action]]
-         void logsellram( const name& account, const asset& quantity, int64_t bytes, int64_t ram_bytes );
+         void logsellram( const name& account, const asset& quantity, int64_t bytes, int64_t ram_bytes, const asset& fee );
 
          /**
           * Transfer ram action, reduces sender's quota by bytes and increase receiver's quota by bytes.
@@ -1210,6 +1250,17 @@ namespace eosiosystem {
           */
          [[eosio::action]]
          action_return_ramtransfer ramburn( const name& owner, int64_t bytes, const std::string& memo );
+
+         /**
+          * Buy RAM and immediately burn RAM.
+          * An inline transfer from payer to system contract of tokens will be executed.
+          *
+          * @param payer - the payer of buy RAM & burn.
+          * @param quantity - the quantity of tokens to buy RAM & burn with.
+          * @param memo - the memo string to accompany the transaction.
+          */
+         [[eosio::action]]
+         action_return_buyram buyramburn( const name& payer, const asset& quantity, const std::string& memo );
 
          /**
           * Logging for ram changes
@@ -1549,6 +1600,7 @@ namespace eosiosystem {
          using setacctnet_action = eosio::action_wrapper<"setacctnet"_n, &system_contract::setacctnet>;
          using setacctcpu_action = eosio::action_wrapper<"setacctcpu"_n, &system_contract::setacctcpu>;
          using activate_action = eosio::action_wrapper<"activate"_n, &system_contract::activate>;
+         using logsystemfee_action = eosio::action_wrapper<"logsystemfee"_n, &system_contract::logsystemfee>;
          using delegatebw_action = eosio::action_wrapper<"delegatebw"_n, &system_contract::delegatebw>;
          using deposit_action = eosio::action_wrapper<"deposit"_n, &system_contract::deposit>;
          using withdraw_action = eosio::action_wrapper<"withdraw"_n, &system_contract::withdraw>;
@@ -1569,6 +1621,7 @@ namespace eosiosystem {
          using mvfrsavings_action = eosio::action_wrapper<"mvfrsavings"_n, &system_contract::mvfrsavings>;
          using consolidate_action = eosio::action_wrapper<"consolidate"_n, &system_contract::consolidate>;
          using closerex_action = eosio::action_wrapper<"closerex"_n, &system_contract::closerex>;
+         using donatetorex_action = eosio::action_wrapper<"donatetorex"_n, &system_contract::donatetorex>;
          using undelegatebw_action = eosio::action_wrapper<"undelegatebw"_n, &system_contract::undelegatebw>;
          using buyram_action = eosio::action_wrapper<"buyram"_n, &system_contract::buyram>;
          using buyrambytes_action = eosio::action_wrapper<"buyrambytes"_n, &system_contract::buyrambytes>;
@@ -1577,6 +1630,7 @@ namespace eosiosystem {
          using logsellram_action = eosio::action_wrapper<"logsellram"_n, &system_contract::logsellram>;
          using ramtransfer_action = eosio::action_wrapper<"ramtransfer"_n, &system_contract::ramtransfer>;
          using ramburn_action = eosio::action_wrapper<"ramburn"_n, &system_contract::ramburn>;
+         using buyramburn_action = eosio::action_wrapper<"buyramburn"_n, &system_contract::buyramburn>;
          using logramchange_action = eosio::action_wrapper<"logramchange"_n, &system_contract::logramchange>;
          using refund_action = eosio::action_wrapper<"refund"_n, &system_contract::refund>;
          using regproducer_action = eosio::action_wrapper<"regproducer"_n, &system_contract::regproducer>;
@@ -1606,19 +1660,12 @@ namespace eosiosystem {
          using unvest_action = eosio::action_wrapper<"unvest"_n, &system_contract::unvest>;
 
       private:
-         // Implementation details:
-
-         static symbol get_core_symbol( const rammarket& rm ) {
-            auto itr = rm.find(ramcore_symbol.raw());
-            check(itr != rm.end(), "system contract must first be initialized");
-            return itr->quote.balance.symbol;
-         }
-
          //defined in eosio.system.cpp
          static eosio_global_state get_default_parameters();
          static eosio_global_state4 get_default_inflation_parameters();
          symbol core_symbol()const;
          void update_ram_supply();
+         void channel_to_system_fees( const name& from, const asset& amount );
          bool execute_next_schedule();
 
          // defined in rex.cpp
@@ -1629,8 +1676,6 @@ namespace eosiosystem {
                                         const char* error_msg = "must vote for at least 21 producers or for a proxy before buying REX" )const;
          rex_order_outcome fill_rex_order( const rex_balance_table::const_iterator& bitr, const asset& rex );
          asset update_rex_account( const name& owner, const asset& proceeds, const asset& unstake_quant, bool force_vote_update = false );
-         void channel_to_rex( const name& from, const asset& amount, bool required = false );
-         void channel_namebid_to_rex( const int64_t highest_bid );
          template <typename T>
          int64_t rent_rex( T& table, const name& from, const name& receiver, const asset& loan_payment, const asset& loan_fund );
          template <typename T>
@@ -1640,8 +1685,6 @@ namespace eosiosystem {
          void transfer_from_fund( const name& owner, const asset& amount );
          void transfer_to_fund( const name& owner, const asset& amount );
          bool rex_loans_available()const;
-         bool rex_system_initialized()const { return _rexpool.begin() != _rexpool.end(); }
-         bool rex_available()const { return rex_system_initialized() && _rexpool.begin()->total_rex.amount > 0; }
          static time_point_sec get_rex_maturity();
          asset add_to_rex_balance( const name& owner, const asset& payment, const asset& rex_received );
          asset add_to_rex_pool( const asset& payment );
