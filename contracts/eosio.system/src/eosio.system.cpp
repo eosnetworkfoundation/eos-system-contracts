@@ -24,6 +24,7 @@ namespace eosiosystem {
     _global2(get_self(), get_self().value),
     _global3(get_self(), get_self().value),
     _global4(get_self(), get_self().value),
+    _schedules(get_self(), get_self().value),
     _rammarket(get_self(), get_self().value),
     _rexpool(get_self(), get_self().value),
     _rexretpool(get_self(), get_self().value),
@@ -421,6 +422,67 @@ namespace eosiosystem {
       _gstate4.inflation_pay_factor = inflation_pay_factor;
       _gstate4.votepay_factor       = votepay_factor;
       _global4.set( _gstate4, get_self() );
+   }
+
+   void system_contract::setpayfactor( int64_t inflation_pay_factor, int64_t votepay_factor ) {
+      require_auth(get_self());
+      if ( inflation_pay_factor < pay_factor_precision ) {
+         check( false, "inflation_pay_factor must not be less than " + std::to_string(pay_factor_precision) );
+      }
+      if ( votepay_factor < pay_factor_precision ) {
+         check( false, "votepay_factor must not be less than " + std::to_string(pay_factor_precision) );
+      }
+      _gstate4.inflation_pay_factor = inflation_pay_factor;
+      _gstate4.votepay_factor       = votepay_factor;
+      _global4.set( _gstate4, get_self() );
+   }
+
+   void system_contract::setschedule( const time_point_sec start_time, double continuous_rate )
+   {
+      require_auth( get_self() );
+
+      check(continuous_rate >= 0, "continuous_rate can't be negative");
+      check(continuous_rate <= 1, "continuous_rate can't be over 100%");
+
+      auto itr = _schedules.find( start_time.sec_since_epoch() );
+
+      if( itr == _schedules.end() ) {
+         _schedules.emplace( get_self(), [&]( auto& s ) {
+            s.start_time = start_time;
+            s.continuous_rate = continuous_rate;
+         });
+      } else {
+         _schedules.modify( itr, same_payer, [&]( auto& s ) {
+            s.continuous_rate = continuous_rate;
+         });
+      }
+   }
+
+   void system_contract::delschedule( const time_point_sec start_time )
+   {
+      require_auth( get_self() );
+
+      auto itr = _schedules.require_find( start_time.sec_since_epoch(), "schedule not found" );
+      _schedules.erase( itr );
+   }
+
+   void system_contract::execschedule()
+   {
+      check(execute_next_schedule(), "no schedule to execute");
+   }
+
+   bool system_contract::execute_next_schedule()
+   {
+      auto itr = _schedules.begin();
+      if (itr == _schedules.end()) return false; // no schedules to execute
+
+      if ( current_time_point().sec_since_epoch() >= itr->start_time.sec_since_epoch() ) {
+         _gstate4.continuous_rate = itr->continuous_rate;
+         _global4.set( _gstate4, get_self() );
+         _schedules.erase( itr );
+         return true;
+      }
+      return false;
    }
 
    /**

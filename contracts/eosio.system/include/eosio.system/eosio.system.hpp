@@ -197,6 +197,17 @@ namespace eosiosystem {
       EOSLIB_SERIALIZE( eosio_global_state4, (continuous_rate)(inflation_pay_factor)(votepay_factor) )
    };
 
+   // Defines the schedule for pre-determined annual rate changes.
+   struct [[eosio::table, eosio::contract("eosio.system")]] schedules_info {
+      time_point_sec start_time;
+      double   continuous_rate;
+
+      uint64_t primary_key() const { return start_time.sec_since_epoch(); }
+
+      // explicit serialization macro is not necessary, used here only to improve compilation time
+      EOSLIB_SERIALIZE( schedules_info, (start_time)(continuous_rate) )
+   };
+
    inline eosio::block_signing_authority convert_to_block_signing_authority( const eosio::public_key& producer_key ) {
       return eosio::block_signing_authority_v0{ .threshold = 1, .keys = {{producer_key, 1}} };
    }
@@ -329,6 +340,7 @@ namespace eosiosystem {
 
    typedef eosio::multi_index< "producers2"_n, producer_info2 > producers_table2;
 
+   typedef eosio::multi_index< "schedules"_n, schedules_info > schedules_table;
 
    typedef eosio::singleton< "global"_n, eosio_global_state >   global_state_singleton;
 
@@ -713,6 +725,7 @@ namespace eosiosystem {
          eosio_global_state2      _gstate2;
          eosio_global_state3      _gstate3;
          eosio_global_state4      _gstate4;
+         schedules_table          _schedules;
          rammarket                _rammarket;
          rex_pool_table           _rexpool;
          rex_return_pool_table    _rexretpool;
@@ -1430,6 +1443,60 @@ namespace eosiosystem {
          void setinflation( int64_t annual_rate, int64_t inflation_pay_factor, int64_t votepay_factor );
 
          /**
+          * Change how inflated or vested tokens will be distributed based on the following structure.
+          *
+          * @param inflation_pay_factor - Inverse of the fraction of the inflation used to reward block producers.
+          *     The remaining inflation will be sent to the `eosio.saving` account.
+          *     (eg. For 20% of inflation going to block producer rewards   => inflation_pay_factor = 50000
+          *          For 100% of inflation going to block producer rewards  => inflation_pay_factor = 10000).
+          * @param votepay_factor - Inverse of the fraction of the block producer rewards to be distributed proportional to blocks produced.
+          *     The remaining rewards will be distributed proportional to votes received.
+          *     (eg. For 25% of block producer rewards going towards block pay => votepay_factor = 40000
+          *          For 75% of block producer rewards going towards block pay => votepay_factor = 13333).
+          */
+         [[eosio::action]]
+         void setpayfactor( int64_t inflation_pay_factor, int64_t votepay_factor );
+
+         /**
+          * Set the schedule for pre-determined annual rate changes.
+          *
+          * @param start_time - the time to start the schedule.
+          * @param annual_rate - the annual inflation rate of the core token supply.
+          *     (eg. For 5% Annual inflation => annual_rate=500
+          *          For 1.5% Annual inflation => annual_rate=150
+          */
+         [[eosio::action]]
+         void setschedule( const time_point_sec start_time, double continuous_rate );
+
+         /**
+          * Delete the schedule for pre-determined annual rate changes.
+          *
+          * @param start_time - the time to start the schedule.
+          */
+         [[eosio::action]]
+         void delschedule( const time_point_sec start_time );
+
+         /**
+          * Executes the next schedule for pre-determined annual rate changes.
+          *
+          * Start time of the schedule must be in the past.
+          *
+          * Can be executed by any account.
+          */
+         [[eosio::action]]
+         void execschedule();
+
+         /**
+          * Facilitates the removal of vested staked tokens from an account, ensuring that these tokens are reallocated to the system's pool.
+          *
+          * @param account - the target account from which tokens are to be unvested.
+          * @param unvest_net_quantity - the amount of NET tokens to unvest.
+          * @param unvest_cpu_quantity - the amount of CPU tokens to unvest.
+          */
+         [[eosio::action]]
+         void unvest(const name account, const asset unvest_net_quantity, const asset unvest_cpu_quantity);
+
+         /**
           * Configure the `power` market. The market becomes available the first time this
           * action is invoked.
           */
@@ -1529,9 +1596,14 @@ namespace eosiosystem {
          using setalimits_action = eosio::action_wrapper<"setalimits"_n, &system_contract::setalimits>;
          using setparams_action = eosio::action_wrapper<"setparams"_n, &system_contract::setparams>;
          using setinflation_action = eosio::action_wrapper<"setinflation"_n, &system_contract::setinflation>;
+         using setpayfactor_action = eosio::action_wrapper<"setpayfactor"_n, &system_contract::setpayfactor>;
          using cfgpowerup_action = eosio::action_wrapper<"cfgpowerup"_n, &system_contract::cfgpowerup>;
          using powerupexec_action = eosio::action_wrapper<"powerupexec"_n, &system_contract::powerupexec>;
          using powerup_action = eosio::action_wrapper<"powerup"_n, &system_contract::powerup>;
+         using execschedule_action = eosio::action_wrapper<"execschedule"_n, &system_contract::execschedule>;
+         using setschedule_action = eosio::action_wrapper<"setschedule"_n, &system_contract::setschedule>;
+         using delschedule_action = eosio::action_wrapper<"delschedule"_n, &system_contract::delschedule>;
+         using unvest_action = eosio::action_wrapper<"unvest"_n, &system_contract::unvest>;
 
       private:
          // Implementation details:
@@ -1547,6 +1619,7 @@ namespace eosiosystem {
          static eosio_global_state4 get_default_inflation_parameters();
          symbol core_symbol()const;
          void update_ram_supply();
+         bool execute_next_schedule();
 
          // defined in rex.cpp
          void runrex( uint16_t max );
@@ -1588,10 +1661,12 @@ namespace eosiosystem {
          // defined in delegate_bandwidth.cpp
          void changebw( name from, const name& receiver,
                         const asset& stake_net_quantity, const asset& stake_cpu_quantity, bool transfer );
-         void update_voting_power( const name& voter, const asset& total_update );
+         int64_t update_voting_power( const name& voter, const asset& total_update );
          void set_resource_ram_bytes_limits( const name& owner );
          int64_t reduce_ram( const name& owner, int64_t bytes );
          int64_t add_ram( const name& owner, int64_t bytes );
+         void update_stake_delegated( const name from, const name receiver, const asset stake_net_delta, const asset stake_cpu_delta );
+         void update_user_resources( const name from, const name receiver, const asset stake_net_delta, const asset stake_cpu_delta );
 
          // defined in voting.cpp
          void register_producer( const name& producer, const eosio::block_signing_authority& producer_authority, const std::string& url, uint16_t location );

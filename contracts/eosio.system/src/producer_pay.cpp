@@ -76,6 +76,7 @@ namespace eosiosystem {
    void system_contract::claimrewards( const name& owner ) {
       require_auth( owner );
 
+      execute_next_schedule();
       const auto& prod = _producers.get( owner.value, "producer not registered" );
       check( prod.active(), "producer does not have an active key" );
 

@@ -643,6 +643,13 @@ public:
                           ("unstake_cpu_quantity", cpu)
       );
    }
+   action_result unvest( const account_name& account, const asset& net, const asset& cpu ) {
+      return push_action( "eosio"_n, "unvest"_n, mvo()
+                          ("account", account)
+                          ("unvest_net_quantity", net)
+                          ("unvest_cpu_quantity", cpu)
+      );
+   }
    action_result unstake( std::string_view from, std::string_view to, const asset& net, const asset& cpu ) {
       return unstake( account_name(from), account_name(to), net, cpu );
    }
@@ -1286,6 +1293,11 @@ public:
       return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "eosio_global_state3", data, abi_serializer::create_yield_function(abi_serializer_max_time) );
    }
 
+   fc::variant get_global_state4() {
+      vector<char> data = get_row_by_account( config::system_account_name, config::system_account_name, "global4"_n, "global4"_n );
+      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "eosio_global_state4", data, abi_serializer::create_yield_function(abi_serializer_max_time) );
+   }
+
    fc::variant get_refund_request( name account ) {
       vector<char> data = get_row_by_account( config::system_account_name, account, "refunds"_n, account );
       return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "refund_request", data, abi_serializer::create_yield_function(abi_serializer_max_time) );
@@ -1419,6 +1431,35 @@ public:
                ("inflation_pay_factor", inflation_pay_factor)
                ("votepay_factor", votepay_factor)
       );
+   }
+
+   action_result setpayfactor( int64_t inflation_pay_factor, int64_t votepay_factor ) {
+      return push_action( "eosio"_n, "setpayfactor"_n, mvo()
+               ("inflation_pay_factor", inflation_pay_factor)
+               ("votepay_factor", votepay_factor)
+      );
+   }
+
+   action_result setschedule( const time_point_sec start_time, double continuous_rate ) {
+      return push_action( "eosio"_n, "setschedule"_n, mvo()
+               ("start_time", start_time)
+               ("continuous_rate",     continuous_rate)
+      );
+   }
+
+   action_result delschedule( const time_point_sec start_time ) {
+      return push_action( "eosio"_n, "delschedule"_n, mvo()
+               ("start_time", start_time)
+      );
+   }
+
+   action_result execschedule( const name executor ) {
+      return push_action( executor, "execschedule"_n, mvo());
+   }
+
+   fc::variant get_vesting_schedule( uint64_t time ) {
+      vector<char> data = get_row_by_account( "eosio"_n, "eosio"_n, "schedules"_n, account_name(time) );
+      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "schedules_info", data, abi_serializer::create_yield_function(abi_serializer_max_time) );
    }
 
    abi_serializer abi_ser;

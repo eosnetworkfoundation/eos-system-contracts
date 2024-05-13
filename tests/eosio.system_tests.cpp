@@ -1672,6 +1672,13 @@ BOOST_FIXTURE_TEST_CASE(change_inflation, eosio_system_tester) try {
                            setinflation(1, 9999, 10000) );
       BOOST_REQUIRE_EQUAL( wasm_assert_msg("votepay_factor must not be less than 10000"),
                            setinflation(1, 10000, 9999) );
+
+      BOOST_REQUIRE_EQUAL( success(),
+                           setpayfactor(10000, 10000) );
+      BOOST_REQUIRE_EQUAL( wasm_assert_msg("inflation_pay_factor must not be less than 10000"),
+                           setpayfactor(9999, 10000) );
+      BOOST_REQUIRE_EQUAL( wasm_assert_msg("votepay_factor must not be less than 10000"),
+                           setpayfactor(10000, 9999) );
    }
 
    {
@@ -5538,41 +5545,74 @@ BOOST_FIXTURE_TEST_CASE( b1_vesting, eosio_system_tester ) try {
    create_accounts_with_resources( { b1 }, alice );
 
    const asset stake_amount = core_sym::from_string("50000000.0000");
-   const asset final_amount = core_sym::from_string("17664825.5000");
-   const asset small_amount = core_sym::from_string("1000.0000");
    issue_and_transfer( b1, stake_amount + stake_amount + stake_amount, config::system_account_name );
 
    stake( b1, b1, stake_amount, stake_amount );
 
    BOOST_REQUIRE_EQUAL( 2 * stake_amount.get_amount(), get_voter_info( b1 )["staked"].as<int64_t>() );
 
-   BOOST_REQUIRE_EQUAL( success(), unstake( b1, b1, small_amount, small_amount ) );
+   // The code has changed since the tests were originally written, and B1's vesting is no longer based
+   // on the time of the block, but is a fixed amount instead.
+   // The total amount of possible vested is 35329651.2515, meaning there is 64670348.7485
+   // left which will not be vested.
+   // These tests now reflect the new behavior.
 
-   produce_block( fc::days(4) );
+   const asset vested = core_sym::from_string("35329651.2515");
+   const asset unvestable = core_sym::from_string("64670348.7485");
+   const asset oneToken = core_sym::from_string("1.0000");
+   const asset zero = core_sym::from_string("0.0000");
 
-   BOOST_REQUIRE_EQUAL( success(), push_action( b1, "refund"_n, mvo()("owner", b1) ) );
-
-   BOOST_REQUIRE_EQUAL( 2 * ( stake_amount.get_amount() - small_amount.get_amount() ),
-                        get_voter_info( b1 )["staked"].as<int64_t>() );
-   
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg("b1 can only claim their tokens over 10 years"),
-                        unstake( b1, b1, final_amount, final_amount ) );
-
+   // Can't use rex
    BOOST_REQUIRE_EQUAL( wasm_assert_msg("must vote for at least 21 producers or for a proxy before buying REX"),
-                        unstaketorex( b1, b1, final_amount - small_amount, final_amount - small_amount ) );
-
+                        unstaketorex( b1, b1, vested, zero ) );
    BOOST_REQUIRE_EQUAL( error("missing authority of eosio"), vote( b1, { }, "proxyaccount"_n ) );
 
-   BOOST_REQUIRE_EQUAL( success(), unstake( b1, b1, final_amount - small_amount, final_amount - small_amount ) );
-   
+   // Can't take what isn't vested
+   BOOST_REQUIRE_EQUAL( 
+      wasm_assert_msg("b1 can only claim what has already vested"),
+      unstake( b1, b1, stake_amount, stake_amount ) 
+   );
+   BOOST_REQUIRE_EQUAL( 
+      wasm_assert_msg("b1 can only claim what has already vested"),
+      unstake( b1, b1, stake_amount, zero ) 
+   );
+
+   // Taking the vested amount - 1 token
+   BOOST_REQUIRE_EQUAL( success(), unstake( b1, b1, vested-oneToken, zero ) );
    produce_block( fc::days(4) );
-
    BOOST_REQUIRE_EQUAL( success(), push_action( b1, "refund"_n, mvo()("owner", b1) ) );
+   BOOST_REQUIRE_EQUAL(unvestable.get_amount() + oneToken.get_amount(),
+                        get_voter_info( b1 )["staked"].as<int64_t>() );
 
-   produce_block( fc::days( 5 * 364 ) );
+   // Can't take 2 tokens, only 1 is vested
+   BOOST_REQUIRE_EQUAL( 
+      wasm_assert_msg("b1 can only claim what has already vested"),
+      unstake( b1, b1, oneToken, oneToken ) 
+   );
 
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg("b1 can only claim their tokens over 10 years"),
-                        unstake( b1, b1, small_amount, small_amount ) );
+   // Can't unvest the 1 token, as it's already unvested
+   BOOST_REQUIRE_EQUAL( 
+      wasm_assert_msg("can only unvest what is not already vested"),
+      unvest( b1, (stake_amount - vested) + oneToken, stake_amount ) 
+   );
+
+   auto supply_before = get_token_supply();
+
+   // Unvesting the remaining unvested tokens
+   BOOST_REQUIRE_EQUAL( success(), unvest( b1, stake_amount - vested, stake_amount ) );
+   BOOST_REQUIRE_EQUAL(oneToken.get_amount(), get_voter_info( b1 )["staked"].as<int64_t>() );
+
+   // Should have retired the unvestable tokens
+   BOOST_REQUIRE_EQUAL( 
+      get_token_supply(), 
+      supply_before-unvestable
+   );
+
+   // B1 can take the last token, even after unvesting has occurred
+   BOOST_REQUIRE_EQUAL( success(), unstake( b1, b1, oneToken, zero )  );
+   produce_block( fc::days(4) );
+   BOOST_REQUIRE_EQUAL( success(), push_action( b1, "refund"_n, mvo()("owner", b1) ) );
+   BOOST_REQUIRE_EQUAL(0, get_voter_info( b1 )["staked"].as<int64_t>() );
 
 } FC_LOG_AND_RETHROW()
 

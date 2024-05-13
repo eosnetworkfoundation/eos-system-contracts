@@ -241,13 +241,25 @@ namespace eosiosystem {
       }
    }
 
-   void validate_b1_vesting( int64_t stake ) {
+   std::pair<int64_t, int64_t> get_b1_vesting_info() {
       const int64_t base_time = 1527811200; /// Friday, June 1, 2018 12:00:00 AM UTC
       const int64_t current_time = 1638921540; /// Tuesday, December 7, 2021 11:59:00 PM UTC
-      const int64_t max_claimable = 100'000'000'0000ll;
-      const int64_t claimable = int64_t(max_claimable * double(current_time - base_time) / (10*seconds_per_year) );
+      const int64_t total_vesting = 100'000'000'0000ll;
+      const int64_t vested = int64_t(total_vesting * double(current_time - base_time) / (10*seconds_per_year) );
+      return { total_vesting, vested };
+   }
 
-      check( max_claimable - claimable <= stake, "b1 can only claim their tokens over 10 years" );
+
+   void validate_b1_vesting( int64_t new_stake, asset stake_change ) {
+      const auto [total_vesting, vested] = get_b1_vesting_info();
+      auto unvestable = total_vesting - vested;
+
+      auto hasAlreadyUnvested = new_stake < unvestable 
+            && stake_change.amount < 0 
+            && new_stake + std::abs(stake_change.amount) < unvestable;
+      if(hasAlreadyUnvested) return;
+
+      check( new_stake >= unvestable, "b1 can only claim what has already vested" ); 
    }
 
    void system_contract::changebw( name from, const name& receiver,
@@ -264,77 +276,8 @@ namespace eosiosystem {
          from = receiver;
       }
 
-      // update stake delegated from "from" to "receiver"
-      {
-         del_bandwidth_table     del_tbl( get_self(), from.value );
-         auto itr = del_tbl.find( receiver.value );
-         if( itr == del_tbl.end() ) {
-            itr = del_tbl.emplace( from, [&]( auto& dbo ){
-                  dbo.from          = from;
-                  dbo.to            = receiver;
-                  dbo.net_weight    = stake_net_delta;
-                  dbo.cpu_weight    = stake_cpu_delta;
-               });
-         }
-         else {
-            del_tbl.modify( itr, same_payer, [&]( auto& dbo ){
-                  dbo.net_weight    += stake_net_delta;
-                  dbo.cpu_weight    += stake_cpu_delta;
-               });
-         }
-         check( 0 <= itr->net_weight.amount, "insufficient staked net bandwidth" );
-         check( 0 <= itr->cpu_weight.amount, "insufficient staked cpu bandwidth" );
-         if ( itr->is_empty() ) {
-            del_tbl.erase( itr );
-         }
-      } // itr can be invalid, should go out of scope
-
-      // update totals of "receiver"
-      {
-         user_resources_table   totals_tbl( get_self(), receiver.value );
-         auto tot_itr = totals_tbl.find( receiver.value );
-         if( tot_itr ==  totals_tbl.end() ) {
-            tot_itr = totals_tbl.emplace( from, [&]( auto& tot ) {
-                  tot.owner = receiver;
-                  tot.net_weight    = stake_net_delta;
-                  tot.cpu_weight    = stake_cpu_delta;
-               });
-         } else {
-            totals_tbl.modify( tot_itr, from == receiver ? from : same_payer, [&]( auto& tot ) {
-                  tot.net_weight    += stake_net_delta;
-                  tot.cpu_weight    += stake_cpu_delta;
-               });
-         }
-         check( 0 <= tot_itr->net_weight.amount, "insufficient staked total net bandwidth" );
-         check( 0 <= tot_itr->cpu_weight.amount, "insufficient staked total cpu bandwidth" );
-
-         {
-            bool ram_managed = false;
-            bool net_managed = false;
-            bool cpu_managed = false;
-
-            auto voter_itr = _voters.find( receiver.value );
-            if( voter_itr != _voters.end() ) {
-               ram_managed = has_field( voter_itr->flags1, voter_info::flags1_fields::ram_managed );
-               net_managed = has_field( voter_itr->flags1, voter_info::flags1_fields::net_managed );
-               cpu_managed = has_field( voter_itr->flags1, voter_info::flags1_fields::cpu_managed );
-            }
-
-            if( !(net_managed && cpu_managed) ) {
-               int64_t ram_bytes, net, cpu;
-               get_resource_limits( receiver, ram_bytes, net, cpu );
-
-               set_resource_limits( receiver,
-                                    ram_managed ? ram_bytes : std::max( tot_itr->ram_bytes + ram_gift_bytes, ram_bytes ),
-                                    net_managed ? net : tot_itr->net_weight.amount,
-                                    cpu_managed ? cpu : tot_itr->cpu_weight.amount );
-            }
-         }
-
-         if ( tot_itr->is_empty() ) {
-            totals_tbl.erase( tot_itr );
-         }
-      } // tot_itr can be invalid, should go out of scope
+      update_stake_delegated( from, receiver, stake_net_delta, stake_cpu_delta );
+      update_user_resources( from, receiver, stake_net_delta, stake_cpu_delta );
 
       // create refund or update from existing refund
       if ( stake_account != source_stake_from ) { //for eosio both transfer and refund make no sense
@@ -406,10 +349,84 @@ namespace eosiosystem {
       }
 
       vote_stake_updater( from );
-      update_voting_power( from, stake_net_delta + stake_cpu_delta );
+      const int64_t staked = update_voting_power( from, stake_net_delta + stake_cpu_delta );
+      if ( from == "b1"_n ) {
+         validate_b1_vesting( staked, stake_net_delta + stake_cpu_delta );
+      }
    }
 
-   void system_contract::update_voting_power( const name& voter, const asset& total_update )
+   void system_contract::update_stake_delegated( const name from, const name receiver, const asset stake_net_delta, const asset stake_cpu_delta )
+   {
+      del_bandwidth_table del_tbl( get_self(), from.value );
+      auto itr = del_tbl.find( receiver.value );
+      if( itr == del_tbl.end() ) {
+         itr = del_tbl.emplace( from, [&]( auto& dbo ){
+               dbo.from          = from;
+               dbo.to            = receiver;
+               dbo.net_weight    = stake_net_delta;
+               dbo.cpu_weight    = stake_cpu_delta;
+            });
+      } else {
+         del_tbl.modify( itr, same_payer, [&]( auto& dbo ){
+               dbo.net_weight    += stake_net_delta;
+               dbo.cpu_weight    += stake_cpu_delta;
+            });
+      }
+      check( 0 <= itr->net_weight.amount, "insufficient staked net bandwidth" );
+      check( 0 <= itr->cpu_weight.amount, "insufficient staked cpu bandwidth" );
+      if ( itr->is_empty() ) {
+         del_tbl.erase( itr );
+      }
+   }
+
+   void system_contract::update_user_resources( const name from, const name receiver, const asset stake_net_delta, const asset stake_cpu_delta )
+   {
+      user_resources_table   totals_tbl( get_self(), receiver.value );
+      auto tot_itr = totals_tbl.find( receiver.value );
+      if( tot_itr ==  totals_tbl.end() ) {
+         tot_itr = totals_tbl.emplace( from, [&]( auto& tot ) {
+               tot.owner = receiver;
+               tot.net_weight    = stake_net_delta;
+               tot.cpu_weight    = stake_cpu_delta;
+            });
+      } else {
+         totals_tbl.modify( tot_itr, from == receiver ? from : same_payer, [&]( auto& tot ) {
+               tot.net_weight    += stake_net_delta;
+               tot.cpu_weight    += stake_cpu_delta;
+            });
+      }
+      check( 0 <= tot_itr->net_weight.amount, "insufficient staked total net bandwidth" );
+      check( 0 <= tot_itr->cpu_weight.amount, "insufficient staked total cpu bandwidth" );
+
+      {
+         bool ram_managed = false;
+         bool net_managed = false;
+         bool cpu_managed = false;
+
+         auto voter_itr = _voters.find( receiver.value );
+         if( voter_itr != _voters.end() ) {
+            ram_managed = has_field( voter_itr->flags1, voter_info::flags1_fields::ram_managed );
+            net_managed = has_field( voter_itr->flags1, voter_info::flags1_fields::net_managed );
+            cpu_managed = has_field( voter_itr->flags1, voter_info::flags1_fields::cpu_managed );
+         }
+
+         if( !(net_managed && cpu_managed) ) {
+            int64_t ram_bytes, net, cpu;
+            get_resource_limits( receiver, ram_bytes, net, cpu );
+
+            set_resource_limits( receiver,
+                                 ram_managed ? ram_bytes : std::max( tot_itr->ram_bytes + ram_gift_bytes, ram_bytes ),
+                                 net_managed ? net : tot_itr->net_weight.amount,
+                                 cpu_managed ? cpu : tot_itr->cpu_weight.amount );
+         }
+      }
+
+      if ( tot_itr->is_empty() ) {
+         totals_tbl.erase( tot_itr );
+      } // tot_itr can be invalid, should go out of scope
+   }
+
+   int64_t system_contract::update_voting_power( const name& voter, const asset& total_update )
    {
       auto voter_itr = _voters.find( voter.value );
       if( voter_itr == _voters.end() ) {
@@ -425,13 +442,10 @@ namespace eosiosystem {
 
       check( 0 <= voter_itr->staked, "stake for voting cannot be negative" );
 
-      if( voter == "b1"_n ) {
-         validate_b1_vesting( voter_itr->staked );
-      }
-
       if( voter_itr->producers.size() || voter_itr->proxy ) {
          update_votes( voter, voter_itr->proxy, voter_itr->producers, false );
       }
+      return voter_itr->staked;
    }
 
    void system_contract::delegatebw( const name& from, const name& receiver,
@@ -460,7 +474,6 @@ namespace eosiosystem {
       changebw( from, receiver, -unstake_net_quantity, -unstake_cpu_quantity, false);
    } // undelegatebw
 
-
    void system_contract::refund( const name& owner ) {
       require_auth( owner );
 
@@ -474,5 +487,32 @@ namespace eosiosystem {
       refunds_tbl.erase( req );
    }
 
+   void system_contract::unvest(const name account, const asset unvest_net_quantity, const asset unvest_cpu_quantity)
+   {
+      require_auth( get_self() );
+
+      check( account == "b1"_n, "only b1 account can unvest");
+
+      check( unvest_cpu_quantity.amount >= 0, "must unvest a positive amount" );
+      check( unvest_net_quantity.amount >= 0, "must unvest a positive amount" );
+
+      const auto [total_vesting, vested] = get_b1_vesting_info();
+      const asset unvesting = unvest_net_quantity + unvest_cpu_quantity;
+      check( unvesting.amount <= total_vesting - vested , "can only unvest what is not already vested");
+
+      // reduce staked from account
+      update_voting_power( account, -unvesting );
+      update_stake_delegated( account, account, -unvest_net_quantity, -unvest_cpu_quantity );
+      update_user_resources( account, account, -unvest_net_quantity, -unvest_cpu_quantity );
+      vote_stake_updater( account );
+
+      // transfer unvested tokens to `eosio`
+      token::transfer_action transfer_act{ token_account, { {stake_account, active_permission} } };
+      transfer_act.send( stake_account, get_self(), unvesting, "unvest" );
+
+      // retire unvested tokens
+      token::retire_action retire_act{ token_account, { {"eosio"_n, active_permission} } };
+      retire_act.send( unvesting, "unvest" );
+   } // unvest
 
 } //namespace eosiosystem
