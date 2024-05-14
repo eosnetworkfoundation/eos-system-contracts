@@ -32,11 +32,12 @@ public:
       produce_blocks( 2 );
 
       create_accounts({ "eosio.token"_n, "eosio.ram"_n, "eosio.ramfee"_n, "eosio.stake"_n,
-               "eosio.bpay"_n, "eosio.vpay"_n, "eosio.saving"_n, "eosio.names"_n, "eosio.rex"_n });
+               "eosio.bpay"_n, "eosio.vpay"_n, "eosio.saving"_n, "eosio.names"_n, "eosio.rex"_n, "eosio.fees"_n });
 
 
       produce_blocks( 100 );
       set_code( "eosio.token"_n, contracts::token_wasm());
+      set_code( "eosio.fees"_n, contracts::fees_wasm());
       set_abi( "eosio.token"_n, contracts::token_abi().data() );
       {
          const auto& accnt = control->db().get<account_object,by_name>( "eosio.token"_n );
@@ -80,7 +81,7 @@ public:
       create_account_with_resources( "bob111111111"_n, config::system_account_name, core_sym::from_string("0.4500"), false );
       create_account_with_resources( "carol1111111"_n, config::system_account_name, core_sym::from_string("1.0000"), false );
 
-      BOOST_REQUIRE_EQUAL( core_sym::from_string("1000000000.0000"), get_balance("eosio")  + get_balance("eosio.ramfee") + get_balance("eosio.stake") + get_balance("eosio.ram") );
+      BOOST_REQUIRE_EQUAL( core_sym::from_string("1000000000.0000"), get_balance("eosio")  + get_balance("eosio.ramfee") + get_balance("eosio.stake") + get_balance("eosio.ram") + get_balance("eosio.fees") );
    }
 
    enum class setup_level {
@@ -259,7 +260,11 @@ public:
                  {
                      "name": "ram_bytes",
                      "type": "int64"
-                 }
+                 },
+                 {
+                      "name": "fee",
+                      "type": "asset"
+                  }
              ]
          },
          {
@@ -307,7 +312,11 @@ public:
                  {
                      "name": "ram_bytes",
                      "type": "int64"
-                 }
+                 },
+                 {
+                      "name": "fee",
+                      "type": "asset"
+                  }
              ]
          },
       ],
@@ -426,6 +435,11 @@ public:
    action_result ramburn(std::string_view owner, uint32_t bytes, const std::string& memo)
    {
       return ramburn(account_name(owner), bytes, memo);
+   }
+
+   action_result buyramburn( const name& payer, const asset& quantity, const std::string& memo)
+   {
+      return push_action(payer, "buyramburn"_n, mvo()("payer", payer)("quantity", quantity)("memo", memo));
    }
 
    void validate_ramburn_return(const account_name& owner, uint32_t bytes, const std::string& memo,
@@ -641,6 +655,13 @@ public:
                           ("receiver", to)
                           ("unstake_net_quantity", net)
                           ("unstake_cpu_quantity", cpu)
+      );
+   }
+   action_result unvest( const account_name& account, const asset& net, const asset& cpu ) {
+      return push_action( "eosio"_n, "unvest"_n, mvo()
+                          ("account", account)
+                          ("unvest_net_quantity", net)
+                          ("unvest_cpu_quantity", cpu)
       );
    }
    action_result unstake( std::string_view from, std::string_view to, const asset& net, const asset& cpu ) {
@@ -872,6 +893,14 @@ public:
 
    action_result closerex( const account_name& owner ) {
       return push_action( name(owner), "closerex"_n, mvo()("owner", owner) );
+   }
+
+   action_result donatetorex( const account_name& payer, const asset& quantity, const std::string& memo ) {
+      return push_action( name(payer), "donatetorex"_n, mvo()
+                          ("payer", payer)
+                          ("quantity", quantity)
+                          ("memo", memo)
+      );
    }
 
    fc::variant get_last_loan(bool cpu) {
@@ -1157,11 +1186,33 @@ public:
       base_tester::push_action(contract, "create"_n, contract, act );
    }
 
-   void issue( const asset& amount, const name& manager = config::system_account_name ) {
-      base_tester::push_action( "eosio.token"_n, "issue"_n, manager, mutable_variant_object()
-                                ("to",       manager )
-                                ("quantity", amount )
+   void issue( const asset& quantity, const name& to = config::system_account_name ) {
+      base_tester::push_action( "eosio.token"_n, "issue"_n, to, mutable_variant_object()
+                                ("to",       to )
+                                ("quantity", quantity )
                                 ("memo",     "")
+                                );
+   }
+
+   void retire( const asset& quantity, const name& issuer = config::system_account_name ) {
+      base_tester::push_action( "eosio.token"_n, "retire"_n, issuer, mutable_variant_object()
+                                ("quantity", quantity )
+                                ("memo",     "")
+                                );
+   }
+
+   void issuefixed( const asset& supply, const name& to = config::system_account_name ) {
+      base_tester::push_action( "eosio.token"_n, "issuefixed"_n, to, mutable_variant_object()
+                                ("to",       to )
+                                ("supply", supply )
+                                ("memo",     "")
+                                );
+   }
+
+   void setmaxsupply( const asset& maximum_supply, const name& issuer = config::system_account_name) {
+      base_tester::push_action( "eosio.token"_n, "setmaxsupply"_n, issuer, mutable_variant_object()
+                                ("issuer",       issuer )
+                                ("maximum_supply", maximum_supply )
                                 );
    }
 
@@ -1262,6 +1313,11 @@ public:
    fc::variant get_global_state3() {
       vector<char> data = get_row_by_account( config::system_account_name, config::system_account_name, "global3"_n, "global3"_n );
       return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "eosio_global_state3", data, abi_serializer::create_yield_function(abi_serializer_max_time) );
+   }
+
+   fc::variant get_global_state4() {
+      vector<char> data = get_row_by_account( config::system_account_name, config::system_account_name, "global4"_n, "global4"_n );
+      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "eosio_global_state4", data, abi_serializer::create_yield_function(abi_serializer_max_time) );
    }
 
    fc::variant get_refund_request( name account ) {
@@ -1397,6 +1453,35 @@ public:
                ("inflation_pay_factor", inflation_pay_factor)
                ("votepay_factor", votepay_factor)
       );
+   }
+
+   action_result setpayfactor( int64_t inflation_pay_factor, int64_t votepay_factor ) {
+      return push_action( "eosio"_n, "setpayfactor"_n, mvo()
+               ("inflation_pay_factor", inflation_pay_factor)
+               ("votepay_factor", votepay_factor)
+      );
+   }
+
+   action_result setschedule( const time_point_sec start_time, double continuous_rate ) {
+      return push_action( "eosio"_n, "setschedule"_n, mvo()
+               ("start_time", start_time)
+               ("continuous_rate",     continuous_rate)
+      );
+   }
+
+   action_result delschedule( const time_point_sec start_time ) {
+      return push_action( "eosio"_n, "delschedule"_n, mvo()
+               ("start_time", start_time)
+      );
+   }
+
+   action_result execschedule( const name executor ) {
+      return push_action( executor, "execschedule"_n, mvo());
+   }
+
+   fc::variant get_vesting_schedule( uint64_t time ) {
+      vector<char> data = get_row_by_account( "eosio"_n, "eosio"_n, "schedules"_n, account_name(time) );
+      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "schedules_info", data, abi_serializer::create_yield_function(abi_serializer_max_time) );
    }
 
    abi_serializer abi_ser;

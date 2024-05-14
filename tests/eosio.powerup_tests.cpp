@@ -633,9 +633,6 @@ BOOST_AUTO_TEST_CASE(rent_tests) try {
       BOOST_REQUIRE_EQUAL(
             t.wasm_assert_msg("max_payment is less than calculated fee: 3000000.0000 TST"), //
             t.powerup("bob111111111"_n, "alice1111111"_n, 30, powerup_frac, powerup_frac, asset::from_string("1.0000 TST")));
-      BOOST_REQUIRE_EQUAL(t.wasm_assert_msg("can't channel fees to rex"), //
-                          t.powerup("bob111111111"_n, "alice1111111"_n, 30, powerup_frac, powerup_frac,
-                                   asset::from_string("3000000.0000 TST")));
    }
 
    // net:100%, cpu:100%

@@ -354,6 +354,26 @@ namespace eosiosystem {
    }
 
    /**
+    * @brief Updates REX pool and deposits token to eosio.rex
+    *
+    * @param payer - the payer of donated funds.
+    * @param quantity - the quantity of tokens to donated to REX with.
+    * @param memo - the memo string to accompany the transfer.
+    */
+   void system_contract::donatetorex( const name& payer, const asset& quantity, const std::string& memo )
+   {
+      require_auth( payer );
+      check( rex_available(), "rex system is not initialized" );
+      check( quantity.symbol == core_symbol(), "quantity must be core token" );
+      check( quantity.amount > 0, "quantity must be positive" );
+
+      add_to_rex_return_pool( quantity );
+      // inline transfer to rex_account
+      token::transfer_action transfer_act{ token_account, { payer, active_permission } };
+      transfer_act.send( payer, rex_account, quantity, memo );
+   }
+
+   /**
     * @brief Updates account NET and CPU resource limits
     *
     * @param from - account charged for RAM if there is a need
@@ -453,7 +473,7 @@ namespace eosiosystem {
     */
    void system_contract::add_loan_to_rex_pool( const asset& payment, int64_t rented_tokens, bool new_loan )
    {
-      add_to_rex_return_pool( payment );
+      channel_to_system_fees( get_self(), payment );
       _rexpool.modify( _rexpool.begin(), same_payer, [&]( auto& rt ) {
          // add payment to total_rent
          rt.total_rent.amount    += payment.amount;
@@ -545,14 +565,6 @@ namespace eosiosystem {
 
          return { delete_loan, delta_stake };
       };
-
-      /// transfer from eosio.names to eosio.rex
-      if ( pool->namebid_proceeds.amount > 0 ) {
-         channel_to_rex( names_account, pool->namebid_proceeds );
-         _rexpool.modify( pool, same_payer, [&]( auto& rt ) {
-            rt.namebid_proceeds.amount = 0;
-         });
-      }
 
       /// process cpu loans
       {
@@ -754,6 +766,10 @@ namespace eosiosystem {
 
       rex_results::rentresult_action rentresult_act{ rex_account, std::vector<eosio::permission_level>{ } };
       rentresult_act.send( asset{ rented_tokens, core_symbol() } );
+
+      // logging
+      system_contract::logsystemfee_action logsystemfee_act{ get_self(), { {get_self(), active_permission} } };
+      logsystemfee_act.send( rex_account, payment, "rent rex" );
       return rented_tokens;
    }
 
@@ -913,44 +929,6 @@ namespace eosiosystem {
          update_voting_power( owner, to_stake );
 
       return rex_in_sell_order;
-   }
-
-   /**
-    * @brief Channels system fees to REX pool
-    *
-    * @param from - account from which asset is transferred to REX pool
-    * @param amount - amount of tokens to be transferred
-    * @param required - if true, asserts when the system is not configured to channel fees into REX
-    */
-   void system_contract::channel_to_rex( const name& from, const asset& amount, bool required )
-   {
-#if CHANNEL_RAM_AND_NAMEBID_FEES_TO_REX
-      if ( rex_available() ) {
-         add_to_rex_return_pool( amount );
-         // inline transfer to rex_account
-         token::transfer_action transfer_act{ token_account, { from, active_permission } };
-         transfer_act.send( from, rex_account, amount,
-                            std::string("transfer from ") + from.to_string() + " to eosio.rex" );
-         return;
-      }
-#endif
-      eosio::check( !required, "can't channel fees to rex" );
-   }
-
-   /**
-    * @brief Updates namebid proceeds to be transferred to REX pool
-    *
-    * @param highest_bid - highest bidding amount of closed namebid
-    */
-   void system_contract::channel_namebid_to_rex( const int64_t highest_bid )
-   {
-#if CHANNEL_RAM_AND_NAMEBID_FEES_TO_REX
-      if ( rex_available() ) {
-         _rexpool.modify( _rexpool.begin(), same_payer, [&]( auto& rp ) {
-            rp.namebid_proceeds.amount += highest_bid;
-         });
-      }
-#endif
    }
 
    /**
