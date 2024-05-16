@@ -64,7 +64,12 @@ namespace eosiosystem {
                 (current_time_point() - _gstate.thresh_activated_stake_time) > microseconds(14 * useconds_per_day)
             ) {
                _gstate.last_name_close = timestamp;
-               channel_namebid_to_rex( highest->high_bid );
+               channel_to_system_fees( names_account, asset( highest->high_bid, core_symbol() ) );
+
+               // logging
+               system_contract::logsystemfee_action logsystemfee_act{ get_self(), { {get_self(), active_permission} } };
+               logsystemfee_act.send( names_account, asset( highest->high_bid, core_symbol() ), "buy name" );
+
                idx.modify( highest, same_payer, [&]( auto& b ){
                   b.high_bid = -b.high_bid;
                });
@@ -76,7 +81,8 @@ namespace eosiosystem {
    void system_contract::claimrewards( const name& owner ) {
       require_auth( owner );
 
-      const auto& prod = _producers.get( owner.value );
+      execute_next_schedule();
+      const auto& prod = _producers.get( owner.value, "producer not registered" );
       check( prod.active(), "producer does not have an active key" );
 
       check( _gstate.thresh_activated_stake_time != time_point(),
@@ -87,6 +93,8 @@ namespace eosiosystem {
       check( ct - prod.last_claim_time > microseconds(useconds_per_day), "already claimed rewards within past day" );
 
       const asset token_supply   = token::get_supply(token_account, core_symbol().code() );
+      const asset token_max_supply = token::get_max_supply(token_account, core_symbol().code() );
+      const asset token_balance = token::get_balance(token_account, get_self(), core_symbol().code() );
       const auto usecs_since_last_fill = (ct - _gstate.last_pervote_bucket_fill).count();
 
       if( usecs_since_last_fill > 0 && _gstate.last_pervote_bucket_fill > time_point() ) {
@@ -101,14 +109,22 @@ namespace eosiosystem {
          int64_t to_per_vote_pay  = to_producers - to_per_block_pay;
 
          if( new_tokens > 0 ) {
+            // issue new tokens or use existing eosio token balance
             {
-               token::issue_action issue_act{ token_account, { {get_self(), active_permission} } };
-               issue_act.send( get_self(), asset(new_tokens, core_symbol()), "issue tokens for producer pay and savings" );
+               // issue new tokens if circulating supply does not exceed max supply
+               if ( token_supply.amount + new_tokens <= token_max_supply.amount ) {
+                  token::issue_action issue_act{ token_account, { {get_self(), active_permission} } };
+                  issue_act.send( get_self(), asset(new_tokens, core_symbol()), "issue tokens for producer pay and savings" );
+
+               // use existing eosio token balance if circulating supply exceeds max supply
+               } else {
+                  check( token_balance.amount >= new_tokens, "insufficient system token balance for claiming rewards");
+               }
             }
             {
                token::transfer_action transfer_act{ token_account, { {get_self(), active_permission} } };
                if( to_savings > 0 ) {
-                  transfer_act.send( get_self(), saving_account, asset(to_savings, core_symbol()), "unallocated inflation" );
+                  transfer_act.send( get_self(), saving_account, asset(to_savings, core_symbol()), "unallocated bucket" );
                }
                if( to_per_block_pay > 0 ) {
                   transfer_act.send( get_self(), bpay_account, asset(to_per_block_pay, core_symbol()), "fund per-block bucket" );
