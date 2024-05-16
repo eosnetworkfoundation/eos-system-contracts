@@ -1512,9 +1512,9 @@ namespace eosiosystem {
           * Set the schedule for pre-determined annual rate changes.
           *
           * @param start_time - the time to start the schedule.
-          * @param annual_rate - the annual inflation rate of the core token supply.
-          *     (eg. For 5% Annual inflation => annual_rate=500
-          *          For 1.5% Annual inflation => annual_rate=150
+          * @param continuous_rate - the inflation or distribution rate of the core token supply.
+          *     (eg. For 5% => 0.05
+          *          For 1.5% => 0.015)
           */
          [[eosio::action]]
          void setschedule( const time_point_sec start_time, double continuous_rate );
