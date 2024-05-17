@@ -94,6 +94,17 @@ icon: @ICON_BASE_URL@/@REX_ICON_URI@
 
 A sell order of the purchased amount can only be initiated after waiting for the maturity period of 4 to 5 days to pass. Even then, depending on the market conditions, the initiated sell order may not be executed immediately.
 
+<h1 class="contract">donatetorex</h1>
+
+---
+spec_version: "0.2.0"
+title: Donate system tokens to REX
+summary: '{{nowrap payer}} donates {{nowrap quantity}} tokens to REX'
+icon: @ICON_BASE_URL@/@REX_ICON_URI@
+---
+
+{{quantity}} is taken out of {{payer}}’s token balance and given to REX with the included memo: "{{memo}}".
+
 <h1 class="contract">canceldelay</h1>
 
 ---
@@ -818,3 +829,14 @@ icon: @ICON_BASE_URL@/@ADMIN_ICON_URI@
 ---
 
 {{$action.account}} to execute the next upcoming annual rate schedule.
+
+<h1 class="contract">unvest</h1>
+
+---
+spec_version: "0.2.0"
+title: Unvest Tokens
+summary: 'Reclaim and retire unvested tokens'
+icon: @ICON_BASE_URL@/@ADMIN_ICON_URI@
+---
+
+Reclaim and retire {{$action.unvest_net_quantity}} and {{$action.unvest_cpu_quantity}} worth of unvested tokens from the account {{$action.account}}.
