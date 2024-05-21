@@ -173,6 +173,17 @@ BOOST_FIXTURE_TEST_CASE( buy_ram_burn, eosio_system_tester ) try {
    const account_name alice = accounts[0];
    const account_name null_account = "eosio.null"_n;
 
+   const char* expected_buyramburn_return_data = R"=====(
+{
+   "payer": "alice",
+   "receiver": "alice",
+   "quantity": "1.0000 TST",
+   "bytes_purchased": 68374,
+   "ram_bytes": 86357,
+   "fee": "0.0050 TST"
+}
+)=====";
+
    create_accounts_with_resources( accounts );
    transfer( config::system_account_name, alice, core_sym::from_string("100.0000"), config::system_account_name );
 
@@ -191,6 +202,9 @@ BOOST_FIXTURE_TEST_CASE( buy_ram_burn, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL( alice_before_buyramburn, alice_after_buyramburn );
    BOOST_REQUIRE_EQUAL( true, null_before_buyramburn < null_after_buyramburn );
    BOOST_REQUIRE_EQUAL( initial_alice_balance - ten_core_token,  get_balance(alice));
+
+   validate_buyramburn_return(alice, core_sym::from_string("1.0000"), "burn RAM memo",
+                           "action_return_buyram", expected_buyramburn_return_data );
 } FC_LOG_AND_RETHROW()
 
 // buyramself

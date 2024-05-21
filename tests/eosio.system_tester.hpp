@@ -442,6 +442,30 @@ public:
       return push_action(payer, "buyramburn"_n, mvo()("payer", payer)("quantity", quantity)("memo", memo));
    }
 
+   void validate_buyramburn_return(const name& payer, const asset& quantity,
+                               const std::string& memo, const type_name& type, const std::string& json) {
+      // create hex return from provided json
+      std::string expected_hex = convert_json_to_hex(type, json);
+      // initialize string that will hold actual return
+      std::string actual_hex;
+
+      // execute transaction and get traces must use base_tester
+      auto trace = base_tester::push_action(config::system_account_name, "buyramburn"_n, payer,
+                                mvo()("payer",payer)("quantity",quantity)("memo", memo));
+      produce_block();
+
+      // confirm we have trances and find the right one (should be trace idx == 0)
+      BOOST_REQUIRE_EQUAL(true, chain_has_transaction(trace->id));
+
+      // the first trace always has the return value
+      int i = 0;
+      std::string copy_trace = std::string(trace->action_traces[i].return_value.begin(), trace->action_traces[i].return_value.end());
+      actual_hex = convert_ordinals_to_hex(copy_trace);
+
+      // test fails here actual_hex is
+      BOOST_REQUIRE_EQUAL(expected_hex,actual_hex);
+   }
+
    void validate_ramburn_return(const account_name& owner, uint32_t bytes, const std::string& memo,
                                     const type_name& type, const std::string& json) {
       // create hex return from provided json
