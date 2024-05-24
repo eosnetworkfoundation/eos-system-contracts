@@ -51,5 +51,6 @@ add_subdirectory(eosio.msig)
 add_subdirectory(eosio.system)
 add_subdirectory(eosio.token)
 add_subdirectory(eosio.wrap)
+add_subdirectory(eosio.fees)
 
 add_subdirectory(test_contracts)

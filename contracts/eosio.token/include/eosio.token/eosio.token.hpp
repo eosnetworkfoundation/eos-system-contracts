@@ -15,11 +15,11 @@ namespace eosio {
 
    /**
     * The `eosio.token` sample system contract defines the structures and actions that allow users to create, issue, and manage tokens for EOSIO based blockchains. It demonstrates one way to implement a smart contract which allows for creation and management of tokens. It is possible for one to create a similar contract which suits different needs. However, it is recommended that if one only needs a token with the below listed actions, that one uses the `eosio.token` contract instead of developing their own.
-    * 
+    *
     * The `eosio.token` contract class also implements two useful public static methods: `get_supply` and `get_balance`. The first allows one to check the total supply of a specified token, created by an account and the second allows one to check the balance of a token for a specified account (the token creator account has to be specified as well).
-    * 
+    *
     * The `eosio.token` contract manages the set of tokens, accounts and their corresponding balances, by using two internal multi-index structures: the `accounts` and `stats`. The `accounts` multi-index table holds, for each row, instances of `account` object and the `account` object holds information about the balance of one token. The `accounts` table is scoped to an EOSIO account, and it keeps the rows indexed based on the token's symbol.  This means that when one queries the `accounts` multi-index table for an account name the result is all the tokens that account holds at the moment.
-    * 
+    *
     * Similarly, the `stats` multi-index table, holds instances of `currency_stats` objects for each row, which contains information about current supply, maximum supply, and the creator account for a symbol token. The `stats` table is scoped to the token symbol.  Therefore, when one queries the `stats` table for a token symbol the result is one single entry/row corresponding to the queried symbol token if it was previously created, or nothing, otherwise.
     */
    class [[eosio::contract("eosio.token")]] token : public contract {
@@ -45,10 +45,29 @@ namespace eosio {
           *
           * @param to - the account to issue tokens to, it must be the same as the issuer,
           * @param quantity - the amount of tokens to be issued,
-          * @memo - the memo string that accompanies the token issue transaction.
+          * @param memo - the memo string that accompanies the token issue transaction.
           */
          [[eosio::action]]
          void issue( const name& to, const asset& quantity, const string& memo );
+
+         /**
+          * Issues only the necessary tokens to bridge the gap between the current supply and the targeted total.
+          *
+          * @param to - the account to issue tokens to, it must be the same as the issuer,
+          * @param supply - the target total supply for the token.
+          * @param memo - the memo string that accompanies the token issue transaction.
+          */
+         [[eosio::action]]
+         void issuefixed( const name& to, const asset& supply, const string& memo );
+
+         /**
+          * Set the maximum supply of the token.
+          *
+          * @param issuer - the issuer account setting the maximum supply.
+          * @param maximum_supply - the maximum supply of the token.
+          */
+         [[eosio::action]]
+         void setmaxsupply( const name& issuer, const asset& maximum_supply );
 
          /**
           * The opposite for create action, if all validations succeed,
@@ -104,15 +123,25 @@ namespace eosio {
          static asset get_supply( const name& token_contract_account, const symbol_code& sym_code )
          {
             stats statstable( token_contract_account, sym_code.raw() );
-            const auto& st = statstable.get( sym_code.raw(), "invalid supply symbol code" );
-            return st.supply;
+            return statstable.get( sym_code.raw(), "invalid supply symbol code" ).supply;
+         }
+
+         static asset get_max_supply( const name& token_contract_account, const symbol_code& sym_code )
+         {
+            stats statstable( token_contract_account, sym_code.raw() );
+            return statstable.get( sym_code.raw(), "invalid supply symbol code" ).max_supply;
+         }
+
+         static name get_issuer( const name& token_contract_account, const symbol_code& sym_code )
+         {
+            stats statstable( token_contract_account, sym_code.raw() );
+            return statstable.get( sym_code.raw(), "invalid supply symbol code" ).issuer;
          }
 
          static asset get_balance( const name& token_contract_account, const name& owner, const symbol_code& sym_code )
          {
             accounts accountstable( token_contract_account, owner.value );
-            const auto& ac = accountstable.get( sym_code.raw(), "no balance with specified symbol" );
-            return ac.balance;
+            return accountstable.get( sym_code.raw(), "no balance with specified symbol" ).balance;
          }
 
          using create_action = eosio::action_wrapper<"create"_n, &token::create>;
@@ -121,7 +150,9 @@ namespace eosio {
          using transfer_action = eosio::action_wrapper<"transfer"_n, &token::transfer>;
          using open_action = eosio::action_wrapper<"open"_n, &token::open>;
          using close_action = eosio::action_wrapper<"close"_n, &token::close>;
-      private:
+         using issuefixed_action = eosio::action_wrapper<"issuefixed"_n, &token::issuefixed>;
+         using setmaxsupply_action = eosio::action_wrapper<"setmaxsupply"_n, &token::setmaxsupply>;
+
          struct [[eosio::table]] account {
             asset    balance;
 
@@ -139,6 +170,7 @@ namespace eosio {
          typedef eosio::multi_index< "accounts"_n, account > accounts;
          typedef eosio::multi_index< "stat"_n, currency_stats > stats;
 
+      private:
          void sub_balance( const name& owner, const asset& value );
          void add_balance( const name& owner, const asset& value, const name& ram_payer );
    };

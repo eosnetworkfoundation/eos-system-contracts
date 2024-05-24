@@ -40,11 +40,11 @@ BOOST_FIXTURE_TEST_CASE( buysell, eosio_system_tester ) try {
    auto init_bytes =  total["ram_bytes"].as_uint64();
 
    const asset initial_ram_balance = get_balance("eosio.ram"_n);
-   const asset initial_ramfee_balance = get_balance("eosio.ramfee"_n);
+   const asset initial_fees_balance = get_balance("eosio.fees"_n);
    BOOST_REQUIRE_EQUAL( success(), buyram( "alice1111111", "alice1111111", core_sym::from_string("200.0000") ) );
    BOOST_REQUIRE_EQUAL( core_sym::from_string("800.0000"), get_balance( "alice1111111" ) );
    BOOST_REQUIRE_EQUAL( initial_ram_balance + core_sym::from_string("199.0000"), get_balance("eosio.ram"_n) );
-   BOOST_REQUIRE_EQUAL( initial_ramfee_balance + core_sym::from_string("1.0000"), get_balance("eosio.ramfee"_n) );
+   BOOST_REQUIRE_EQUAL( initial_fees_balance + core_sym::from_string("1.0000"), get_balance("eosio.fees"_n) );
 
    total = get_total_stake( "alice1111111" );
    auto bytes = total["ram_bytes"].as_uint64();
@@ -1612,7 +1612,7 @@ BOOST_FIXTURE_TEST_CASE(producer_pay, eosio_system_tester, * boost::unit_test::t
 
    // defproducerb tries to claim rewards but he's not on the list
    {
-      BOOST_REQUIRE_EQUAL(wasm_assert_msg("unable to find key"),
+      BOOST_REQUIRE_EQUAL(wasm_assert_msg("producer not registered"),
                           push_action("defproducerb"_n, "claimrewards"_n, mvo()("owner", "defproducerb")));
    }
 
@@ -1638,6 +1638,27 @@ BOOST_FIXTURE_TEST_CASE(producer_pay, eosio_system_tester, * boost::unit_test::t
       BOOST_REQUIRE(500 * 10000 > int64_t(double(initial_supply.get_amount()) * double(0.05)) - (supply.get_amount() - initial_supply.get_amount()));
       BOOST_REQUIRE(500 * 10000 > int64_t(double(initial_supply.get_amount()) * double(0.04)) - (savings - initial_savings));
    }
+
+   // test claimrewards when max supply is reached
+   {
+      produce_block(fc::hours(24));
+
+      const asset before_supply = get_token_supply();
+      const asset before_system_balance = get_balance(config::system_account_name);
+      const asset before_producer_balance = get_balance("defproducera"_n);
+
+      setmaxsupply( before_supply );
+      BOOST_REQUIRE_EQUAL(success(), push_action("defproducera"_n, "claimrewards"_n, mvo()("owner", "defproducera")));
+
+      const asset after_supply = get_token_supply();
+      const asset after_system_balance = get_balance(config::system_account_name);
+      const asset after_producer_balance = get_balance("defproducera"_n);
+
+      BOOST_REQUIRE_EQUAL(after_supply.get_amount(), before_supply.get_amount());
+      BOOST_REQUIRE_EQUAL(after_system_balance.get_amount() - before_system_balance.get_amount(), -1407793756);
+      BOOST_REQUIRE_EQUAL(after_producer_balance.get_amount() - before_producer_balance.get_amount(), 281558751);
+   }
+
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE(change_inflation, eosio_system_tester) try {
@@ -1651,6 +1672,13 @@ BOOST_FIXTURE_TEST_CASE(change_inflation, eosio_system_tester) try {
                            setinflation(1, 9999, 10000) );
       BOOST_REQUIRE_EQUAL( wasm_assert_msg("votepay_factor must not be less than 10000"),
                            setinflation(1, 10000, 9999) );
+
+      BOOST_REQUIRE_EQUAL( success(),
+                           setpayfactor(10000, 10000) );
+      BOOST_REQUIRE_EQUAL( wasm_assert_msg("inflation_pay_factor must not be less than 10000"),
+                           setpayfactor(9999, 10000) );
+      BOOST_REQUIRE_EQUAL( wasm_assert_msg("votepay_factor must not be less than 10000"),
+                           setpayfactor(10000, 9999) );
    }
 
    {
@@ -1738,7 +1766,8 @@ BOOST_FIXTURE_TEST_CASE(change_inflation, eosio_system_tester) try {
 BOOST_AUTO_TEST_CASE(extreme_inflation) try {
    eosio_system_tester t(eosio_system_tester::setup_level::minimal);
    symbol core_symbol{CORE_SYM};
-   t.create_currency( "eosio.token"_n, config::system_account_name, asset((1ll << 62) - 1, core_symbol) );
+   const asset max_supply = asset((1ll << 62) - 1, core_symbol);
+   t.create_currency( "eosio.token"_n, config::system_account_name, max_supply );
    t.issue( asset(10000000000000, core_symbol) );
    t.deploy_contract();
    t.produce_block();
@@ -1752,17 +1781,22 @@ BOOST_AUTO_TEST_CASE(extreme_inflation) try {
 
    BOOST_REQUIRE_EQUAL(t.success(), t.push_action("defproducera"_n, "claimrewards"_n, mvo()("owner", "defproducera")));
    t.produce_block();
-   asset current_supply;
-   {
-      vector<char> data = t.get_row_by_account( "eosio.token"_n, name(core_symbol.to_symbol_code().value), "stat"_n, account_name(core_symbol.to_symbol_code().value) );
-      current_supply = t.token_abi_ser.binary_to_variant("currency_stats", data, abi_serializer::create_yield_function(eosio_system_tester::abi_serializer_max_time))["supply"].template as<asset>();
-   }
-   t.issue( asset((1ll << 62) - 1, core_symbol) - current_supply );
+   const asset current_supply = t.get_token_supply();
+   t.issue( max_supply - current_supply );
+
+   // empty system balance
+   // claimrewards operates by either `issue` new tokens or using the existing system balance
+   const asset system_balance = t.get_balance(config::system_account_name);
+   t.transfer( config::system_account_name, "eosio.null"_n, system_balance, config::system_account_name);
+   BOOST_REQUIRE_EQUAL(t.get_balance(config::system_account_name).get_amount(), 0);
+   BOOST_REQUIRE_EQUAL(t.get_token_supply().get_amount() - max_supply.get_amount(), 0);
+
+   // set maximum inflation
    BOOST_REQUIRE_EQUAL(t.success(), t.setinflation(std::numeric_limits<int64_t>::max(), 50000, 40000));
    t.produce_block();
 
    t.produce_block(fc::hours(10*24));
-   BOOST_REQUIRE_EQUAL(t.wasm_assert_msg("quantity exceeds available supply"), t.push_action("defproducera"_n, "claimrewards"_n, mvo()("owner", "defproducera")));
+   BOOST_REQUIRE_EQUAL(t.wasm_assert_msg("insufficient system token balance for claiming rewards"), t.push_action("defproducera"_n, "claimrewards"_n, mvo()("owner", "defproducera")));
 
    t.produce_block(fc::hours(11*24));
    BOOST_REQUIRE_EQUAL(t.wasm_assert_msg("magnitude of asset amount must be less than 2^62"), t.push_action("defproducera"_n, "claimrewards"_n, mvo()("owner", "defproducera")));
@@ -1770,7 +1804,7 @@ BOOST_AUTO_TEST_CASE(extreme_inflation) try {
    t.produce_block(fc::hours(24));
    BOOST_REQUIRE_EQUAL(t.wasm_assert_msg("overflow in calculating new tokens to be issued; inflation rate is too high"), t.push_action("defproducera"_n, "claimrewards"_n, mvo()("owner", "defproducera")));
    BOOST_REQUIRE_EQUAL(t.success(), t.setinflation(500, 50000, 40000));
-   BOOST_REQUIRE_EQUAL(t.wasm_assert_msg("quantity exceeds available supply"), t.push_action("defproducera"_n, "claimrewards"_n, mvo()("owner", "defproducera")));
+   BOOST_REQUIRE_EQUAL(t.wasm_assert_msg("insufficient system token balance for claiming rewards"), t.push_action("defproducera"_n, "claimrewards"_n, mvo()("owner", "defproducera")));
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE(multiple_producer_pay, eosio_system_tester, * boost::unit_test::tolerance(1e-10)) try {
@@ -3816,7 +3850,7 @@ BOOST_FIXTURE_TEST_CASE( eosioram_ramusage, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL( success(), stake( "eosio", "alice1111111", core_sym::from_string("200.0000"), core_sym::from_string("100.0000") ) );
 
    const asset initial_ram_balance = get_balance("eosio.ram"_n);
-   const asset initial_ramfee_balance = get_balance("eosio.ramfee"_n);
+   const asset initial_fees_balance = get_balance("eosio.fees"_n);
    BOOST_REQUIRE_EQUAL( success(), buyram( "alice1111111", "alice1111111", core_sym::from_string("1000.0000") ) );
 
    BOOST_REQUIRE_EQUAL( false, get_row_by_account( "eosio.token"_n, "alice1111111"_n, "accounts"_n, account_name(symbol{CORE_SYM}.to_symbol_code()) ).empty() );
@@ -4024,6 +4058,8 @@ BOOST_FIXTURE_TEST_CASE( rex_auth, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "mvtosavings"_n, mvo()("owner", alice)("rex", one_rex) ) );
    BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "mvfrsavings"_n, mvo()("owner", alice)("rex", one_rex) ) );
    BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "closerex"_n, mvo()("owner", alice) ) );
+   BOOST_REQUIRE_EQUAL( error(error_msg),
+                        push_action( bob, "donatetorex"_n, mvo()("payer", alice)("quantity", one_eos)("memo", "") ) );
 
    BOOST_REQUIRE_EQUAL( error("missing authority of eosio"), push_action( alice, "setrex"_n, mvo()("balance", one_eos) ) );
 
@@ -4725,18 +4761,18 @@ BOOST_FIXTURE_TEST_CASE( ramfee_namebid_to_rex, eosio_system_tester ) try {
    account_name alice = accounts[0], bob = accounts[1], carol = accounts[2], emily = accounts[3], frank = accounts[4];
    setup_rex_accounts( accounts, init_balance, core_sym::from_string("80.0000"), core_sym::from_string("80.0000"), false );
 
-   asset cur_ramfee_balance = get_balance( "eosio.ramfee"_n );
+   asset cur_fees_balance = get_balance( "eosio.fees"_n );
    BOOST_REQUIRE_EQUAL( success(),                      buyram( alice, alice, core_sym::from_string("20.0000") ) );
-   BOOST_REQUIRE_EQUAL( get_balance( "eosio.ramfee"_n ), core_sym::from_string("0.1000") + cur_ramfee_balance );
+   BOOST_REQUIRE_EQUAL( get_balance( "eosio.fees"_n ), core_sym::from_string("0.1000") + cur_fees_balance );
    BOOST_REQUIRE_EQUAL( wasm_assert_msg("must deposit to REX fund first"),
                         buyrex( alice, core_sym::from_string("350.0000") ) );
    BOOST_REQUIRE_EQUAL( success(),                      deposit( alice, core_sym::from_string("350.0000") ) );
    BOOST_REQUIRE_EQUAL( success(),                      buyrex( alice, core_sym::from_string("350.0000") ) );
-   cur_ramfee_balance = get_balance( "eosio.ramfee"_n );
+   cur_fees_balance = get_balance( "eosio.fees"_n );
    asset cur_rex_balance = get_balance( "eosio.rex"_n );
    BOOST_REQUIRE_EQUAL( core_sym::from_string("350.0000"), cur_rex_balance );
    BOOST_REQUIRE_EQUAL( success(),                         buyram( bob, carol, core_sym::from_string("70.0000") ) );
-   BOOST_REQUIRE_EQUAL( cur_ramfee_balance,                get_balance( "eosio.ramfee"_n ) );
+   BOOST_REQUIRE_EQUAL( cur_fees_balance,                get_balance( "eosio.fees"_n ) );
    BOOST_REQUIRE_EQUAL( get_balance( "eosio.rex"_n ),       cur_rex_balance + core_sym::from_string("0.3500") );
 
    cur_rex_balance = get_balance( "eosio.rex"_n );
@@ -4770,7 +4806,7 @@ BOOST_FIXTURE_TEST_CASE( ramfee_namebid_to_rex, eosio_system_tester ) try {
    produce_block( fc::hours(24) );
    produce_blocks( 2 );
 
-   BOOST_REQUIRE_EQUAL( core_sym::from_string("29.3500"), get_rex_pool()["namebid_proceeds"].as<asset>() );
+   BOOST_REQUIRE_EQUAL( core_sym::from_string("0.0000"), get_rex_pool()["namebid_proceeds"].as<asset>() );
    BOOST_REQUIRE_EQUAL( success(),                        deposit( frank, core_sym::from_string("5.0000") ) );
    BOOST_REQUIRE_EQUAL( success(),                        buyrex( frank, core_sym::from_string("5.0000") ) );
    BOOST_REQUIRE_EQUAL( get_balance( "eosio.rex"_n ),      cur_rex_balance + core_sym::from_string("34.3500") );
@@ -5446,6 +5482,33 @@ BOOST_FIXTURE_TEST_CASE( close_rex, eosio_system_tester ) try {
 
 } FC_LOG_AND_RETHROW()
 
+BOOST_FIXTURE_TEST_CASE( donate_to_rex, eosio_system_tester ) try {
+
+   const asset   init_balance = core_sym::from_string("10000.0000");
+   const std::vector<account_name> accounts = { "aliceaccount"_n, "bobbyaccount"_n };
+   account_name alice = accounts[0], bob = accounts[1];
+   setup_rex_accounts( accounts, init_balance );
+   issue_and_transfer( bob, core_sym::from_string("1000.0000"), config::system_account_name );
+
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg("rex system is not initialized"),
+                        donatetorex( bob, core_sym::from_string("500.0000"), "") );
+   BOOST_REQUIRE_EQUAL( success(), buyrex( alice, init_balance ) );
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg("quantity must be core token"),
+                        donatetorex( bob, asset::from_string("100 TKN"), "") );
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "quantity must be positive" ),
+                        donatetorex( bob, core_sym::from_string("-100.0000"), "") );
+
+   BOOST_REQUIRE_EQUAL( success(), donatetorex( bob, core_sym::from_string("100.0000"), "") );
+   
+   
+   for (int i = 0; i < 4; ++i) {
+      const asset rex_balance = get_balance("eosio.rex"_n);
+      const int64_t rex_proceeds = get_rex_return_pool()["proceeds"].as<int64_t>();
+      BOOST_REQUIRE_EQUAL( success(), donatetorex( bob, core_sym::from_string("100.0000"), "") );
+      BOOST_REQUIRE_EQUAL( rex_balance + core_sym::from_string("100.0000"), get_balance("eosio.rex"_n) );
+      BOOST_REQUIRE_EQUAL( rex_proceeds + 1000000, get_rex_return_pool()["proceeds"].as<int64_t>() );
+   }
+} FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE( set_rex, eosio_system_tester ) try {
 
@@ -5511,41 +5574,74 @@ BOOST_FIXTURE_TEST_CASE( b1_vesting, eosio_system_tester ) try {
    create_accounts_with_resources( { b1 }, alice );
 
    const asset stake_amount = core_sym::from_string("50000000.0000");
-   const asset final_amount = core_sym::from_string("17664825.5000");
-   const asset small_amount = core_sym::from_string("1000.0000");
    issue_and_transfer( b1, stake_amount + stake_amount + stake_amount, config::system_account_name );
 
    stake( b1, b1, stake_amount, stake_amount );
 
    BOOST_REQUIRE_EQUAL( 2 * stake_amount.get_amount(), get_voter_info( b1 )["staked"].as<int64_t>() );
 
-   BOOST_REQUIRE_EQUAL( success(), unstake( b1, b1, small_amount, small_amount ) );
+   // The code has changed since the tests were originally written, and B1's vesting is no longer based
+   // on the time of the block, but is a fixed amount instead.
+   // The total amount of possible vested is 35329651.2515, meaning there is 64670348.7485
+   // left which will not be vested.
+   // These tests now reflect the new behavior.
 
-   produce_block( fc::days(4) );
+   const asset vested = core_sym::from_string("35329651.2515");
+   const asset unvestable = core_sym::from_string("64670348.7485");
+   const asset oneToken = core_sym::from_string("1.0000");
+   const asset zero = core_sym::from_string("0.0000");
 
-   BOOST_REQUIRE_EQUAL( success(), push_action( b1, "refund"_n, mvo()("owner", b1) ) );
-
-   BOOST_REQUIRE_EQUAL( 2 * ( stake_amount.get_amount() - small_amount.get_amount() ),
-                        get_voter_info( b1 )["staked"].as<int64_t>() );
-   
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg("b1 can only claim their tokens over 10 years"),
-                        unstake( b1, b1, final_amount, final_amount ) );
-
+   // Can't use rex
    BOOST_REQUIRE_EQUAL( wasm_assert_msg("must vote for at least 21 producers or for a proxy before buying REX"),
-                        unstaketorex( b1, b1, final_amount - small_amount, final_amount - small_amount ) );
-
+                        unstaketorex( b1, b1, vested, zero ) );
    BOOST_REQUIRE_EQUAL( error("missing authority of eosio"), vote( b1, { }, "proxyaccount"_n ) );
 
-   BOOST_REQUIRE_EQUAL( success(), unstake( b1, b1, final_amount - small_amount, final_amount - small_amount ) );
-   
+   // Can't take what isn't vested
+   BOOST_REQUIRE_EQUAL( 
+      wasm_assert_msg("b1 can only claim what has already vested"),
+      unstake( b1, b1, stake_amount, stake_amount ) 
+   );
+   BOOST_REQUIRE_EQUAL( 
+      wasm_assert_msg("b1 can only claim what has already vested"),
+      unstake( b1, b1, stake_amount, zero ) 
+   );
+
+   // Taking the vested amount - 1 token
+   BOOST_REQUIRE_EQUAL( success(), unstake( b1, b1, vested-oneToken, zero ) );
    produce_block( fc::days(4) );
-
    BOOST_REQUIRE_EQUAL( success(), push_action( b1, "refund"_n, mvo()("owner", b1) ) );
+   BOOST_REQUIRE_EQUAL(unvestable.get_amount() + oneToken.get_amount(),
+                        get_voter_info( b1 )["staked"].as<int64_t>() );
 
-   produce_block( fc::days( 5 * 364 ) );
+   // Can't take 2 tokens, only 1 is vested
+   BOOST_REQUIRE_EQUAL( 
+      wasm_assert_msg("b1 can only claim what has already vested"),
+      unstake( b1, b1, oneToken, oneToken ) 
+   );
 
-   BOOST_REQUIRE_EQUAL( wasm_assert_msg("b1 can only claim their tokens over 10 years"),
-                        unstake( b1, b1, small_amount, small_amount ) );
+   // Can't unvest the 1 token, as it's already unvested
+   BOOST_REQUIRE_EQUAL( 
+      wasm_assert_msg("can only unvest what is not already vested"),
+      unvest( b1, (stake_amount - vested) + oneToken, stake_amount ) 
+   );
+
+   auto supply_before = get_token_supply();
+
+   // Unvesting the remaining unvested tokens
+   BOOST_REQUIRE_EQUAL( success(), unvest( b1, stake_amount - vested, stake_amount ) );
+   BOOST_REQUIRE_EQUAL(oneToken.get_amount(), get_voter_info( b1 )["staked"].as<int64_t>() );
+
+   // Should have retired the unvestable tokens
+   BOOST_REQUIRE_EQUAL( 
+      get_token_supply(), 
+      supply_before-unvestable
+   );
+
+   // B1 can take the last token, even after unvesting has occurred
+   BOOST_REQUIRE_EQUAL( success(), unstake( b1, b1, oneToken, zero )  );
+   produce_block( fc::days(4) );
+   BOOST_REQUIRE_EQUAL( success(), push_action( b1, "refund"_n, mvo()("owner", b1) ) );
+   BOOST_REQUIRE_EQUAL(0, get_voter_info( b1 )["staked"].as<int64_t>() );
 
 } FC_LOG_AND_RETHROW()
 

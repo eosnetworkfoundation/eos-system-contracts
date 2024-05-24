@@ -93,6 +93,7 @@ setacctram
 setalimits
 setcode
 setinflation
+setpayfactor
 setparams
 setpriv
 setram
