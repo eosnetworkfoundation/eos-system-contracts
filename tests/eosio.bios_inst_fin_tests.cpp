@@ -16,7 +16,7 @@ using namespace fc;
 using mvo = fc::mutable_variant_object;
 
 // tests for instant finality actions
-class eosio_bios_if_tester : public tester_not_transition_to_savanna {
+class eosio_bios_if_tester : public legacy_tester {
 public:
 
    eosio_bios_if_tester() {
