@@ -1,6 +1,6 @@
 {
    "spring-dev":{
-      "target":"default_tester",
+      "target":"main",
       "prerelease":false
    },
    "cdt":{
