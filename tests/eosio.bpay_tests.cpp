@@ -10,7 +10,7 @@ account_name inactive = "bp.inactive"_n;
 account_name fees = "eosio.fees"_n;
 account_name bpay = "eosio.bpay"_n;
 
-BOOST_FIXTURE_TEST_CASE( sanity_test, eosio_system_tester ) try {
+BOOST_FIXTURE_TEST_CASE( bpay_test, eosio_system_tester ) try {
 
 
    // Transferring some tokens to the fees account
@@ -86,6 +86,14 @@ BOOST_FIXTURE_TEST_CASE( sanity_test, eosio_system_tester ) try {
       BOOST_REQUIRE_EQUAL( wasm_assert_msg("no rewards to claim"), bpay_claimrewards( standby ) );
       BOOST_REQUIRE_EQUAL( core_sym::from_string("0.0000"), get_balance( standby ) );
    }
+
+   // Tokens transferred from the eosio account should be ignored
+   {
+      transfer( config::system_account_name, bpay, rewards_sent, config::system_account_name );
+      BOOST_REQUIRE_EQUAL( get_bpay_rewards(producer_names[10])["quantity"].as<asset>(), core_sym::from_string("95.2380") );
+   }
+
+   
 
 } FC_LOG_AND_RETHROW()
 

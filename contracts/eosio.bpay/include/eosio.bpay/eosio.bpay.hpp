@@ -47,7 +47,7 @@ namespace eosio {
         [[eosio::action]]
         void claimrewards( const name owner);
 
-        [[eosio::on_notify("*::transfer")]]
+        [[eosio::on_notify("eosio.token::transfer")]]
         void on_transfer( const name from, const name to, const asset quantity, const string memo );
 
     private:
