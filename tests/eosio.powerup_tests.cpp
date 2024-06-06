@@ -71,7 +71,12 @@ using namespace eosio_system;
 
 struct powerup_tester : eosio_system_tester {
 
-   powerup_tester() { create_accounts_with_resources({ "eosio.reserv"_n }); }
+   // Use full_except_do_not_transition_to_savanna for now until
+   // https://github.com/AntelopeIO/reference-contracts/issues/91 is resolved
+   powerup_tester()
+   : eosio_system_tester(setup_level::full, setup_policy::full_except_do_not_transition_to_savanna) {
+      create_accounts_with_resources({ "eosio.reserv"_n });
+   }
 
    void start_rex() {
       create_account_with_resources("rexholder111"_n, config::system_account_name, core_sym::from_string("1.0000"),

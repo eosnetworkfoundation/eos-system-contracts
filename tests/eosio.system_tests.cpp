@@ -843,7 +843,7 @@ BOOST_FIXTURE_TEST_CASE( producer_wtmsig, eosio_system_tester ) try {
 
    produce_block();
    produce_block( fc::minutes(2) );
-   produce_blocks(2);
+   produce_blocks(config::producer_repetitions * 2);
    BOOST_REQUIRE_EQUAL( control->active_producers().version, 1u );
    produce_block();
    BOOST_REQUIRE_EQUAL( control->pending_block_producer(), "alice1111111"_n );
@@ -901,7 +901,7 @@ BOOST_FIXTURE_TEST_CASE( producer_wtmsig, eosio_system_tester ) try {
 
    produce_block();
    produce_block( fc::minutes(2) );
-   produce_blocks(2);
+   produce_blocks(config::producer_repetitions * 2);
    BOOST_REQUIRE_EQUAL( control->active_producers().version, 2u );
    produce_block();
    BOOST_REQUIRE_EQUAL( control->pending_block_producer(), "alice1111111"_n );
@@ -933,7 +933,7 @@ BOOST_FIXTURE_TEST_CASE( producer_wtmsig_transition, eosio_system_tester ) try {
 
    produce_block();
    produce_block( fc::minutes(2) );
-   produce_blocks(2);
+   produce_blocks(config::producer_repetitions * 2);
    BOOST_REQUIRE_EQUAL( control->active_producers().version, 1u );
 
    auto convert_to_block_timestamp = [](const fc::variant& timestamp) -> eosio::chain::block_timestamp_type {
@@ -2958,6 +2958,10 @@ BOOST_FIXTURE_TEST_CASE(producer_onblock_check, eosio_system_tester) try {
 
    BOOST_REQUIRE_EQUAL(success(), vote( "producvoterb"_n, vector<account_name>(producer_names.begin(), producer_names.begin()+21)));
    BOOST_REQUIRE_EQUAL(success(), vote( "producvoterc"_n, vector<account_name>(producer_names.begin(), producer_names.end())));
+
+   int retries = 50;
+   while (produce_block()->producer == config::system_account_name && --retries);
+   BOOST_REQUIRE(retries > 0);
 
    // give a chance for everyone to produce blocks
    {

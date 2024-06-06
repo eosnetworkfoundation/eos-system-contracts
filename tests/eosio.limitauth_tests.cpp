@@ -26,7 +26,7 @@ inline const auto bob = "bob111111111"_n;
 struct limitauth_tester: eosio_system_tester {
    action_result push_action(name code, name action, permission_level auth, const variant_object& data) {
       try {
-         TESTER::push_action(code, action, {auth}, data);
+         validating_tester::push_action(code, action, {auth}, data);
          return "";
       } catch (const fc::exception& ex) {
          edump((ex.to_detail_string()));
