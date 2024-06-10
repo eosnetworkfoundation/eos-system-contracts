@@ -78,6 +78,21 @@ public:
       );
    }
 
+   action_result issuefixed( account_name to, asset supply, string memo ) {
+      return push_action( to, "issuefixed"_n, mvo()
+           ( "to", to)
+           ( "supply", supply)
+           ( "memo", memo)
+      );
+   }
+
+   action_result setmaxsupply( account_name issuer, asset maximum_supply ) {
+      return push_action( issuer, "setmaxsupply"_n, mvo()
+           ( "issuer", issuer)
+           ( "maximum_supply", maximum_supply)
+      );
+   }
+
    action_result retire( account_name issuer, asset quantity, string memo ) {
       return push_action( issuer, "retire"_n, mvo()
            ( "quantity", quantity)
@@ -238,6 +253,78 @@ BOOST_FIXTURE_TEST_CASE( issue_tests, eosio_token_tester ) try {
                         issue( "alice"_n, asset::from_string("1.000 TKN"), "hola" )
    );
 
+} FC_LOG_AND_RETHROW()
+
+BOOST_FIXTURE_TEST_CASE( issuefixed_tests, eosio_token_tester ) try {
+
+   auto token = create( "alice"_n, asset::from_string("1000.000 TKN"));
+   produce_blocks(1);
+
+   issue( "alice"_n, asset::from_string("200.000 TKN"), "issue active supply" );
+
+   issuefixed( "alice"_n, asset::from_string("1000.000 TKN"), "issue max supply" );
+
+   auto stats = get_stats("3,TKN");
+   REQUIRE_MATCHING_OBJECT( stats, mvo()
+      ("supply", "1000.000 TKN")
+      ("max_supply", "1000.000 TKN")
+      ("issuer", "alice")
+   );
+
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "symbol precision mismatch" ),
+                        issuefixed( "alice"_n, asset::from_string("1 TKN"), "" )
+   );
+
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "tokens can only be issued to issuer account" ),
+                        issuefixed( "bob"_n, asset::from_string("1.000 TKN"), "" )
+   );
+
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "must issue positive quantity" ),
+                        issuefixed( "alice"_n, asset::from_string("500.000 TKN"), "" )
+   );
+
+} FC_LOG_AND_RETHROW()
+
+BOOST_FIXTURE_TEST_CASE( setmaxsupply_tests, eosio_token_tester ) try {
+
+   auto token = create( "alice"_n, asset::from_string("1000.000 TKN"));
+   produce_blocks(1);
+
+   issue( "alice"_n, asset::from_string("1000.000 TKN"), "issue active supply" );
+
+   auto stats = get_stats("3,TKN");
+   REQUIRE_MATCHING_OBJECT( stats, mvo()
+      ("supply", "1000.000 TKN")
+      ("max_supply", "1000.000 TKN")
+      ("issuer", "alice")
+   );
+
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "quantity exceeds available supply" ),
+                        issue( "alice"_n, asset::from_string("1000.000 TKN"), "quantity exceeds available supply" )
+   );
+
+   setmaxsupply( "alice"_n, asset::from_string("2000.000 TKN") );
+
+   issue( "alice"_n, asset::from_string("1000.000 TKN"), "issue active supply" );
+
+   stats = get_stats("3,TKN");
+   REQUIRE_MATCHING_OBJECT( stats, mvo()
+      ("supply", "2000.000 TKN")
+      ("max_supply", "2000.000 TKN")
+      ("issuer", "alice")
+   );
+
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "symbol precision mismatch" ),
+                        setmaxsupply( "alice"_n, asset::from_string("3000 TKN") )
+   );
+
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "only issuer can set token maximum supply" ),
+                        setmaxsupply( "bob"_n, asset::from_string("1000.000 TKN") )
+   );
+
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg( "max supply is less than available supply" ),
+                        setmaxsupply( "alice"_n, asset::from_string("1000.000 TKN") )
+   );
 
 } FC_LOG_AND_RETHROW()
 

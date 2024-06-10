@@ -28,6 +28,19 @@ This action will not result any any tokens being issued into circulation.
 
 RAM will deducted from {{$action.account}}’s resources to create the necessary records.
 
+<h1 class="contract">setmaxsupply</h1>
+
+---
+spec_version: "0.2.0"
+title: Set Max Supply
+summary: 'Set max supply for token'
+icon: @ICON_BASE_URL@/@TOKEN_ICON_URI@
+---
+
+{{issuer}} will be allowed to issue tokens into circulation, up to a maximum supply of {{maximum_supply}}.
+
+This action will not result any any tokens being issued into circulation.
+
 <h1 class="contract">issue</h1>
 
 ---
@@ -38,6 +51,25 @@ icon: @ICON_BASE_URL@/@TOKEN_ICON_URI@
 ---
 
 The token manager agrees to issue {{quantity}} into circulation, and transfer it into {{to}}’s account.
+
+{{#if memo}}There is a memo attached to the transfer stating:
+{{memo}}
+{{/if}}
+
+If {{to}} does not have a balance for {{asset_to_symbol_code quantity}}, or the token manager does not have a balance for {{asset_to_symbol_code quantity}}, the token manager will be designated as the RAM payer of the {{asset_to_symbol_code quantity}} token balance for {{to}}. As a result, RAM will be deducted from the token manager’s resources to create the necessary records.
+
+This action does not allow the total quantity to exceed the max allowed supply of the token.
+
+<h1 class="contract">issuefixed</h1>
+
+---
+spec_version: "0.2.0"
+title: Issue Fixed Supply of Tokens into Circulation
+summary: 'Issue up to {{nowrap supply}} supply into circulation and transfer into {{nowrap to}}’s account'
+icon: @ICON_BASE_URL@/@TOKEN_ICON_URI@
+---
+
+The token manager agrees to issue tokens up to {{supply}} fixed supply into circulation, and transfer it into {{to}}’s account.
 
 {{#if memo}}There is a memo attached to the transfer stating:
 {{memo}}
