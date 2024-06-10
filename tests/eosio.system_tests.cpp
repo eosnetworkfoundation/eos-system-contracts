@@ -24,10 +24,12 @@ FC_REFLECT( connector, (balance)(weight) );
 
 using namespace eosio_system;
 
-BOOST_AUTO_TEST_SUITE(eosio_system_tests)
-
 bool within_error(int64_t a, int64_t b, int64_t err) { return std::abs(a - b) <= err; };
 bool within_one(int64_t a, int64_t b) { return within_error(a, b, 1); }
+
+// Split the tests into multiple suites so that they can be finished within CICD time limit.
+// Each suite takes approximately same amount of time.
+BOOST_AUTO_TEST_SUITE(eosio_system_part1_tests)
 
 BOOST_FIXTURE_TEST_CASE( buysell, eosio_system_tester ) try {
 
@@ -1640,6 +1642,9 @@ BOOST_FIXTURE_TEST_CASE(producer_pay, eosio_system_tester, * boost::unit_test::t
    }
 } FC_LOG_AND_RETHROW()
 
+BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE(eosio_system_part2_tests)
+
 BOOST_FIXTURE_TEST_CASE(change_inflation, eosio_system_tester) try {
 
    {
@@ -1772,6 +1777,9 @@ BOOST_AUTO_TEST_CASE(extreme_inflation) try {
    BOOST_REQUIRE_EQUAL(t.success(), t.setinflation(500, 50000, 40000));
    BOOST_REQUIRE_EQUAL(t.wasm_assert_msg("quantity exceeds available supply"), t.push_action("defproducera"_n, "claimrewards"_n, mvo()("owner", "defproducera")));
 } FC_LOG_AND_RETHROW()
+
+BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE(eosio_system_part3_tests)
 
 BOOST_FIXTURE_TEST_CASE(multiple_producer_pay, eosio_system_tester, * boost::unit_test::tolerance(1e-10)) try {
 
@@ -3035,6 +3043,8 @@ BOOST_FIXTURE_TEST_CASE( voters_actions_affect_proxy_and_producers, eosio_system
 
 } FC_LOG_AND_RETHROW()
 
+BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE(eosio_system_part4_tests)
 
 BOOST_FIXTURE_TEST_CASE( vote_both_proxy_and_producers, eosio_system_tester ) try {
    //alice1111111 becomes a proxy
@@ -3717,6 +3727,9 @@ BOOST_FIXTURE_TEST_CASE( wasmcfg, eosio_system_tester ) try {
    auto active_params = control->get_global_properties().wasm_configuration;
    BOOST_REQUIRE_EQUAL( active_params.max_table_elements, 8192 );
 } FC_LOG_AND_RETHROW()
+
+BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE(eosio_system_part5_tests)
 
 BOOST_FIXTURE_TEST_CASE( setram_effect, eosio_system_tester ) try {
 
