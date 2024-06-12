@@ -71,10 +71,7 @@ using namespace eosio_system;
 
 struct powerup_tester : eosio_system_tester {
 
-   // Use full_except_do_not_transition_to_savanna for now until
-   // https://github.com/AntelopeIO/reference-contracts/issues/91 is resolved
-   powerup_tester()
-   : eosio_system_tester(setup_level::full, setup_policy::full_except_do_not_transition_to_savanna) {
+   powerup_tester() {
       create_accounts_with_resources({ "eosio.reserv"_n });
    }
 
@@ -368,7 +365,23 @@ BOOST_FIXTURE_TEST_CASE(config_tests, powerup_tester) try {
 FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE(weight_tests, powerup_tester) try {
-   produce_block();
+   // NET and CPU decays are calculated by `update_weight` in the system contract as
+   //   `res.initial_weight_ratio +
+   //      int128_t(res.target_weight_ratio - res.initial_weight_ratio) *
+   //        (now.utc_seconds - res.initial_timestamp.utc_seconds) /
+   //        (res.target_timestamp.utc_seconds - res.initial_timestamp.utc_seconds)`
+   // `target_timestamp` is set in tests to be
+   //    `time_point_sec(control->head_block_time() + decay_period)`
+   // while `initial_timestamp` is set in contract by `eosio::current_time_point()` which
+   // is eventually by `context.control.pending_block_time().time_since_epoch().count()`.
+   // As pending_block_time() is `head_block_time() + 500ms`, when head_block_time() is not
+   // on the second, pending_block_time().utc_seconds will be the next second;
+   // this results in `(res.target_timestamp.utc_seconds - res.initial_timestamp.utc_seconds)`
+   // not equal to `decay_period`, causing rounding errors in tests.
+   if ((control->head_block_time().time_since_epoch().count() % 1000000ll) != 0) {
+      produce_block();
+      BOOST_REQUIRE_EQUAL((control->head_block_time().time_since_epoch().count() % 1000000ll), 0);
+   }
 
    auto net_start  = (powerup_frac * 11) / 100;
    auto net_target = (powerup_frac * 1) / 100;
@@ -498,7 +511,12 @@ FC_LOG_AND_RETHROW()
 BOOST_AUTO_TEST_CASE(rent_tests) try {
    {
       powerup_tester t;
-      t.produce_block();
+
+      // See comments in weight_tests why only produce a block on even head_block_num
+      if ((t.control->head_block_time().time_since_epoch().count() % 1000000ll) != 0) {
+         t.produce_block();
+         BOOST_REQUIRE_EQUAL((t.control->head_block_time().time_since_epoch().count() % 1000000ll), 0);
+      }
 
       BOOST_REQUIRE_EQUAL(t.wasm_assert_msg("powerup hasn't been initialized"), //
                           t.powerup("bob111111111"_n, "alice1111111"_n, 30, powerup_frac / 4, powerup_frac / 8,
@@ -582,7 +600,12 @@ BOOST_AUTO_TEST_CASE(rent_tests) try {
    }
 
    auto init = [](auto& t, bool rex) {
-      t.produce_block();
+      // See comments in weight_tests why only produce a block on even head_block_num
+      if ((t.control->head_block_time().time_since_epoch().count() % 1000000ll) != 0) {
+         t.produce_block();
+         BOOST_REQUIRE_EQUAL((t.control->head_block_time().time_since_epoch().count() % 1000000ll), 0);
+      }
+
       BOOST_REQUIRE_EQUAL("", t.configbw(t.make_config([&](auto& config) {
          // weight = stake_weight * 3
          config.net.current_weight_ratio = powerup_frac / 4;
