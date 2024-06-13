@@ -21,13 +21,13 @@ class eosio_system_tester : public validating_tester {
 public:
 
    void basic_setup() {
-      produce_blocks( 2 );
+      produce_block();
 
       create_accounts({ "eosio.token"_n, "eosio.ram"_n, "eosio.ramfee"_n, "eosio.stake"_n,
                "eosio.bpay"_n, "eosio.vpay"_n, "eosio.saving"_n, "eosio.names"_n, "eosio.rex"_n });
 
 
-      produce_blocks( 100 );
+      produce_block();
       set_code( "eosio.token"_n, contracts::token_wasm());
       set_abi( "eosio.token"_n, contracts::token_abi().data() );
       {
@@ -65,7 +65,7 @@ public:
    }
 
    void remaining_setup() {
-      produce_blocks();
+      produce_block();
 
       // Assumes previous setup steps were done with core token symbol set to CORE_SYM
       create_account_with_resources( "alice1111111"_n, config::system_account_name, core_sym::from_string("1.0000"), false );
@@ -1306,7 +1306,8 @@ public:
             BOOST_REQUIRE_EQUAL( success(), regproducer(p) );
          }
       }
-      produce_blocks( 250);
+      produce_block();
+      produce_block(fc::seconds(1000));
 
       auto trace_auth = validating_tester::push_action(config::system_account_name, updateauth::get_name(), config::system_account_name, mvo()
                                             ("account", name(config::system_account_name).to_string())
@@ -1332,7 +1333,7 @@ public:
                              )
          );
       }
-      produce_blocks( 250 );
+      produce_blocks( 250 ); // cannot use `produce_block(fc::seconds(1000));` trick. msig tests can fail.
 
       auto producer_schedule = control->active_producers();
       BOOST_REQUIRE_EQUAL( 21, producer_schedule.producers.size() );
