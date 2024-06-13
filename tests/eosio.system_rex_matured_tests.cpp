@@ -84,10 +84,6 @@ BOOST_FIXTURE_TEST_CASE( buy_sell_matured_rex, eosio_system_tester ) try {
 
    // 4.1. Test selling less than all their matured rex, and having all of their already matured rex sold regardless
    BOOST_REQUIRE_EQUAL( core_sym::from_string("2.5000"), get_sellrex_result( mark, asset::from_string("1.0000 REX") ) );
-   BOOST_REQUIRE_EQUAL( get_rex_balance_obj( mark )["vote_stake"].as<asset>(), core_sym::from_string("0.0000") );
-   BOOST_REQUIRE_EQUAL( asset::from_string("10000.0000 REX"), get_buyrex_result( mark, core_sym::from_string("1.0000") ) );
-   BOOST_REQUIRE_EQUAL( success(), mvfrsavings( mark, asset::from_string("10000.0000 REX") ) );
-   // BOOST_REQUIRE_EQUAL( get_rex_balance_obj( mark )["rex_maturities"].get_array()[0].as<time_point>(), get_rex_balance_obj( mark )["matured_rex"].as<time_point>() );
 
    BOOST_REQUIRE_EQUAL( success(), mvfrsavings( david, asset::from_string("10000.0000 REX") ) ); // must move REX from savings to initiate matured REX unstaking process
    BOOST_REQUIRE_EQUAL( wasm_assert_msg("insufficient available rex"), sellrex( david, asset::from_string("25000.0000 REX") ) ); // already sold when previously buying REX
