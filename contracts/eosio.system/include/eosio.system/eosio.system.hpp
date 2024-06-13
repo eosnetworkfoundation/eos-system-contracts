@@ -933,7 +933,7 @@ namespace eosiosystem {
           *
           * @post User votes are updated following this action.
           * @post Tokens used in purchase are added to user's voting power.
-          * @post Bought REX cannot be sold before 4 days counting from end of day of purchase.
+          * @post Bought REX cannot be sold before {num_of_maturity_buckets} days counting from end of day of purchase.
           */
          [[eosio::action]]
          void buyrex( const name& from, const asset& amount );
@@ -949,7 +949,7 @@ namespace eosiosystem {
           *
           * @post User votes are updated following this action.
           * @post Tokens used in purchase are added to user's voting power.
-          * @post Bought REX cannot be sold before 4 days counting from end of day of purchase.
+          * @post Bought REX cannot be sold before {num_of_maturity_buckets} days counting from end of day of purchase.
           */
          [[eosio::action]]
          void unstaketorex( const name& owner, const name& receiver, const asset& from_net, const asset& from_cpu );
@@ -1078,7 +1078,7 @@ namespace eosiosystem {
          void rexexec( const name& user, uint16_t max );
 
          /**
-          * Consolidate action, consolidates REX maturity buckets into one bucket that can be sold after 4 days
+          * Consolidate action, consolidates REX maturity buckets into one bucket that can be sold after {num_of_maturity_buckets} days
           * starting from the end of the day.
           *
           * @param owner - REX owner account name.
@@ -1090,7 +1090,7 @@ namespace eosiosystem {
           * Mvtosavings action, moves a specified amount of REX into savings bucket. REX savings bucket
           * never matures. In order for it to be sold, it has to be moved explicitly
           * out of that bucket. Then the moved amount will have the regular maturity
-          * period of 4 days starting from the end of the day.
+          * period of {num_of_maturity_buckets} days starting from the end of the day.
           *
           * @param owner - REX owner account name.
           * @param rex - amount of REX to be moved.
@@ -1100,7 +1100,7 @@ namespace eosiosystem {
 
          /**
           * Mvfrsavings action, moves a specified amount of REX out of savings bucket. The moved amount
-          * will have the regular REX maturity period of 4 days.
+          * will have the regular REX maturity period of {num_of_maturity_buckets} days.
           *
           * @param owner - REX owner account name.
           * @param rex - amount of REX to be moved.
@@ -1132,7 +1132,7 @@ namespace eosiosystem {
           *                             https://github.com/eosnetworkfoundation/eos-system-contracts/issues/135
           */
          [[eosio::action]]
-         void rexmaturity(const std::optional<uint32_t> num_of_maturity_buckets, const std::optional<bool> sell_matured_rex, const std::optional<bool> buy_rex_to_savings );
+         void setrexmature(const std::optional<uint32_t> num_of_maturity_buckets, const std::optional<bool> sell_matured_rex, const std::optional<bool> buy_rex_to_savings );
          
          /**
           * Donatetorex action, donates funds to REX, increases REX pool return buckets

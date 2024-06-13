@@ -8,7 +8,7 @@ namespace eosiosystem {
    using eosio::token;
    using eosio::seconds;
 
-   void system_contract::rexmaturity(const std::optional<uint32_t> num_of_maturity_buckets, const std::optional<bool> sell_matured_rex, const std::optional<bool> buy_rex_to_savings )
+   void system_contract::setrexmature(const std::optional<uint32_t> num_of_maturity_buckets, const std::optional<bool> sell_matured_rex, const std::optional<bool> buy_rex_to_savings )
    {
       require_auth(get_self());
 
@@ -945,7 +945,7 @@ namespace eosiosystem {
    }
 
    /**
-    * @brief Calculates maturity time of purchased REX tokens which is 4 days from end
+    * @brief Calculates maturity time of purchased REX tokens which is {num_of_maturity_buckets} days from end
     * of the day UTC
     *
     * @return time_point_sec
