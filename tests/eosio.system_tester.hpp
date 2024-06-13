@@ -1333,7 +1333,7 @@ public:
                              )
          );
       }
-      produce_blocks( 250 ); // cannot use `produce_block(fc::seconds(1000));` trick. msig tests can fail.
+      produce_blocks( 2 * 21 ); // This is minimum number of blocks required by ram_gift in system_tests
 
       auto producer_schedule = control->active_producers();
       BOOST_REQUIRE_EQUAL( 21, producer_schedule.producers.size() );
