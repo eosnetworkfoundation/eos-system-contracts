@@ -99,7 +99,7 @@ struct powerup_tester : eosio_system_tester {
       config.net.current_weight_ratio = powerup_frac;
       config.net.target_weight_ratio  = powerup_frac / 100;
       config.net.assumed_stake_weight = stake_weight;
-      config.net.target_timestamp     = time_point_sec(control->head_block_time() + fc::days(100));
+      config.net.target_timestamp     = time_point_sec(control->pending_block_time() + fc::days(100));
       config.net.exponent             = 2;
       config.net.decay_secs           = fc::days(1).to_seconds();
       config.net.min_price            = asset::from_string("0.0000 TST");
@@ -108,7 +108,7 @@ struct powerup_tester : eosio_system_tester {
       config.cpu.current_weight_ratio = powerup_frac;
       config.cpu.target_weight_ratio  = powerup_frac / 100;
       config.cpu.assumed_stake_weight = stake_weight;
-      config.cpu.target_timestamp     = time_point_sec(control->head_block_time() + fc::days(100));
+      config.cpu.target_timestamp     = time_point_sec(control->pending_block_time() + fc::days(100));
       config.cpu.exponent             = 2;
       config.cpu.decay_secs           = fc::days(1).to_seconds();
       config.cpu.min_price            = asset::from_string("0.0000 TST");
@@ -289,9 +289,9 @@ BOOST_FIXTURE_TEST_CASE(config_tests, powerup_tester) try {
    BOOST_REQUIRE_EQUAL(wasm_assert_msg("target_timestamp does not have a default value"),
                        configbw(make_config([&](auto& c) { c.net.target_timestamp = {}; })));
    BOOST_REQUIRE_EQUAL(wasm_assert_msg("target_timestamp must be in the future"),
-                       configbw(make_config([&](auto& c) { c.net.target_timestamp = time_point_sec(control->head_block_time()); })));
+                       configbw(make_config([&](auto& c) { c.net.target_timestamp = time_point_sec(control->pending_block_time()); })));
    BOOST_REQUIRE_EQUAL(wasm_assert_msg("target_timestamp must be in the future"), configbw(make_config([&](auto& c) {
-                          c.net.target_timestamp = time_point_sec(control->head_block_time() - fc::seconds(1));
+                          c.net.target_timestamp = time_point_sec(control->pending_block_time() - fc::seconds(1));
                        })));
    BOOST_REQUIRE_EQUAL(wasm_assert_msg("exponent must be >= 1"),
                        configbw(make_config([&](auto& c) { c.net.exponent = .999; })));
@@ -334,9 +334,9 @@ BOOST_FIXTURE_TEST_CASE(config_tests, powerup_tester) try {
    BOOST_REQUIRE_EQUAL(wasm_assert_msg("target_timestamp does not have a default value"),
                        configbw(make_config([&](auto& c) { c.cpu.target_timestamp = {}; })));
    BOOST_REQUIRE_EQUAL(wasm_assert_msg("target_timestamp must be in the future"),
-                       configbw(make_config([&](auto& c) { c.cpu.target_timestamp = time_point_sec(control->head_block_time()); })));
+                       configbw(make_config([&](auto& c) { c.cpu.target_timestamp = time_point_sec(control->pending_block_time()); })));
    BOOST_REQUIRE_EQUAL(wasm_assert_msg("target_timestamp must be in the future"), configbw(make_config([&](auto& c) {
-                          c.cpu.target_timestamp = time_point_sec(control->head_block_time() - fc::seconds(1));
+                          c.cpu.target_timestamp = time_point_sec(control->pending_block_time() - fc::seconds(1));
                        })));
    BOOST_REQUIRE_EQUAL(wasm_assert_msg("exponent must be >= 1"),
                        configbw(make_config([&](auto& c) { c.cpu.exponent = .999; })));
@@ -365,23 +365,7 @@ BOOST_FIXTURE_TEST_CASE(config_tests, powerup_tester) try {
 FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE(weight_tests, powerup_tester) try {
-   // NET and CPU decays are calculated by `update_weight` in the system contract as
-   //   `res.initial_weight_ratio +
-   //      int128_t(res.target_weight_ratio - res.initial_weight_ratio) *
-   //        (now.utc_seconds - res.initial_timestamp.utc_seconds) /
-   //        (res.target_timestamp.utc_seconds - res.initial_timestamp.utc_seconds)`
-   // `target_timestamp` is set in tests to be
-   //    `time_point_sec(control->head_block_time() + decay_period)`
-   // while `initial_timestamp` is set in contract by `eosio::current_time_point()` which
-   // is eventually by `context.control.pending_block_time().time_since_epoch().count()`.
-   // As pending_block_time() is `head_block_time() + 500ms`, when head_block_time() is not
-   // on the second, pending_block_time().utc_seconds will be the next second;
-   // this results in `(res.target_timestamp.utc_seconds - res.initial_timestamp.utc_seconds)`
-   // not equal to `decay_period`, causing rounding errors in tests.
-   if ((control->head_block_time().time_since_epoch().count() % 1000000ll) != 0) {
-      produce_block();
-      BOOST_REQUIRE_EQUAL((control->head_block_time().time_since_epoch().count() % 1000000ll), 0);
-   }
+   produce_block();
 
    auto net_start  = (powerup_frac * 11) / 100;
    auto net_target = (powerup_frac * 1) / 100;
@@ -392,12 +376,12 @@ BOOST_FIXTURE_TEST_CASE(weight_tests, powerup_tester) try {
                           config.net.current_weight_ratio = net_start;
                           config.net.target_weight_ratio  = net_target;
                           config.net.assumed_stake_weight = stake_weight;
-                          config.net.target_timestamp     = time_point_sec(control->head_block_time() + fc::days(10));
+                          config.net.target_timestamp     = time_point_sec(control->pending_block_time() + fc::days(10));
 
                           config.cpu.current_weight_ratio = cpu_start;
                           config.cpu.target_weight_ratio  = cpu_target;
                           config.cpu.assumed_stake_weight = stake_weight;
-                          config.cpu.target_timestamp     = time_point_sec(control->head_block_time() + fc::days(20));
+                          config.cpu.target_timestamp     = time_point_sec(control->pending_block_time() + fc::days(20));
                        })));
 
    int64_t net;
@@ -433,8 +417,8 @@ BOOST_FIXTURE_TEST_CASE(weight_tests, powerup_tester) try {
       int i = 7;
       produce_block(fc::days(1) - fc::milliseconds(500));
       BOOST_REQUIRE_EQUAL("", configbw(make_default_config([&](powerup_config& config) {
-                             config.net.target_timestamp = time_point_sec(control->head_block_time() + fc::days(30));
-                             config.cpu.target_timestamp = time_point_sec(control->head_block_time() + fc::days(40));
+                             config.net.target_timestamp = time_point_sec(control->pending_block_time() + fc::days(30));
+                             config.cpu.target_timestamp = time_point_sec(control->pending_block_time() + fc::days(40));
                           })));
       net_start = net = net_start + i * (net_target - net_start) / 10;
       cpu_start = cpu = cpu_start + i * (cpu_target - cpu_start) / 20;
@@ -489,7 +473,7 @@ BOOST_FIXTURE_TEST_CASE(weight_tests, powerup_tester) try {
    // Move transition time to immediate future
    {
       produce_block(fc::days(1) - fc::milliseconds(500));
-      time_point_sec tps(control->head_block_time() + fc::milliseconds(1000));
+      time_point_sec tps(control->pending_block_time() + fc::milliseconds(1000));
       BOOST_REQUIRE_EQUAL("", configbw(make_default_config([&](powerup_config& config) {
                              config.net.target_timestamp = tps;
                              config.cpu.target_timestamp = tps;
@@ -511,8 +495,8 @@ FC_LOG_AND_RETHROW()
 BOOST_AUTO_TEST_CASE(rent_tests) try {
    {
       powerup_tester t;
-
-      // See comments in weight_tests why only produce a block on even head_block_num
+      // This test is flaky. It only passes when head block time is on the second.
+      // https://github.com/AntelopeIO/reference-contracts/issues/104 tracks this issue.
       if ((t.control->head_block_time().time_since_epoch().count() % 1000000ll) != 0) {
          t.produce_block();
          BOOST_REQUIRE_EQUAL((t.control->head_block_time().time_since_epoch().count() % 1000000ll), 0);
@@ -600,7 +584,8 @@ BOOST_AUTO_TEST_CASE(rent_tests) try {
    }
 
    auto init = [](auto& t, bool rex) {
-      // See comments in weight_tests why only produce a block on even head_block_num
+      // This test is flaky. It only passes when head block time is on the second.
+      // https://github.com/AntelopeIO/reference-contracts/issues/104 tracks this issue.
       if ((t.control->head_block_time().time_since_epoch().count() % 1000000ll) != 0) {
          t.produce_block();
          BOOST_REQUIRE_EQUAL((t.control->head_block_time().time_since_epoch().count() % 1000000ll), 0);
