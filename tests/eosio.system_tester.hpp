@@ -796,13 +796,14 @@ public:
 
    asset get_sellrex_result( const account_name& from, const asset& rex ) {
       auto trace = base_tester::push_action( config::system_account_name, "sellrex"_n, from, mvo()("from", from)("rex", rex) );
-      asset proceeds;
+      asset proceeds = core_sym::from_string("0.0000");
       for ( size_t i = 0; i < trace->action_traces.size(); ++i ) {
          if ( trace->action_traces[i].act.name == "sellresult"_n ) {
+            asset _action_proceeds;
             fc::raw::unpack( trace->action_traces[i].act.data.data(),
                              trace->action_traces[i].act.data.size(),
-                             proceeds );
-            return proceeds;
+                             _action_proceeds );
+            proceeds += _action_proceeds;
          }
       }
       return proceeds;
@@ -930,6 +931,10 @@ public:
       return push_action( name(owner), "closerex"_n, mvo()("owner", owner) );
    }
 
+   action_result setrexmature(const std::optional<uint32_t> num_of_maturity_buckets, const std::optional<bool> sell_matured_rex, const std::optional<bool> buy_rex_to_savings ) {
+      return push_action( "eosio"_n, "setrexmature"_n, mvo()("num_of_maturity_buckets", num_of_maturity_buckets)("sell_matured_rex", sell_matured_rex)("buy_rex_to_savings", buy_rex_to_savings) );
+   }
+   
    action_result donatetorex( const account_name& payer, const asset& quantity, const std::string& memo ) {
       return push_action( name(payer), "donatetorex"_n, mvo()
                           ("payer", payer)
