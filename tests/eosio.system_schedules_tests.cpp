@@ -1,5 +1,4 @@
 #include <boost/test/unit_test.hpp>
-
 #include "eosio.system_tester.hpp"
 
 using namespace eosio_system;
