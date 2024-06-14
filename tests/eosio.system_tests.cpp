@@ -27,9 +27,11 @@ using namespace eosio_system;
 bool within_error(int64_t a, int64_t b, int64_t err) { return std::abs(a - b) <= err; };
 bool within_one(int64_t a, int64_t b) { return within_error(a, b, 1); }
 
-// Split the tests into multiple suites so that they can be finished within CICD time limit.
-// Each suite takes approximately same amount of time.
-BOOST_AUTO_TEST_SUITE(eosio_system_part1_tests)
+// Split the tests into multiple suites so that they can run in parallel in CICD to
+// reduce overall CICD time..
+// Each suite is grouped by functionality and takes approximately the same amount of time.
+
+BOOST_AUTO_TEST_SUITE(eosio_system_stake_tests)
 
 BOOST_FIXTURE_TEST_CASE( buysell, eosio_system_tester ) try {
 
@@ -744,6 +746,9 @@ BOOST_FIXTURE_TEST_CASE( stake_to_another_user_not_from_refund, eosio_system_tes
    //BOOST_REQUIRE_EQUAL( orig_request_time, refund["request_time"].as_int64() );
 
 } FC_LOG_AND_RETHROW()
+
+BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE(eosio_system_producer_tests)
 
 // Tests for voting
 BOOST_FIXTURE_TEST_CASE( producer_register_unregister, eosio_system_tester ) try {
@@ -1664,7 +1669,7 @@ BOOST_FIXTURE_TEST_CASE(producer_pay, eosio_system_tester, * boost::unit_test::t
 } FC_LOG_AND_RETHROW()
 
 BOOST_AUTO_TEST_SUITE_END()
-BOOST_AUTO_TEST_SUITE(eosio_system_part2_tests)
+BOOST_AUTO_TEST_SUITE(eosio_system_inflation_tests)
 
 BOOST_FIXTURE_TEST_CASE(change_inflation, eosio_system_tester) try {
 
@@ -1813,7 +1818,7 @@ BOOST_AUTO_TEST_CASE(extreme_inflation) try {
 } FC_LOG_AND_RETHROW()
 
 BOOST_AUTO_TEST_SUITE_END()
-BOOST_AUTO_TEST_SUITE(eosio_system_part3_tests)
+BOOST_AUTO_TEST_SUITE(eosio_system_multiple_producer_pay_tests)
 
 BOOST_FIXTURE_TEST_CASE(multiple_producer_pay, eosio_system_tester, * boost::unit_test::tolerance(1e-10)) try {
 
@@ -2193,6 +2198,9 @@ BOOST_FIXTURE_TEST_CASE(multiple_producer_pay, eosio_system_tester, * boost::uni
 
 } FC_LOG_AND_RETHROW()
 
+
+BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE(eosio_system_votepay_tests)
 
 BOOST_FIXTURE_TEST_CASE(multiple_producer_votepay_share, eosio_system_tester, * boost::unit_test::tolerance(1e-10)) try {
 
@@ -2892,9 +2900,6 @@ BOOST_FIXTURE_TEST_CASE(producers_upgrade_system_contract, eosio_system_tester) 
    BOOST_REQUIRE( bool(trace) );
    BOOST_REQUIRE_EQUAL( 1, trace->action_traces.size() );
    BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
-
-   produce_blocks( 250 );
-
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE(producer_onblock_check, eosio_system_tester) try {
@@ -3289,6 +3294,9 @@ BOOST_FIXTURE_TEST_CASE( elect_producers /*_and_parameters*/, eosio_system_teste
 
 } FC_LOG_AND_RETHROW()
 
+
+BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE(eosio_system_name_tests)
 
 BOOST_FIXTURE_TEST_CASE( buyname, eosio_system_tester ) try {
    create_accounts_with_resources( { "dan"_n, "sam"_n } );
@@ -3935,6 +3943,9 @@ BOOST_FIXTURE_TEST_CASE( ram_gift, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL( userres["ram_bytes"].as_uint64() + ram_gift, ram_bytes );
 
 } FC_LOG_AND_RETHROW()
+
+BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE(eosio_system_rex_tests)
 
 BOOST_FIXTURE_TEST_CASE( rex_rounding_issue, eosio_system_tester ) try {
    const std::vector<name> whales { "whale1"_n, "whale2"_n, "whale3"_n, "whale4"_n , "whale5"_n  };
@@ -5516,8 +5527,8 @@ BOOST_FIXTURE_TEST_CASE( donate_to_rex, eosio_system_tester ) try {
                         donatetorex( bob, core_sym::from_string("-100.0000"), "") );
 
    BOOST_REQUIRE_EQUAL( success(), donatetorex( bob, core_sym::from_string("100.0000"), "") );
-   
-   
+
+
    for (int i = 0; i < 4; ++i) {
       const asset rex_balance = get_balance("eosio.rex"_n);
       const int64_t rex_proceeds = get_rex_return_pool()["proceeds"].as<int64_t>();
@@ -5614,13 +5625,13 @@ BOOST_FIXTURE_TEST_CASE( b1_vesting, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL( error("missing authority of eosio"), vote( b1, { }, "proxyaccount"_n ) );
 
    // Can't take what isn't vested
-   BOOST_REQUIRE_EQUAL( 
+   BOOST_REQUIRE_EQUAL(
       wasm_assert_msg("b1 can only claim what has already vested"),
-      unstake( b1, b1, stake_amount, stake_amount ) 
+      unstake( b1, b1, stake_amount, stake_amount )
    );
-   BOOST_REQUIRE_EQUAL( 
+   BOOST_REQUIRE_EQUAL(
       wasm_assert_msg("b1 can only claim what has already vested"),
-      unstake( b1, b1, stake_amount, zero ) 
+      unstake( b1, b1, stake_amount, zero )
    );
 
    // Taking the vested amount - 1 token
@@ -5631,15 +5642,15 @@ BOOST_FIXTURE_TEST_CASE( b1_vesting, eosio_system_tester ) try {
                         get_voter_info( b1 )["staked"].as<int64_t>() );
 
    // Can't take 2 tokens, only 1 is vested
-   BOOST_REQUIRE_EQUAL( 
+   BOOST_REQUIRE_EQUAL(
       wasm_assert_msg("b1 can only claim what has already vested"),
-      unstake( b1, b1, oneToken, oneToken ) 
+      unstake( b1, b1, oneToken, oneToken )
    );
 
    // Can't unvest the 1 token, as it's already unvested
-   BOOST_REQUIRE_EQUAL( 
+   BOOST_REQUIRE_EQUAL(
       wasm_assert_msg("can only unvest what is not already vested"),
-      unvest( b1, (stake_amount - vested) + oneToken, stake_amount ) 
+      unvest( b1, (stake_amount - vested) + oneToken, stake_amount )
    );
 
    auto supply_before = get_token_supply();
@@ -5649,8 +5660,8 @@ BOOST_FIXTURE_TEST_CASE( b1_vesting, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL(oneToken.get_amount(), get_voter_info( b1 )["staked"].as<int64_t>() );
 
    // Should have retired the unvestable tokens
-   BOOST_REQUIRE_EQUAL( 
-      get_token_supply(), 
+   BOOST_REQUIRE_EQUAL(
+      get_token_supply(),
       supply_before-unvestable
    );
 
