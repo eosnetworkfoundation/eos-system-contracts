@@ -24,10 +24,14 @@ FC_REFLECT( connector, (balance)(weight) );
 
 using namespace eosio_system;
 
-BOOST_AUTO_TEST_SUITE(eosio_system_tests)
-
 bool within_error(int64_t a, int64_t b, int64_t err) { return std::abs(a - b) <= err; };
 bool within_one(int64_t a, int64_t b) { return within_error(a, b, 1); }
+
+// Split the tests into multiple suites so that they can run in parallel in CICD to
+// reduce overall CICD time..
+// Each suite is grouped by functionality and takes approximately the same amount of time.
+
+BOOST_AUTO_TEST_SUITE(eosio_system_stake_tests)
 
 BOOST_FIXTURE_TEST_CASE( buysell, eosio_system_tester ) try {
 
@@ -742,6 +746,9 @@ BOOST_FIXTURE_TEST_CASE( stake_to_another_user_not_from_refund, eosio_system_tes
    //BOOST_REQUIRE_EQUAL( orig_request_time, refund["request_time"].as_int64() );
 
 } FC_LOG_AND_RETHROW()
+
+BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE(eosio_system_producer_tests)
 
 // Tests for voting
 BOOST_FIXTURE_TEST_CASE( producer_register_unregister, eosio_system_tester ) try {
@@ -1640,6 +1647,9 @@ BOOST_FIXTURE_TEST_CASE(producer_pay, eosio_system_tester, * boost::unit_test::t
    }
 } FC_LOG_AND_RETHROW()
 
+BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE(eosio_system_inflation_tests)
+
 BOOST_FIXTURE_TEST_CASE(change_inflation, eosio_system_tester) try {
 
    {
@@ -1772,6 +1782,9 @@ BOOST_AUTO_TEST_CASE(extreme_inflation) try {
    BOOST_REQUIRE_EQUAL(t.success(), t.setinflation(500, 50000, 40000));
    BOOST_REQUIRE_EQUAL(t.wasm_assert_msg("quantity exceeds available supply"), t.push_action("defproducera"_n, "claimrewards"_n, mvo()("owner", "defproducera")));
 } FC_LOG_AND_RETHROW()
+
+BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE(eosio_system_multiple_producer_pay_tests)
 
 BOOST_FIXTURE_TEST_CASE(multiple_producer_pay, eosio_system_tester, * boost::unit_test::tolerance(1e-10)) try {
 
@@ -2151,6 +2164,9 @@ BOOST_FIXTURE_TEST_CASE(multiple_producer_pay, eosio_system_tester, * boost::uni
 
 } FC_LOG_AND_RETHROW()
 
+
+BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE(eosio_system_votepay_tests)
 
 BOOST_FIXTURE_TEST_CASE(multiple_producer_votepay_share, eosio_system_tester, * boost::unit_test::tolerance(1e-10)) try {
 
@@ -2850,9 +2866,6 @@ BOOST_FIXTURE_TEST_CASE(producers_upgrade_system_contract, eosio_system_tester) 
    BOOST_REQUIRE( bool(trace) );
    BOOST_REQUIRE_EQUAL( 1, trace->action_traces.size() );
    BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
-
-   produce_blocks( 250 );
-
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE(producer_onblock_check, eosio_system_tester) try {
@@ -3245,6 +3258,9 @@ BOOST_FIXTURE_TEST_CASE( elect_producers /*_and_parameters*/, eosio_system_teste
 
 } FC_LOG_AND_RETHROW()
 
+
+BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE(eosio_system_name_tests)
 
 BOOST_FIXTURE_TEST_CASE( buyname, eosio_system_tester ) try {
    create_accounts_with_resources( { "dan"_n, "sam"_n } );
@@ -3888,6 +3904,9 @@ BOOST_FIXTURE_TEST_CASE( ram_gift, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL( userres["ram_bytes"].as_uint64() + ram_gift, ram_bytes );
 
 } FC_LOG_AND_RETHROW()
+
+BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE(eosio_system_rex_tests)
 
 BOOST_FIXTURE_TEST_CASE( rex_rounding_issue, eosio_system_tester ) try {
    const std::vector<name> whales { "whale1"_n, "whale2"_n, "whale3"_n, "whale4"_n , "whale5"_n  };
