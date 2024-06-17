@@ -631,6 +631,14 @@ namespace eosiosystem {
    typedef eosio::multi_index< "rexqueue"_n, rex_order,
                                indexed_by<"bytime"_n, const_mem_fun<rex_order, uint64_t, &rex_order::by_time>>> rex_order_table;
 
+   struct [[eosio::table("rexmaturity"),eosio::contract("eosio.system")]] rex_maturity {
+      uint32_t num_of_maturity_buckets = 5;
+      bool sell_matured_rex = false;
+      bool buy_rex_to_savings = false;
+   };
+
+   typedef eosio::singleton<"rexmaturity"_n, rex_maturity> rex_maturity_singleton;
+
    struct rex_order_outcome {
       bool success;
       asset proceeds;
@@ -820,6 +828,7 @@ namespace eosiosystem {
          rex_fund_table           _rexfunds;
          rex_balance_table        _rexbalance;
          rex_order_table          _rexorders;
+         rex_maturity_singleton   _rexmaturity;
 
       public:
          static constexpr eosio::name active_permission{"active"_n};
@@ -1007,12 +1016,9 @@ namespace eosiosystem {
           * @param from - owner account name,
           * @param amount - amount of tokens taken out of 'from' REX fund.
           *
-          * @pre A voting requirement must be satisfied before action can be executed.
-          * @pre User must vote for at least 21 producers or delegate vote to proxy before buying REX.
-          *
           * @post User votes are updated following this action.
           * @post Tokens used in purchase are added to user's voting power.
-          * @post Bought REX cannot be sold before 4 days counting from end of day of purchase.
+          * @post Bought REX cannot be sold before {num_of_maturity_buckets} days counting from end of day of purchase.
           */
          [[eosio::action]]
          void buyrex( const name& from, const asset& amount );
@@ -1026,12 +1032,9 @@ namespace eosiosystem {
           * @param from_net - amount of tokens to be unstaked from NET bandwidth and used for REX purchase,
           * @param from_cpu - amount of tokens to be unstaked from CPU bandwidth and used for REX purchase.
           *
-          * @pre A voting requirement must be satisfied before action can be executed.
-          * @pre User must vote for at least 21 producers or delegate vote to proxy before buying REX.
-          *
           * @post User votes are updated following this action.
           * @post Tokens used in purchase are added to user's voting power.
-          * @post Bought REX cannot be sold before 4 days counting from end of day of purchase.
+          * @post Bought REX cannot be sold before {num_of_maturity_buckets} days counting from end of day of purchase.
           */
          [[eosio::action]]
          void unstaketorex( const name& owner, const name& receiver, const asset& from_net, const asset& from_cpu );
@@ -1160,7 +1163,7 @@ namespace eosiosystem {
          void rexexec( const name& user, uint16_t max );
 
          /**
-          * Consolidate action, consolidates REX maturity buckets into one bucket that can be sold after 4 days
+          * Consolidate action, consolidates REX maturity buckets into one bucket that can be sold after {num_of_maturity_buckets} days
           * starting from the end of the day.
           *
           * @param owner - REX owner account name.
@@ -1172,7 +1175,7 @@ namespace eosiosystem {
           * Mvtosavings action, moves a specified amount of REX into savings bucket. REX savings bucket
           * never matures. In order for it to be sold, it has to be moved explicitly
           * out of that bucket. Then the moved amount will have the regular maturity
-          * period of 4 days starting from the end of the day.
+          * period of {num_of_maturity_buckets} days starting from the end of the day.
           *
           * @param owner - REX owner account name.
           * @param rex - amount of REX to be moved.
@@ -1182,7 +1185,7 @@ namespace eosiosystem {
 
          /**
           * Mvfrsavings action, moves a specified amount of REX out of savings bucket. The moved amount
-          * will have the regular REX maturity period of 4 days.
+          * will have the regular REX maturity period of {num_of_maturity_buckets} days.
           *
           * @param owner - REX owner account name.
           * @param rex - amount of REX to be moved.
@@ -1204,6 +1207,18 @@ namespace eosiosystem {
          [[eosio::action]]
          void closerex( const name& owner );
 
+         /**
+          * Facilitates the modification of REX maturity buckets
+          *
+          * @param num_of_maturity_buckets - used to calculate maturity time of purchase REX tokens from end of the day UTC.
+          * @param sell_matured_rex - if true, matured REX is sold immediately.
+          *                           https://github.com/eosnetworkfoundation/eos-system-contracts/issues/134
+          * @param buy_rex_to_savings - if true, buying REX is moved immediately to REX savings.
+          *                             https://github.com/eosnetworkfoundation/eos-system-contracts/issues/135
+          */
+         [[eosio::action]]
+         void setrexmature(const std::optional<uint32_t> num_of_maturity_buckets, const std::optional<bool> sell_matured_rex, const std::optional<bool> buy_rex_to_savings );
+         
          /**
           * Donatetorex action, donates funds to REX, increases REX pool return buckets
           * Executes inline transfer from payer to system contract of tokens will be executed.
@@ -1819,8 +1834,6 @@ namespace eosiosystem {
          void runrex( uint16_t max );
          void update_rex_pool();
          void update_resource_limits( const name& from, const name& receiver, int64_t delta_net, int64_t delta_cpu );
-         void check_voting_requirement( const name& owner,
-                                        const char* error_msg = "must vote for at least 21 producers or for a proxy before buying REX" )const;
          rex_order_outcome fill_rex_order( const rex_balance_table::const_iterator& bitr, const asset& rex );
          asset update_rex_account( const name& owner, const asset& proceeds, const asset& unstake_quant, bool force_vote_update = false );
          template <typename T>
@@ -1832,16 +1845,19 @@ namespace eosiosystem {
          void transfer_from_fund( const name& owner, const asset& amount );
          void transfer_to_fund( const name& owner, const asset& amount );
          bool rex_loans_available()const;
-         static time_point_sec get_rex_maturity();
+         static time_point_sec get_rex_maturity(const name& system_account_name = "eosio"_n );
          asset add_to_rex_balance( const name& owner, const asset& payment, const asset& rex_received );
          asset add_to_rex_pool( const asset& payment );
          void add_to_rex_return_pool( const asset& fee );
          void process_rex_maturities( const rex_balance_table::const_iterator& bitr );
+         void process_sell_matured_rex( const name owner );
+         void process_buy_rex_to_savings( const name owner, const asset rex );
          void consolidate_rex_balance( const rex_balance_table::const_iterator& bitr,
                                        const asset& rex_in_sell_order );
          int64_t read_rex_savings( const rex_balance_table::const_iterator& bitr );
          void put_rex_savings( const rex_balance_table::const_iterator& bitr, int64_t rex );
          void update_rex_stake( const name& voter );
+         void sell_rex( const name& from, const asset& rex );
 
          void add_loan_to_rex_pool( const asset& payment, int64_t rented_tokens, bool new_loan );
          void remove_loan_from_rex_pool( const rex_loan& loan );

@@ -27,15 +27,26 @@ public:
                "eosio.bpay"_n, "eosio.vpay"_n, "eosio.saving"_n, "eosio.names"_n, "eosio.rex"_n, "eosio.fees"_n });
 
 
-      produce_block();
+      produce_blocks( 100 );
+
       set_code( "eosio.token"_n, contracts::token_wasm());
-      set_code( "eosio.fees"_n, contracts::fees_wasm());
       set_abi( "eosio.token"_n, contracts::token_abi().data() );
       {
          const auto& accnt = control->db().get<account_object,by_name>( "eosio.token"_n );
          abi_def abi;
          BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt.abi, abi), true);
          token_abi_ser.set_abi(abi, abi_serializer::create_yield_function(abi_serializer_max_time));
+      }
+
+      set_code( "eosio.fees"_n, contracts::fees_wasm());
+
+      set_code( "eosio.bpay"_n, contracts::bpay_wasm());
+      set_abi( "eosio.bpay"_n, contracts::bpay_abi().data() );
+      {
+         const auto& accnt = control->db().get<account_object,by_name>( "eosio.bpay"_n );
+         abi_def abi;
+         BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt.abi, abi), true);
+         bpay_abi_ser.set_abi(abi, abi_serializer::create_yield_function(abi_serializer_max_time));
       }
    }
 
@@ -778,13 +789,14 @@ public:
 
    asset get_sellrex_result( const account_name& from, const asset& rex ) {
       auto trace = base_tester::push_action( config::system_account_name, "sellrex"_n, from, mvo()("from", from)("rex", rex) );
-      asset proceeds;
+      asset proceeds = core_sym::from_string("0.0000");
       for ( size_t i = 0; i < trace->action_traces.size(); ++i ) {
          if ( trace->action_traces[i].act.name == "sellresult"_n ) {
+            asset _action_proceeds;
             fc::raw::unpack( trace->action_traces[i].act.data.data(),
                              trace->action_traces[i].act.data.size(),
-                             proceeds );
-            return proceeds;
+                             _action_proceeds );
+            proceeds += _action_proceeds;
          }
       }
       return proceeds;
@@ -910,6 +922,10 @@ public:
 
    action_result closerex( const account_name& owner ) {
       return push_action( name(owner), "closerex"_n, mvo()("owner", owner) );
+   }
+
+   action_result setrexmature(const std::optional<uint32_t> num_of_maturity_buckets, const std::optional<bool> sell_matured_rex, const std::optional<bool> buy_rex_to_savings ) {
+      return push_action( "eosio"_n, "setrexmature"_n, mvo()("num_of_maturity_buckets", num_of_maturity_buckets)("sell_matured_rex", sell_matured_rex)("buy_rex_to_savings", buy_rex_to_savings) );
    }
 
    action_result donatetorex( const account_name& payer, const asset& quantity, const std::string& memo ) {
@@ -1502,8 +1518,25 @@ public:
       return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "schedules_info", data, abi_serializer::create_yield_function(abi_serializer_max_time) );
    }
 
+
+
+   action_result bpay_claimrewards( const account_name owner ) {
+      action act;
+      act.account = "eosio.bpay"_n;
+      act.name = "claimrewards"_n;
+      act.data = abi_ser.variant_to_binary( bpay_abi_ser.get_action_type("claimrewards"_n), mvo()("owner", owner), abi_serializer::create_yield_function(abi_serializer_max_time) );
+
+      return base_tester::push_action( std::move(act), owner.to_uint64_t() );
+   }
+
+   fc::variant get_bpay_rewards( account_name producer ) {
+      vector<char> data = get_row_by_account( "eosio.bpay"_n, "eosio.bpay"_n, "rewards"_n, producer );
+      return data.empty() ? fc::variant() : bpay_abi_ser.binary_to_variant( "rewards_row", data, abi_serializer::create_yield_function(abi_serializer_max_time) );
+   }
+
    abi_serializer abi_ser;
    abi_serializer token_abi_ser;
+   abi_serializer bpay_abi_ser;
 };
 
 inline fc::mutable_variant_object voter( account_name acct ) {

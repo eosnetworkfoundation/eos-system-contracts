@@ -234,10 +234,6 @@ namespace eosiosystem {
 
       vote_stake_updater( voter_name );
       update_votes( voter_name, proxy, producers, true );
-      auto rex_itr = _rexbalance.find( voter_name.value );
-      if( rex_itr != _rexbalance.end() && rex_itr->rex_balance.amount > 0 ) {
-         check_voting_requirement( voter_name, "voter holding REX tokens must vote for at least 21 producers or for a proxy" );
-      }
    }
 
    void system_contract::voteupdate( const name& voter_name ) {
