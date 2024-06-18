@@ -96,6 +96,8 @@ BOOST_FIXTURE_TEST_CASE( buy_sell_matured_rex, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL( core_sym::from_string("0.0000"), get_rex_vote_stake( david ) );
    BOOST_REQUIRE_EQUAL( init_balance, get_rex_fund( david ) );
 
+   // 5.0 Instant maturation
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg("num_of_maturity_buckets must be positive"),  setrexmature( 0, true, true ) );
 
 
 } FC_LOG_AND_RETHROW()
