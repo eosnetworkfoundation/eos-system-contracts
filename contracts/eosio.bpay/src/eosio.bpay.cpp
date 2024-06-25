@@ -34,8 +34,6 @@ void bpay::on_transfer( const name from, const name to, const asset quantity, co
     check( _global.exists(), "global state does not exist");
     uint16_t producer_count = _global.get().last_producer_schedule_size;
 
-    asset reward = quantity / producer_count;
-
     // get producer with the most votes
     // using `by_votes` secondary index
     auto idx = _producers.get_index<"prototalvote"_n>();
@@ -53,6 +51,8 @@ void bpay::on_transfer( const name from, const name to, const asset quantity, co
         
         prod++;
     }
+
+    asset reward = quantity / top_producers.size();
 
     // distribute rewards to top producers
     for (auto producer : top_producers) {
