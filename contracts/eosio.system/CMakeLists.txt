@@ -4,6 +4,7 @@ add_contract(
   ${CMAKE_CURRENT_SOURCE_DIR}/src/eosio.system.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/delegate_bandwidth.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/exchange_state.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/finalizer_key.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/name_bidding.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/native.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/producer_pay.cpp

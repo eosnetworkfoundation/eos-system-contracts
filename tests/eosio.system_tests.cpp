@@ -24,10 +24,14 @@ FC_REFLECT( connector, (balance)(weight) );
 
 using namespace eosio_system;
 
-BOOST_AUTO_TEST_SUITE(eosio_system_tests)
-
 bool within_error(int64_t a, int64_t b, int64_t err) { return std::abs(a - b) <= err; };
 bool within_one(int64_t a, int64_t b) { return within_error(a, b, 1); }
+
+// Split the tests into multiple suites so that they can run in parallel in CICD to
+// reduce overall CICD time..
+// Each suite is grouped by functionality and takes approximately the same amount of time.
+
+BOOST_AUTO_TEST_SUITE(eosio_system_stake_tests)
 
 BOOST_FIXTURE_TEST_CASE( buysell, eosio_system_tester ) try {
 
@@ -743,6 +747,9 @@ BOOST_FIXTURE_TEST_CASE( stake_to_another_user_not_from_refund, eosio_system_tes
 
 } FC_LOG_AND_RETHROW()
 
+BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE(eosio_system_producer_tests)
+
 // Tests for voting
 BOOST_FIXTURE_TEST_CASE( producer_register_unregister, eosio_system_tester ) try {
    issue_and_transfer( "alice1111111", core_sym::from_string("1000.0000"),  config::system_account_name );
@@ -843,7 +850,7 @@ BOOST_FIXTURE_TEST_CASE( producer_wtmsig, eosio_system_tester ) try {
 
    produce_block();
    produce_block( fc::minutes(2) );
-   produce_blocks(2);
+   produce_blocks(config::producer_repetitions * 2);
    BOOST_REQUIRE_EQUAL( control->active_producers().version, 1u );
    produce_block();
    BOOST_REQUIRE_EQUAL( control->pending_block_producer(), "alice1111111"_n );
@@ -901,7 +908,7 @@ BOOST_FIXTURE_TEST_CASE( producer_wtmsig, eosio_system_tester ) try {
 
    produce_block();
    produce_block( fc::minutes(2) );
-   produce_blocks(2);
+   produce_blocks(config::producer_repetitions * 2);
    BOOST_REQUIRE_EQUAL( control->active_producers().version, 2u );
    produce_block();
    BOOST_REQUIRE_EQUAL( control->pending_block_producer(), "alice1111111"_n );
@@ -933,7 +940,7 @@ BOOST_FIXTURE_TEST_CASE( producer_wtmsig_transition, eosio_system_tester ) try {
 
    produce_block();
    produce_block( fc::minutes(2) );
-   produce_blocks(2);
+   produce_blocks(config::producer_repetitions * 2);
    BOOST_REQUIRE_EQUAL( control->active_producers().version, 1u );
 
    auto convert_to_block_timestamp = [](const fc::variant& timestamp) -> eosio::chain::block_timestamp_type {
@@ -1661,6 +1668,9 @@ BOOST_FIXTURE_TEST_CASE(producer_pay, eosio_system_tester, * boost::unit_test::t
 
 } FC_LOG_AND_RETHROW()
 
+BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE(eosio_system_inflation_tests)
+
 BOOST_FIXTURE_TEST_CASE(change_inflation, eosio_system_tester) try {
 
    {
@@ -1806,6 +1816,9 @@ BOOST_AUTO_TEST_CASE(extreme_inflation) try {
    BOOST_REQUIRE_EQUAL(t.success(), t.setinflation(500, 50000, 40000));
    BOOST_REQUIRE_EQUAL(t.wasm_assert_msg("insufficient system token balance for claiming rewards"), t.push_action("defproducera"_n, "claimrewards"_n, mvo()("owner", "defproducera")));
 } FC_LOG_AND_RETHROW()
+
+BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE(eosio_system_multiple_producer_pay_tests)
 
 BOOST_FIXTURE_TEST_CASE(multiple_producer_pay, eosio_system_tester, * boost::unit_test::tolerance(1e-10)) try {
 
@@ -2185,6 +2198,9 @@ BOOST_FIXTURE_TEST_CASE(multiple_producer_pay, eosio_system_tester, * boost::uni
 
 } FC_LOG_AND_RETHROW()
 
+
+BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE(eosio_system_votepay_tests)
 
 BOOST_FIXTURE_TEST_CASE(multiple_producer_votepay_share, eosio_system_tester, * boost::unit_test::tolerance(1e-10)) try {
 
@@ -2869,7 +2885,7 @@ BOOST_FIXTURE_TEST_CASE(producers_upgrade_system_contract, eosio_system_tester) 
    );
 
    transaction_trace_ptr trace;
-   control->applied_transaction.connect(
+   control->applied_transaction().connect(
    [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
       trace = std::get<0>(p);
    } );
@@ -2884,9 +2900,6 @@ BOOST_FIXTURE_TEST_CASE(producers_upgrade_system_contract, eosio_system_tester) 
    BOOST_REQUIRE( bool(trace) );
    BOOST_REQUIRE_EQUAL( 1, trace->action_traces.size() );
    BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
-
-   produce_blocks( 250 );
-
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE(producer_onblock_check, eosio_system_tester) try {
@@ -2958,6 +2971,10 @@ BOOST_FIXTURE_TEST_CASE(producer_onblock_check, eosio_system_tester) try {
 
    BOOST_REQUIRE_EQUAL(success(), vote( "producvoterb"_n, vector<account_name>(producer_names.begin(), producer_names.begin()+21)));
    BOOST_REQUIRE_EQUAL(success(), vote( "producvoterc"_n, vector<account_name>(producer_names.begin(), producer_names.end())));
+
+   int retries = 50;
+   while (produce_block()->producer == config::system_account_name && --retries);
+   BOOST_REQUIRE(retries > 0);
 
    // give a chance for everyone to produce blocks
    {
@@ -3065,6 +3082,8 @@ BOOST_FIXTURE_TEST_CASE( voters_actions_affect_proxy_and_producers, eosio_system
 
 } FC_LOG_AND_RETHROW()
 
+BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE(eosio_system_part4_tests)
 
 BOOST_FIXTURE_TEST_CASE( vote_both_proxy_and_producers, eosio_system_tester ) try {
    //alice1111111 becomes a proxy
@@ -3221,9 +3240,9 @@ BOOST_FIXTURE_TEST_CASE( elect_producers /*_and_parameters*/, eosio_system_teste
    //vote for producers
    BOOST_REQUIRE_EQUAL( success(), vote( "alice1111111"_n, { "defproducer1"_n } ) );
    produce_blocks(250);
-   auto producer_keys = control->head_block_state()->active_schedule.producers;
-   BOOST_REQUIRE_EQUAL( 1, producer_keys.size() );
-   BOOST_REQUIRE_EQUAL( name("defproducer1"), producer_keys[0].producer_name );
+   auto producer_schedule = control->active_producers();
+   BOOST_REQUIRE_EQUAL( 1, producer_schedule.producers.size() );
+   BOOST_REQUIRE_EQUAL( name("defproducer1"), producer_schedule.producers[0].producer_name );
 
    //auto config = config_to_variant( control->get_global_properties().configuration );
    //auto prod1_config = testing::filter_fields( config, producer_parameters_example( 1 ) );
@@ -3237,10 +3256,10 @@ BOOST_FIXTURE_TEST_CASE( elect_producers /*_and_parameters*/, eosio_system_teste
    BOOST_REQUIRE_EQUAL( success(), vote( "bob111111111"_n, { "defproducer2"_n } ) );
    ilog(".");
    produce_blocks(250);
-   producer_keys = control->head_block_state()->active_schedule.producers;
-   BOOST_REQUIRE_EQUAL( 2, producer_keys.size() );
-   BOOST_REQUIRE_EQUAL( name("defproducer1"), producer_keys[0].producer_name );
-   BOOST_REQUIRE_EQUAL( name("defproducer2"), producer_keys[1].producer_name );
+   producer_schedule = control->active_producers();
+   BOOST_REQUIRE_EQUAL( 2, producer_schedule.producers.size() );
+   BOOST_REQUIRE_EQUAL( name("defproducer1"), producer_schedule.producers[0].producer_name );
+   BOOST_REQUIRE_EQUAL( name("defproducer2"), producer_schedule.producers[1].producer_name );
    //config = config_to_variant( control->get_global_properties().configuration );
    //auto prod2_config = testing::filter_fields( config, producer_parameters_example( 2 ) );
    //REQUIRE_EQUAL_OBJECTS(prod2_config, config);
@@ -3248,26 +3267,26 @@ BOOST_FIXTURE_TEST_CASE( elect_producers /*_and_parameters*/, eosio_system_teste
    // elect 3 producers
    BOOST_REQUIRE_EQUAL( success(), vote( "bob111111111"_n, { "defproducer2"_n, "defproducer3"_n } ) );
    produce_blocks(250);
-   producer_keys = control->head_block_state()->active_schedule.producers;
-   BOOST_REQUIRE_EQUAL( 3, producer_keys.size() );
-   BOOST_REQUIRE_EQUAL( name("defproducer1"), producer_keys[0].producer_name );
-   BOOST_REQUIRE_EQUAL( name("defproducer2"), producer_keys[1].producer_name );
-   BOOST_REQUIRE_EQUAL( name("defproducer3"), producer_keys[2].producer_name );
+   producer_schedule = control->active_producers();
+   BOOST_REQUIRE_EQUAL( 3, producer_schedule.producers.size() );
+   BOOST_REQUIRE_EQUAL( name("defproducer1"), producer_schedule.producers[0].producer_name );
+   BOOST_REQUIRE_EQUAL( name("defproducer2"), producer_schedule.producers[1].producer_name );
+   BOOST_REQUIRE_EQUAL( name("defproducer3"), producer_schedule.producers[2].producer_name );
    //config = config_to_variant( control->get_global_properties().configuration );
    //REQUIRE_EQUAL_OBJECTS(prod2_config, config);
 
    // try to go back to 2 producers and fail
    BOOST_REQUIRE_EQUAL( success(), vote( "bob111111111"_n, { "defproducer3"_n } ) );
    produce_blocks(250);
-   producer_keys = control->head_block_state()->active_schedule.producers;
-   BOOST_REQUIRE_EQUAL( 3, producer_keys.size() );
+   producer_schedule = control->active_producers();
+   BOOST_REQUIRE_EQUAL( 3, producer_schedule.producers.size() );
 
    // The test below is invalid now, producer schedule is not updated if there are
    // fewer producers in the new schedule
    /*
-   BOOST_REQUIRE_EQUAL( 2, producer_keys.size() );
-   BOOST_REQUIRE_EQUAL( name("defproducer1"), producer_keys[0].producer_name );
-   BOOST_REQUIRE_EQUAL( name("defproducer3"), producer_keys[1].producer_name );
+   BOOST_REQUIRE_EQUAL( 2, producer_schedule.size() );
+   BOOST_REQUIRE_EQUAL( name("defproducer1"), producer_schedule[0].producer_name );
+   BOOST_REQUIRE_EQUAL( name("defproducer3"), producer_schedule[1].producer_name );
    //config = config_to_variant( control->get_global_properties().configuration );
    //auto prod3_config = testing::filter_fields( config, producer_parameters_example( 3 ) );
    //REQUIRE_EQUAL_OBJECTS(prod3_config, config);
@@ -3275,6 +3294,9 @@ BOOST_FIXTURE_TEST_CASE( elect_producers /*_and_parameters*/, eosio_system_teste
 
 } FC_LOG_AND_RETHROW()
 
+
+BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE(eosio_system_name_tests)
 
 BOOST_FIXTURE_TEST_CASE( buyname, eosio_system_tester ) try {
    create_accounts_with_resources( { "dan"_n, "sam"_n } );
@@ -3635,7 +3657,7 @@ BOOST_FIXTURE_TEST_CASE( setparams, eosio_system_tester ) try {
    }
 
    transaction_trace_ptr trace;
-   control->applied_transaction.connect(
+   control->applied_transaction().connect(
    [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
       trace = std::get<0>(p);
    } );
@@ -3725,7 +3747,7 @@ BOOST_FIXTURE_TEST_CASE( wasmcfg, eosio_system_tester ) try {
    }
 
    transaction_trace_ptr trace;
-   control->applied_transaction.connect(
+   control->applied_transaction().connect(
    [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
       trace = std::get<0>(p);
    } );
@@ -3747,6 +3769,9 @@ BOOST_FIXTURE_TEST_CASE( wasmcfg, eosio_system_tester ) try {
    auto active_params = control->get_global_properties().wasm_configuration;
    BOOST_REQUIRE_EQUAL( active_params.max_table_elements, 8192 );
 } FC_LOG_AND_RETHROW()
+
+BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE(eosio_system_part5_tests)
 
 BOOST_FIXTURE_TEST_CASE( setram_effect, eosio_system_tester ) try {
 
@@ -3918,6 +3943,9 @@ BOOST_FIXTURE_TEST_CASE( ram_gift, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL( userres["ram_bytes"].as_uint64() + ram_gift, ram_bytes );
 
 } FC_LOG_AND_RETHROW()
+
+BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE(eosio_system_origin_rex_tests)
 
 BOOST_FIXTURE_TEST_CASE( rex_rounding_issue, eosio_system_tester ) try {
    const std::vector<name> whales { "whale1"_n, "whale2"_n, "whale3"_n, "whale4"_n , "whale5"_n  };
@@ -5493,8 +5521,8 @@ BOOST_FIXTURE_TEST_CASE( donate_to_rex, eosio_system_tester ) try {
                         donatetorex( bob, core_sym::from_string("-100.0000"), "") );
 
    BOOST_REQUIRE_EQUAL( success(), donatetorex( bob, core_sym::from_string("100.0000"), "") );
-   
-   
+
+
    for (int i = 0; i < 4; ++i) {
       const asset rex_balance = get_balance("eosio.rex"_n);
       const int64_t rex_proceeds = get_rex_return_pool()["proceeds"].as<int64_t>();
@@ -5588,13 +5616,13 @@ BOOST_FIXTURE_TEST_CASE( b1_vesting, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL( error("missing authority of eosio"), vote( b1, { }, "proxyaccount"_n ) );
 
    // Can't take what isn't vested
-   BOOST_REQUIRE_EQUAL( 
+   BOOST_REQUIRE_EQUAL(
       wasm_assert_msg("b1 can only claim what has already vested"),
-      unstake( b1, b1, stake_amount, stake_amount ) 
+      unstake( b1, b1, stake_amount, stake_amount )
    );
-   BOOST_REQUIRE_EQUAL( 
+   BOOST_REQUIRE_EQUAL(
       wasm_assert_msg("b1 can only claim what has already vested"),
-      unstake( b1, b1, stake_amount, zero ) 
+      unstake( b1, b1, stake_amount, zero )
    );
 
    // Taking the vested amount - 1 token
@@ -5605,15 +5633,15 @@ BOOST_FIXTURE_TEST_CASE( b1_vesting, eosio_system_tester ) try {
                         get_voter_info( b1 )["staked"].as<int64_t>() );
 
    // Can't take 2 tokens, only 1 is vested
-   BOOST_REQUIRE_EQUAL( 
+   BOOST_REQUIRE_EQUAL(
       wasm_assert_msg("b1 can only claim what has already vested"),
-      unstake( b1, b1, oneToken, oneToken ) 
+      unstake( b1, b1, oneToken, oneToken )
    );
 
    // Can't unvest the 1 token, as it's already unvested
-   BOOST_REQUIRE_EQUAL( 
+   BOOST_REQUIRE_EQUAL(
       wasm_assert_msg("can only unvest what is not already vested"),
-      unvest( b1, (stake_amount - vested) + oneToken, stake_amount ) 
+      unvest( b1, (stake_amount - vested) + oneToken, stake_amount )
    );
 
    auto supply_before = get_token_supply();
@@ -5623,8 +5651,8 @@ BOOST_FIXTURE_TEST_CASE( b1_vesting, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL(oneToken.get_amount(), get_voter_info( b1 )["staked"].as<int64_t>() );
 
    // Should have retired the unvestable tokens
-   BOOST_REQUIRE_EQUAL( 
-      get_token_supply(), 
+   BOOST_REQUIRE_EQUAL(
+      get_token_supply(),
       supply_before-unvestable
    );
 
