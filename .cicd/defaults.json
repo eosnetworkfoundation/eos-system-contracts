@@ -4,7 +4,7 @@
       "prerelease":false
    },
    "cdt":{
-      "target":"4.1",
-      "prerelease":true
+      "target":"main",
+      "prerelease":false
    }
 }
