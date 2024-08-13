@@ -8,12 +8,12 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
-      override-leap-dev:
-        description: Override leap-dev target
+      override-antelope-spring-dev:
+        description: Override antelope-spring-dev target
         type: string
-      override-leap-dev-prerelease:
+      override-antelope-spring-dev-prerelease:
         type: choice
-        description: Override leap-dev prelease
+        description: Override antelope-spring-dev prelease
         options:
         - default
         - true
@@ -38,22 +38,22 @@ jobs:
     name: Build & Test
     runs-on: ubuntu-22.04
     steps:
-      - name: Setup leap-dev & cdt versions
+      - name: Setup antelope-spring-dev & cdt versions
         id: versions
         env:
           GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
         run: |
           DEFAULTS_JSON=$(curl -sSfL $(gh api https://api.github.com/repos/${{github.repository}}/contents/.cicd/defaults.json?ref=${{github.sha}} --jq .download_url))
-          echo leap-dev-target=$(echo "$DEFAULTS_JSON" | jq -r '."leap-dev".target') >> $GITHUB_OUTPUT
-          echo leap-dev-prerelease=$(echo "$DEFAULTS_JSON" | jq -r '."leap-dev".prerelease') >> $GITHUB_OUTPUT
+          echo antelope-spring-dev-target=$(echo "$DEFAULTS_JSON" | jq -r '."antelope-spring-dev".target') >> $GITHUB_OUTPUT
+          echo antelope-spring-dev-prerelease=$(echo "$DEFAULTS_JSON" | jq -r '."antelope-spring-dev".prerelease') >> $GITHUB_OUTPUT
           echo cdt-target=$(echo "$DEFAULTS_JSON" | jq -r '.cdt.target') >> $GITHUB_OUTPUT
           echo cdt-prerelease=$(echo "$DEFAULTS_JSON" | jq -r '.cdt.prerelease') >> $GITHUB_OUTPUT
 
-          if [[ "${{inputs.override-leap-dev}}" != "" ]]; then
-            echo leap-dev-target=${{inputs.override-leap-dev}} >> $GITHUB_OUTPUT
+          if [[ "${{inputs.override-antelope-spring-dev}}" != "" ]]; then
+            echo antelope-spring-dev-target=${{inputs.override-antelope-spring-dev}} >> $GITHUB_OUTPUT
           fi
-          if [[ "${{inputs.override-leap-dev-prerelease}}" == +(true|false) ]]; then
-            echo leap-dev-prerelease=${{inputs.override-leap-dev-prerelease}} >> $GITHUB_OUTPUT
+          if [[ "${{inputs.override-antelope-spring-dev-prerelease}}" == +(true|false) ]]; then
+            echo antelope-spring-dev-prerelease=${{inputs.override-antelope-spring-dev-prerelease}} >> $GITHUB_OUTPUT
           fi
           if [[ "${{inputs.override-cdt}}" != "" ]]; then
             echo cdt-target=${{inputs.override-cdt}} >> $GITHUB_OUTPUT
@@ -70,20 +70,19 @@ jobs:
           target: '${{steps.versions.outputs.cdt-target}}'
           prereleases: ${{fromJSON(steps.versions.outputs.cdt-prerelease)}}
           artifact-name: cdt_ubuntu_package_amd64
-          token: ${{github.token}}
-      - name: Download leap-dev
+      - name: Download antelope-spring-dev
         uses: AntelopeIO/asset-artifact-download-action@v3
         with:
           owner: AntelopeIO
-          repo: leap
-          file: 'leap-dev.*ubuntu22\.04_amd64.deb'
-          target: '${{steps.versions.outputs.leap-dev-target}}'
-          prereleases: ${{fromJSON(steps.versions.outputs.leap-dev-prerelease)}}
-          artifact-name: leap-dev-ubuntu22-amd64
-          container-package: experimental-binaries
-          token: ${{github.token}}
+          repo: spring
+          file: 'antelope-spring-dev.*ubuntu22\.04_amd64.deb'
+          target: '${{steps.versions.outputs.antelope-spring-dev-target}}'
+          prereleases: ${{fromJSON(steps.versions.outputs.antelope-spring-dev-prerelease)}}
+          artifact-name: antelope-spring-dev-ubuntu22-amd64
+          container-package: antelope-spring-experimental-binaries
       - name: Install packages
         run: |
+          sudo apt-get update && sudo apt-get upgrade -y
           sudo apt install ./*.deb
           sudo apt-get install cmake
           rm ./*.deb
@@ -92,7 +91,7 @@ jobs:
           path: src
       - name: Build & Test
         run: |
-          cmake -S src -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=On -DSYSTEM_ENABLE_LEAP_VERSION_CHECK=Off -DSYSTEM_ENABLE_CDT_VERSION_CHECK=Off
+          cmake -S src -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=On -DSYSTEM_ENABLE_SPRING_VERSION_CHECK=Off -DSYSTEM_ENABLE_CDT_VERSION_CHECK=Off
           cmake --build build -- -j $(nproc)
           tar zcf build.tar.gz build
           ctest --test-dir build/tests --output-on-failure -j $(nproc)

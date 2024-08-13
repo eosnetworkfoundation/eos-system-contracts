@@ -30,8 +30,8 @@ BOOST_FIXTURE_TEST_CASE(set_schedules, eosio_system_tester) try {
    BOOST_REQUIRE_EQUAL( wasm_assert_msg("schedule not found"), delschedule(start_time) );
 
    // action validation
-   BOOST_REQUIRE_EQUAL( success(), setschedule(time_point_sec(0), 0.05) ); 
-   BOOST_REQUIRE_EQUAL( success(), setschedule(start_time, 0.05) ); 
+   BOOST_REQUIRE_EQUAL( success(), setschedule(time_point_sec(0), 0.05) );
+   BOOST_REQUIRE_EQUAL( success(), setschedule(start_time, 0.05) );
    check_schedule(start_time, 0.05);
 
    // allow override existing schedules
@@ -65,7 +65,7 @@ BOOST_FIXTURE_TEST_CASE(set_schedules, eosio_system_tester) try {
    const double before = get_global_state4()["continuous_rate"].as_double();
    BOOST_REQUIRE_EQUAL( before, 0.048790164169432007 ); // 5% continuous rate
 
-   BOOST_REQUIRE_EQUAL( success(), execschedule(alice) ); 
+   BOOST_REQUIRE_EQUAL( success(), execschedule(alice) );
    BOOST_REQUIRE_EQUAL( get_global_state4()["continuous_rate"].as_double(), 0.02 );
 
    // Cannot execute schedule before its time is due

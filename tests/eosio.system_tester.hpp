@@ -15,28 +15,20 @@ using namespace fc;
 
 using mvo = fc::mutable_variant_object;
 
-#ifndef TESTER
-#ifdef NON_VALIDATING_TEST
-#define TESTER tester
-#else
-#define TESTER validating_tester
-#endif
-#endif
-
 namespace eosio_system {
 
-class eosio_system_tester : public TESTER {
+class eosio_system_tester : public validating_tester {
 public:
 
    void basic_setup() {
-      produce_blocks( 2 );
+      produce_block();
 
       create_accounts({ "eosio.token"_n, "eosio.ram"_n, "eosio.ramfee"_n, "eosio.stake"_n,
                "eosio.bpay"_n, "eosio.vpay"_n, "eosio.saving"_n, "eosio.names"_n, "eosio.rex"_n, "eosio.fees"_n });
 
 
       produce_blocks( 100 );
-      
+
       set_code( "eosio.token"_n, contracts::token_wasm());
       set_abi( "eosio.token"_n, contracts::token_abi().data() );
       {
@@ -85,7 +77,7 @@ public:
    }
 
    void remaining_setup() {
-      produce_blocks();
+      produce_block();
 
       // Assumes previous setup steps were done with core token symbol set to CORE_SYM
       create_account_with_resources( "alice1111111"_n, config::system_account_name, core_sym::from_string("1.0000"), false );
@@ -103,7 +95,8 @@ public:
       full
    };
 
-   eosio_system_tester( setup_level l = setup_level::full ) {
+   eosio_system_tester( setup_level l = setup_level::full, setup_policy policy = setup_policy::full )
+   : validating_tester({}, nullptr, policy) {
       if( l == setup_level::none ) return;
 
       basic_setup();
@@ -934,7 +927,7 @@ public:
    action_result setrexmature(const std::optional<uint32_t> num_of_maturity_buckets, const std::optional<bool> sell_matured_rex, const std::optional<bool> buy_rex_to_savings ) {
       return push_action( "eosio"_n, "setrexmature"_n, mvo()("num_of_maturity_buckets", num_of_maturity_buckets)("sell_matured_rex", sell_matured_rex)("buy_rex_to_savings", buy_rex_to_savings) );
    }
-   
+
    action_result donatetorex( const account_name& payer, const asset& quantity, const std::string& memo ) {
       return push_action( name(payer), "donatetorex"_n, mvo()
                           ("payer", payer)
@@ -1390,7 +1383,7 @@ public:
       return msig_abi_ser;
    }
 
-   vector<name> active_and_vote_producers() {
+   vector<name> active_and_vote_producers(uint32_t num_producers = 21) {
       //stake more than 15% of total EOS supply to activate chain
       transfer( "eosio"_n, "alice1111111"_n, core_sym::from_string("650000000.0000"), config::system_account_name );
       BOOST_REQUIRE_EQUAL( success(), stake( "alice1111111"_n, "alice1111111"_n, core_sym::from_string("300000000.0000"), core_sym::from_string("300000000.0000") ) );
@@ -1400,7 +1393,7 @@ public:
       {
          producer_names.reserve('z' - 'a' + 1);
          const std::string root("defproducer");
-         for ( char c = 'a'; c < 'a'+21; ++c ) {
+         for ( char c = 'a'; c < 'a'+num_producers; ++c ) {
             producer_names.emplace_back(root + std::string(1, c));
          }
          setup_producer_accounts(producer_names);
@@ -1409,9 +1402,10 @@ public:
             BOOST_REQUIRE_EQUAL( success(), regproducer(p) );
          }
       }
-      produce_blocks( 250);
+      produce_block();
+      produce_block(fc::seconds(1000));
 
-      auto trace_auth = TESTER::push_action(config::system_account_name, updateauth::get_name(), config::system_account_name, mvo()
+      auto trace_auth = validating_tester::push_action(config::system_account_name, updateauth::get_name(), config::system_account_name, mvo()
                                             ("account", name(config::system_account_name).to_string())
                                             ("permission", name(config::active_name).to_string())
                                             ("parent", name(config::owner_name).to_string())
@@ -1431,15 +1425,15 @@ public:
          BOOST_REQUIRE_EQUAL(success(), push_action("alice1111111"_n, "voteproducer"_n, mvo()
                                                     ("voter",  "alice1111111")
                                                     ("proxy", name(0).to_string())
-                                                    ("producers", vector<account_name>(producer_names.begin(), producer_names.begin()+21))
+                                                    ("producers", vector<account_name>(producer_names.begin(), producer_names.begin()+num_producers))
                              )
          );
       }
-      produce_blocks( 250 );
+      produce_blocks( 2 * 21 ); // This is minimum number of blocks required by ram_gift in system_tests
 
-      auto producer_keys = control->head_block_state()->active_schedule.producers;
-      BOOST_REQUIRE_EQUAL( 21, producer_keys.size() );
-      BOOST_REQUIRE_EQUAL( name("defproducera"), producer_keys[0].producer_name );
+      auto producer_schedule = control->active_producers();
+      BOOST_REQUIRE_EQUAL( 21, producer_schedule.producers.size() );
+      BOOST_REQUIRE_EQUAL( name("defproducera"), producer_schedule.producers[0].producer_name );
 
       return producer_names;
    }

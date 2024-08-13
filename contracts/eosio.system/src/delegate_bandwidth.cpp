@@ -274,12 +274,12 @@ namespace eosiosystem {
       const auto [total_vesting, vested] = get_b1_vesting_info();
       auto unvestable = total_vesting - vested;
 
-      auto hasAlreadyUnvested = new_stake < unvestable 
-            && stake_change.amount < 0 
+      auto hasAlreadyUnvested = new_stake < unvestable
+            && stake_change.amount < 0
             && new_stake + std::abs(stake_change.amount) < unvestable;
       if(hasAlreadyUnvested) return;
 
-      check( new_stake >= unvestable, "b1 can only claim what has already vested" ); 
+      check( new_stake >= unvestable, "b1 can only claim what has already vested" );
    }
 
    void system_contract::changebw( name from, const name& receiver,
