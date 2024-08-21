@@ -45,7 +45,7 @@ The build guide below will assume you are running Ubuntu 22.04. However, as ment
 
 ### Build or install CDT dependency
 
-The CDT dependency is required. This release of the system contracts requires at least version 4.1 of CDT. 
+The CDT dependency is required. This release of the system contracts requires at least version 4.1 of CDT.
 
 The easiest way to satisfy this dependency is to install CDT on your system through a package. Find the release of a compatible version of CDT from its [releases page](https://github.com/AntelopeIO/cdt/releases), download the package file appropriate for your OS from the attached assets, and install the package.
 
@@ -72,7 +72,7 @@ Build system contracts with tests using Spring built from source and with instal
 ```shell
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -Dspring_DIR="${LEAP_BUILD_PATH}/lib/cmake/spring" ..
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -Dspring_DIR="${SPRING_BUILD_PATH}/lib/cmake/spring" ..
 make -j $(nproc)
 ```
 
@@ -84,7 +84,7 @@ make -j $(nproc)
 ```shell
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -Dcdt_DIR="${CDT_BUILD_PATH}/lib/cmake/cdt" -Dspring_DIR="${LEAP_BUILD_PATH}/lib/cmake/spring" ..
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -Dcdt_DIR="${CDT_BUILD_PATH}/lib/cmake/cdt" -Dspring_DIR="${SPRING_BUILD_PATH}/lib/cmake/spring" ..
 make -j $(nproc)
 ```
 

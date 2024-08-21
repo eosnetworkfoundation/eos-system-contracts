@@ -116,7 +116,7 @@ executed transaction: 60d334850151cb95c35fe31ce2e8b536b51441c5fd4c3f2fea98edcc6d
 warning: transaction executed locally, but may not be confirmed by the network yet         ]
 ```
 
-Now check if "bob" got the tokens using [cleos get currency balance](https://docs.eosnetwork.com/leap/latest/cleos/command-reference/get/currency-balance)
+Now check if "bob" got the tokens using [cleos get currency balance](https://github.com/AntelopeIO/spring/blob/main/docs/02_cleos/03_command-reference/get/currency-balance.md)
 
 ```shell
 cleos get currency balance eosio.token bob NEWT
