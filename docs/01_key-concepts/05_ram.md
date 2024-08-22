@@ -80,7 +80,7 @@ The necessary RAM needed for a smart contract to store its data is calculated fr
 As a developer, to understand the amount of RAM your smart contract needs, pay attention to the data structure underlying the multi-index tables your smart contract instantiates and uses. The data structure underlying one multi-index table defines a row in the table. Each data member of the data structure corresponds with a row cell of the table.
 To approximate the amount of RAM one multi-index row needs to store on the blockchain, you have to add the size of the type of each data member and the memory overheads for each of the defined indexes, if any. Find below the overheads defined by the EOS code for multi-index tables, indexes, and data types:
 
-* [Multi-index RAM bytes overhead](https://github.com/AntelopeIO/spring/blob/7254bab917a17bcc0d82d23d03f4173176150239/libraries/chain/include/eosio/chain/config.hpp#L6)
+* [Multi-index RAM bytes overhead](https://github.com/AntelopeIO/spring/blob/7254bab917a17bcc0d82d23d03f4173176150239/libraries/chain/include/eosio/chain/contract_table_objects.hpp#L242-L285)
 * [Overhead per row per index RAM bytes](https://github.com/AntelopeIO/spring/blob/7254bab917a17bcc0d82d23d03f4173176150239/libraries/chain/include/eosio/chain/config.hpp#L114)
 * [Fixed overhead shared vector RAM bytes](https://github.com/AntelopeIO/spring/blob/7254bab917a17bcc0d82d23d03f4173176150239/libraries/chain/include/eosio/chain/config.hpp#L113)
 * [Overhead per account RAM bytes](https://github.com/AntelopeIO/spring/blob/7254bab917a17bcc0d82d23d03f4173176150239/libraries/chain/include/eosio/chain/config.hpp#L115)

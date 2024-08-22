@@ -14,10 +14,10 @@ dune -- cleos get consensus_parameters
 
 For accounts that execute transactions, the blockchain calculates and updates the remaining resources with each block before each transaction is executed. When a transaction is prepared for execution, the blockchain determines whether the payer account has enough CPU to cover the transaction execution. To calculate the necessary CPU, the node that actively builds the current block measures the time to execute the transaction. If the account has enough CPU, the transaction is executed; otherwise it is rejected. For technical details please refer to the following links:
 
-* [The CPU configuration variables](https://github.com/AntelopeIO/spring/blob/7254bab917a17bcc0d82d23d03f4173176150239/libraries/chain/include/eosio/chain/config.hpp#L69)
+* [The CPU configuration variables](https://github.com/AntelopeIO/spring/blob/7254bab917a17bcc0d82d23d03f4173176150239/libraries/chain/include/eosio/chain/config.hpp#L69-L73)
 * [The transaction initialization](https://github.com/AntelopeIO/spring/blob/7254bab917a17bcc0d82d23d03f4173176150239/libraries/chain/controller.cpp#L3012)
-* [The transaction CPU billing](https://github.com/AntelopeIO/spring/blob/7254bab917a17bcc0d82d23d03f4173176150239/libraries/chain/controller.cpp#L2630)
-* [The check of CPU usage for a transaction](https://github.com/AntelopeIO/spring/blob/7254bab917a17bcc0d82d23d03f4173176150239/libraries/chain/controller.cpp#L2620)[Update here as well](https://github.com/AntelopeIO/spring/blob/7254bab917a17bcc0d82d23d03f4173176150239/libraries/chain/controller.cpp#L2787)
+* [The transaction CPU billing](https://github.com/AntelopeIO/spring/blob/7254bab917a17bcc0d82d23d03f4173176150239/libraries/chain/controller.cpp#L3030)
+* [The check of CPU usage for a transaction](https://github.com/AntelopeIO/spring/blob/7254bab917a17bcc0d82d23d03f4173176150239/libraries/chain/transaction_context.cpp#L457)
 
 ## Subjective CPU Billing
 
