@@ -45,7 +45,7 @@ The build guide below will assume you are running Ubuntu 22.04. However, as ment
 
 ### Build or install CDT dependency
 
-The CDT dependency is required. This release of the system contracts requires at least version 4.1 of CDT.
+The CDT dependency is required. This release of the system contracts requires at least version 4.1.0 of CDT, and nodeos version Spring v1.0.0 or later.
 
 The easiest way to satisfy this dependency is to install CDT on your system through a package. Find the release of a compatible version of CDT from its [releases page](https://github.com/AntelopeIO/cdt/releases), download the package file appropriate for your OS from the attached assets, and install the package.
 
