@@ -1351,10 +1351,11 @@ namespace eosiosystem {
           *
           * @param gifter - the account ram is transfered from,
           * @param giftee - the account ram is transfered to,
-          * @param bytes  - the amount of ram to be transfered in bytes.
+          * @param bytes  - the amount of ram to be transfered in bytes,
+          * @param memo   - the memo string to accompany the transaction.
           */
          [[eosio::action]]
-         action_return_ramtransfer giftram( const name gifter, const name giftee, int64_t bytes );
+         action_return_ramtransfer giftram( const name gifter, const name giftee, int64_t bytes, const std::string& memo );
 
          /**
           *  Return gifted ram (the full amount) to the gifter.
@@ -1374,9 +1375,10 @@ namespace eosiosystem {
           *
           * @param giftee - the account ram is transfered from,
           * @param gifter - the account ram is transfered to,
+          * @param memo   - the memo string to accompany the transaction.
           */
          [[eosio::action]]
-         action_return_ramtransfer ungiftram( const name giftee, const name gifter );
+         action_return_ramtransfer ungiftram( const name giftee, const name gifter, const std::string& memo );
 
          /**
           * Logging for sellram action

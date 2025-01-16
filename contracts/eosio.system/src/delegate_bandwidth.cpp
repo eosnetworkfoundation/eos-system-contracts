@@ -161,13 +161,45 @@ namespace eosiosystem {
       require_recipient(account);
    }
 
-   action_return_ramtransfer system_contract::giftram( const name gifter, const name giftee, int64_t bytes ) {
-      return action_return_ramtransfer{ gifter, giftee, bytes, 1, 1 };
+   action_return_ramtransfer system_contract::giftram( const name gifter, const name giftee, int64_t bytes, const std::string& memo  ) {
+      require_auth( gifter );
+      check( bytes > 0, "cannot add negative bytes" );
+      check(is_account(giftee), "giftee=" + giftee.to_string() + " account does not exist");
+
+      // add ram gift to `gifted_ram_table`
+      gifted_ram_table giftedram(get_self(), get_self().value);
+      auto giftedram_itr = giftedram.find(giftee.value);
+      if (giftedram_itr == giftedram.end()) {
+         giftedram.emplace(gifter, [&](auto& res) { // gifter pays the ram costs for gift storage
+            res.giftee    = giftee;
+            res.gifter    = gifter;
+            res.ram_bytes = bytes;
+         });
+      } else {
+         check(giftedram_itr->gifter == gifter, "A single gifter is allowed at any one time per account");
+         giftedram.modify(giftedram_itr, same_payer, [&](auto& res) {
+            res.ram_bytes += bytes;
+         });
+      }
+
+      return ramtransfer( gifter, giftee, bytes, memo );
    }
 
-   action_return_ramtransfer system_contract::ungiftram( const name giftee, const name gifter ) {
-      int64_t returned_bytes = 0;
-      return action_return_ramtransfer{ giftee, gifter, returned_bytes, 1, 1 };
+   action_return_ramtransfer system_contract::ungiftram( const name giftee, const name gifter, const std::string& memo ) {
+      require_auth( giftee );
+      check(is_account(gifter), "gifter=" + gifter.to_string() + " account does not exist");
+
+      // check the amount to return from `gifted_ram_table`
+      gifted_ram_table giftedram(get_self(), get_self().value);
+      auto giftedram_itr = giftedram.find(giftee.value);
+      check(giftedram_itr != giftedram.end(), "Account " + giftee.to_string() + " does not hold any gifted RAM");
+      int64_t returned_bytes = giftedram_itr->ram_bytes;
+
+      // make sure we erase the gifted_ram_row before the call `ramtransfer`, so the `reduce_ram()` will work even
+      // if we just have `returned_bytes` available in `user_resources_table`
+      giftedram.erase(giftedram_itr);
+
+      return ramtransfer( giftee, gifter, returned_bytes, memo );
    }
 
    /**
