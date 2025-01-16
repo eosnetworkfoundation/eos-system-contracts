@@ -176,7 +176,7 @@ namespace eosiosystem {
             res.ram_bytes = bytes;
          });
       } else {
-         check(giftedram_itr->gifter == gifter, "A single gifter is allowed at any one time per account");
+         check(giftedram_itr->gifter == gifter, "A single RAM gifter is allowed at any one time per account");
          giftedram.modify(giftedram_itr, same_payer, [&](auto& res) {
             res.ram_bytes += bytes;
          });
@@ -195,7 +195,7 @@ namespace eosiosystem {
       check(giftedram_itr != giftedram.end(), "Account " + giftee.to_string() + " does not hold any gifted RAM");
       int64_t returned_bytes = giftedram_itr->ram_bytes;
 
-      // make sure we erase the gifted_ram_row before the call `ramtransfer`, so the `reduce_ram()` will work even
+      // we erase the `gifted_ram_table` row before the call to `ramtransfer`, so the `reduce_ram()` will work even
       // if we just have `returned_bytes` available in `user_resources_table`
       giftedram.erase(giftedram_itr);
 
