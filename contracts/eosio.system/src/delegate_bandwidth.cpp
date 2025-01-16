@@ -161,6 +161,15 @@ namespace eosiosystem {
       require_recipient(account);
    }
 
+   action_return_ramtransfer system_contract::giftram( const name gifter, const name giftee, int64_t bytes ) {
+      return action_return_ramtransfer{ gifter, giftee, bytes, 1, 1 };
+   }
+
+   action_return_ramtransfer system_contract::ungiftram( const name giftee, const name gifter ) {
+      int64_t returned_bytes = 0;
+      return action_return_ramtransfer{ giftee, gifter, returned_bytes, 1, 1 };
+   }
+
    /**
     * This action will transfer RAM bytes from one account to another.
     */
@@ -206,17 +215,26 @@ namespace eosiosystem {
       require_recipient( owner );
    }
 
+   // this is called when transfering or selling ram, and encumbered (gifted) ram cannot be sold or transferred.
+   // so if we hold some gifted ram, deduct the amount from the ram available to be sold or transfered.
    int64_t system_contract::reduce_ram( const name& owner, int64_t bytes ) {
       check( bytes > 0, "cannot reduce negative byte" );
+
       user_resources_table userres( get_self(), owner.value );
       auto res_itr = userres.find( owner.value );
       check( res_itr != userres.end(), "no resource row" );
-      check( res_itr->ram_bytes >= bytes, "insufficient quota" );
+
+      gifted_ram_table giftedram( get_self(), get_self().value );
+      auto giftedram_itr = giftedram.find( owner.value );
+      bool holding_gifted_ram = (giftedram_itr != giftedram.end());
+
+      auto available_bytes = holding_gifted_ram ? res_itr->ram_bytes - giftedram_itr->ram_bytes : res_itr->ram_bytes;
+      check( available_bytes >= bytes, "insufficient quota" );
 
       userres.modify( res_itr, same_payer, [&]( auto& res ) {
           res.ram_bytes -= bytes;
       });
-      set_resource_ram_bytes_limits( owner );
+      set_resource_ram_bytes_limits( owner, res_itr->ram_bytes );
 
       // logging
       system_contract::logramchange_action logramchange_act{ get_self(), { {get_self(), active_permission} }};
@@ -236,12 +254,13 @@ namespace eosiosystem {
             res.cpu_weight = asset( 0, core_symbol() );
             res.ram_bytes = bytes;
          });
+         set_resource_ram_bytes_limits( owner, bytes );
       } else {
          userres.modify( res_itr, same_payer, [&]( auto& res ) {
             res.ram_bytes += bytes;
          });
+         set_resource_ram_bytes_limits( owner, res_itr->ram_bytes );
       }
-      set_resource_ram_bytes_limits( owner );
 
       // logging
       system_contract::logramchange_action logramchange_act{ get_self(), { {get_self(), active_permission} } };
@@ -249,15 +268,12 @@ namespace eosiosystem {
       return res_itr->ram_bytes;
    }
 
-   void system_contract::set_resource_ram_bytes_limits( const name& owner ) {
-      user_resources_table userres( get_self(), owner.value );
-      auto res_itr = userres.find( owner.value );
-
+   void system_contract::set_resource_ram_bytes_limits( const name& owner, int64_t res_bytes ) {
       auto voter_itr = _voters.find( owner.value );
       if ( voter_itr == _voters.end() || !has_field( voter_itr->flags1, voter_info::flags1_fields::ram_managed ) ) {
          int64_t ram_bytes, net, cpu;
          get_resource_limits( owner, ram_bytes, net, cpu );
-         set_resource_limits( owner, res_itr->ram_bytes + ram_gift_bytes, net, cpu );
+         set_resource_limits( owner, res_bytes + ram_gift_bytes, net, cpu );
       }
    }
 
