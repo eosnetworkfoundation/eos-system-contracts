@@ -93,7 +93,7 @@ namespace eosiosystem {
    void system_contract::update_ram_supply() {
       auto cbt = eosio::current_block_time();
 
-      if( cbt <= _gstate2.last_ram_increase ) return;
+      if( _gstate2.new_ram_per_block == 0 || cbt <= _gstate2.last_ram_increase ) return;
 
       auto itr = _rammarket.find(ramcore_symbol.raw());
       auto new_ram = (cbt.slot - _gstate2.last_ram_increase.slot)*_gstate2.new_ram_per_block;
