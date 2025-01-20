@@ -95,23 +95,24 @@ namespace eosiosystem {
 
       if( cbt <= _gstate2.last_ram_increase ) return;
 
-      auto itr = _rammarket.find(ramcore_symbol.raw());
-      auto new_ram = (cbt.slot - _gstate2.last_ram_increase.slot)*_gstate2.new_ram_per_block;
-      _gstate.max_ram_size += new_ram;
+      if (_gstate2.new_ram_per_block != 0) {
+         auto itr     = _rammarket.find(ramcore_symbol.raw());
+         auto new_ram = (cbt.slot - _gstate2.last_ram_increase.slot) * _gstate2.new_ram_per_block;
+         _gstate.max_ram_size += new_ram;
 
-      /**
-       *  Increase the amount of ram for sale based upon the change in max ram size.
-       */
-      _rammarket.modify( itr, same_payer, [&]( auto& m ) {
-         m.base.balance.amount += new_ram;
-      });
+         /**
+          *  Increase the amount of ram for sale based upon the change in max ram size.
+          */
+         _rammarket.modify(itr, same_payer, [&](auto& m) { m.base.balance.amount += new_ram; });
+      }
+
       _gstate2.last_ram_increase = cbt;
    }
 
    void system_contract::setramrate( uint16_t bytes_per_block ) {
       require_auth( get_self() );
 
-      update_ram_supply();
+      update_ram_supply(); // make sure all previous blocks are accounted at the old rate before updating the rate
       _gstate2.new_ram_per_block = bytes_per_block;
    }
 
