@@ -258,8 +258,8 @@ try {
 
    produce_blocks(1);
 
-   auto start_block_height    = control->head_block_num();
-   auto start_block_timestamp = control->head_block_time();
+   auto start_block_height    = control->head().block_num();
+   auto start_block_timestamp = control->head().block_time();
 
    std::vector<block_info_record> expected_table;
    auto add_to_expected_table = [&expected_table](uint32_t block_height, fc::time_point block_timestamp) {
@@ -370,8 +370,8 @@ try {
 
    produce_blocks(1); // Now there should be one entry in blockinfo table.
 
-   auto start_block_height    = control->head_block_num();
-   auto start_block_timestamp = control->head_block_time();
+   auto start_block_height    = control->head().block_num();
+   auto start_block_timestamp = control->head().block_time();
 
    BOOST_REQUIRE(8 < start_block_height); // Test assumes it is safe to subtract 8 from start_block_height.
 

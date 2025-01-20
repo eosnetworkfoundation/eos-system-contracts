@@ -366,23 +366,16 @@ public:
       return fc::to_hex(serialized_bytes);
    }
 
-   action_result buyram( const account_name& payer, account_name receiver, const asset& eosin ) {
-      return push_action( payer, "buyram"_n, mvo()( "payer",payer)("receiver",receiver)("quant",eosin) );
-   }
-   action_result buyram( std::string_view payer, std::string_view receiver, const asset& eosin ) {
-      return buyram( account_name(payer), account_name(receiver), eosin );
-   }
-
-   void validate_buyram_return(const account_name& payer, account_name receiver, const asset& eosin,
-                               const type_name& type, const std::string& json) {
+   template <class Action>
+   void validate_action_return(Action&& act, const type_name& type, const std::string& json) {
       // create hex return from provided json
       std::string expected_hex = convert_json_to_hex(type, json);
       // initialize string that will hold actual return
       std::string actual_hex;
 
       // execute transaction and get traces must use base_tester
-      auto trace = base_tester::push_action(config::system_account_name, "buyram"_n, payer,
-                                            mvo()("payer",payer)("receiver",receiver)("quant",eosin));
+      transaction_trace_ptr trace = std::forward<Action>(act)();
+
       produce_block();
 
       // confirm we have trances and find the right one (should be trace idx == 0)
@@ -403,33 +396,36 @@ public:
       BOOST_REQUIRE_EQUAL(expected_hex,actual_hex);
    }
 
+   action_result buyram( const account_name& payer, account_name receiver, const asset& eosin ) {
+      return push_action( payer, "buyram"_n, mvo()( "payer",payer)("receiver",receiver)("quant",eosin) );
+   }
+   action_result buyram( std::string_view payer, std::string_view receiver, const asset& eosin ) {
+      return buyram( account_name(payer), account_name(receiver), eosin );
+   }
+
+   void validate_buyram_return(const account_name& payer, account_name receiver, const asset& eosin,
+                               const type_name& type, const std::string& json) {
+      validate_action_return(
+         [&]() {
+            return base_tester::push_action(config::system_account_name, "buyram"_n, payer,
+                                            mvo()("payer", payer)("receiver", receiver)("quant", eosin));
+         },
+         type, json);
+   }
+
    action_result ramtransfer(const account_name& from, const account_name& to, uint32_t bytes, const std::string& memo) {
       return push_action(from, "ramtransfer"_n,
                          mvo()("from", from)("to", to)("bytes", bytes)("memo", memo));
    }
 
    void validate_ramtransfer_return(const account_name& from, const account_name& to, uint32_t bytes, const std::string& memo,
-                                                 const type_name& type, const std::string& json) {
-      // create hex return from provided json
-      std::string expected_hex = convert_json_to_hex(type, json);
-      // initialize string that will hold actual return
-      std::string actual_hex;
-
-      // execute transaction and get traces must use base_tester
-      auto trace = base_tester::push_action(config::system_account_name, "ramtransfer"_n, from,
+                                    const type_name& type, const std::string& json) {
+      validate_action_return(
+         [&]() {
+            return base_tester::push_action(config::system_account_name, "ramtransfer"_n, from,
                                             mvo()("from", from)("to", to)("bytes", bytes)("memo", memo));
-      produce_block();
-
-      // confirm we have trances and find the right one (should be trace idx == 0)
-      BOOST_REQUIRE_EQUAL(true, chain_has_transaction(trace->id));
-
-      // the first trace always has the return value
-      int i = 0;
-      std::string copy_trace = std::string(trace->action_traces[i].return_value.begin(), trace->action_traces[i].return_value.end());
-      actual_hex = convert_ordinals_to_hex(copy_trace);
-
-      // test fails here actual_hex is
-      BOOST_REQUIRE_EQUAL(expected_hex,actual_hex);
+         },
+         type, json);
    }
 
    action_result ramburn(const account_name& owner, uint32_t bytes, const std::string& memo)
@@ -448,49 +444,22 @@ public:
 
    void validate_buyramburn_return(const name& payer, const asset& quantity,
                                const std::string& memo, const type_name& type, const std::string& json) {
-      // create hex return from provided json
-      std::string expected_hex = convert_json_to_hex(type, json);
-      // initialize string that will hold actual return
-      std::string actual_hex;
-
-      // execute transaction and get traces must use base_tester
-      auto trace = base_tester::push_action(config::system_account_name, "buyramburn"_n, payer,
-                                mvo()("payer",payer)("quantity",quantity)("memo", memo));
-      produce_block();
-
-      // confirm we have trances and find the right one (should be trace idx == 0)
-      BOOST_REQUIRE_EQUAL(true, chain_has_transaction(trace->id));
-
-      // the first trace always has the return value
-      int i = 0;
-      std::string copy_trace = std::string(trace->action_traces[i].return_value.begin(), trace->action_traces[i].return_value.end());
-      actual_hex = convert_ordinals_to_hex(copy_trace);
-
-      // test fails here actual_hex is
-      BOOST_REQUIRE_EQUAL(expected_hex,actual_hex);
+      validate_action_return(
+         [&]() {
+            return base_tester::push_action(config::system_account_name, "buyramburn"_n, payer,
+                                            mvo()("payer", payer)("quantity", quantity)("memo", memo));
+         },
+         type, json);
    }
 
    void validate_ramburn_return(const account_name& owner, uint32_t bytes, const std::string& memo,
                                     const type_name& type, const std::string& json) {
-      // create hex return from provided json
-      std::string expected_hex = convert_json_to_hex(type, json);
-      // initialize string that will hold actual return
-      std::string actual_hex;
-
-      auto trace = base_tester::push_action(config::system_account_name, "ramburn"_n, owner, mvo()("owner", owner)("bytes", bytes)("memo", memo));
-      produce_block();
-
-      // confirm we have trances and find the right one (should be trace idx == 0)
-      BOOST_REQUIRE_EQUAL(true, chain_has_transaction(trace->id));
-
-      // the first trace always has the return value
-      int i = 0;
-      std::string copy_trace = std::string(trace->action_traces[i].return_value.begin(), trace->action_traces[i].return_value.end());
-      // convert from string of ordinals to char representation of hex
-      actual_hex = convert_ordinals_to_hex(copy_trace);
-
-      // test fails here actual_hex is
-      BOOST_REQUIRE_EQUAL(expected_hex,actual_hex);
+      validate_action_return(
+         [&]() {
+            return base_tester::push_action(config::system_account_name, "ramburn"_n, owner,
+                                            mvo()("owner", owner)("bytes", bytes)("memo", memo));
+         },
+         type, json);
    }
 
    action_result buyrambytes(const account_name& payer, account_name receiver, uint32_t numbytes)
@@ -504,26 +473,12 @@ public:
 
    void validate_buyrambytes_return(const account_name& payer, account_name receiver, uint32_t numbytes,
                                 const type_name& type, const std::string& json) {
-      // create hex return from provided json
-      std::string expected_hex = convert_json_to_hex(type, json);
-      // initialize string that will hold actual return
-      std::string actual_hex;
-
-      auto trace = base_tester::push_action(config::system_account_name, "buyrambytes"_n, payer,
+      validate_action_return(
+         [&]() {
+            return base_tester::push_action(config::system_account_name, "buyrambytes"_n, payer,
                                             mvo()("payer", payer)("receiver", receiver)("bytes", numbytes));
-      produce_block();
-
-      // confirm we have trances and find the right one (should be trace idx == 0)
-      BOOST_REQUIRE_EQUAL(true, chain_has_transaction(trace->id));
-
-      // the first trace always has the return value
-      int i = 0;
-      std::string copy_trace = std::string(trace->action_traces[i].return_value.begin(), trace->action_traces[i].return_value.end());
-      // convert from string of ordinals to char representation of hex
-      actual_hex = convert_ordinals_to_hex(copy_trace);
-
-      // test fails here actual_hex is
-      BOOST_REQUIRE_EQUAL(expected_hex,actual_hex);
+         },
+         type, json);
    }
 
    action_result sellram(const account_name& account, uint64_t numbytes)
@@ -534,25 +489,12 @@ public:
 
    void validate_sellram_return(const account_name& account, uint32_t numbytes,
                                     const type_name& type, const std::string& json) {
-      // create hex return from provided json
-      std::string expected_hex = convert_json_to_hex(type, json);
-      // initialize string that will hold actual return
-      std::string actual_hex;
-
-      auto trace = base_tester::push_action(config::system_account_name, "sellram"_n, account, mvo()("account", account)("bytes", numbytes));
-      produce_block();
-
-      // confirm we have trances and find the right one (should be trace idx == 0)
-      BOOST_REQUIRE_EQUAL(true, chain_has_transaction(trace->id));
-
-      // the first trace always has the return value
-      int i = 0;
-      std::string copy_trace = std::string(trace->action_traces[i].return_value.begin(), trace->action_traces[i].return_value.end());
-      // convert from string of ordinals to char representation of hex
-      actual_hex = convert_ordinals_to_hex(copy_trace);
-
-      // test fails here actual_hex is
-      BOOST_REQUIRE_EQUAL(expected_hex,actual_hex);
+      validate_action_return(
+         [&]() {
+            return base_tester::push_action(config::system_account_name, "sellram"_n, account,
+                                            mvo()("account", account)("bytes", numbytes));
+         },
+         type, json);
    }
 
    action_result buyramself(const account_name& account, const asset& quant)
@@ -562,25 +504,12 @@ public:
 
    void validate_buyramself_return(const account_name& account, const asset& quant,
                                 const type_name& type, const std::string& json) {
-      // create hex return from provided json
-      std::string expected_hex = convert_json_to_hex(type, json);
-      // initialize string that will hold actual return
-      std::string actual_hex;
-
-      auto trace = base_tester::push_action(config::system_account_name, "buyramself"_n,  account, mvo()("account", account)("quant", quant));
-      produce_block();
-
-      // confirm we have trances and find the right one (should be trace idx == 0)
-      BOOST_REQUIRE_EQUAL(true, chain_has_transaction(trace->id));
-
-      // the first trace always has the return value
-      int i = 0;
-      std::string copy_trace = std::string(trace->action_traces[i].return_value.begin(), trace->action_traces[i].return_value.end());
-      // convert from string of ordinals to char representation of hex
-      actual_hex = convert_ordinals_to_hex(copy_trace);
-
-      // test fails here actual_hex is
-      BOOST_REQUIRE_EQUAL(expected_hex,actual_hex);
+      validate_action_return(
+         [&]() {
+            return base_tester::push_action(config::system_account_name, "buyramself"_n, account,
+                                            mvo()("account", account)("quant", quant));
+         },
+         type, json);
    }
 
    transaction_trace_ptr setup_producer_accounts( const std::vector<account_name>& accounts,
@@ -1167,7 +1096,7 @@ public:
    }
 
    uint32_t last_block_time() const {
-      return time_point_sec( control->head_block_time() ).sec_since_epoch();
+      return time_point_sec( control->head().block_time() ).sec_since_epoch();
    }
 
    asset get_balance( const account_name& act, symbol balance_symbol = symbol{CORE_SYM} ) {

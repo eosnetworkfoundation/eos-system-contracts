@@ -497,9 +497,9 @@ BOOST_AUTO_TEST_CASE(rent_tests) try {
       powerup_tester t;
       // This test is flaky. It only passes when head block time is on the second.
       // https://github.com/AntelopeIO/reference-contracts/issues/104 tracks this issue.
-      if ((t.control->head_block_time().time_since_epoch().count() % 1000000ll) != 0) {
+      if ((t.control->head().block_time().time_since_epoch().count() % 1000000ll) != 0) {
          t.produce_block();
-         BOOST_REQUIRE_EQUAL((t.control->head_block_time().time_since_epoch().count() % 1000000ll), 0);
+         BOOST_REQUIRE_EQUAL((t.control->head().block_time().time_since_epoch().count() % 1000000ll), 0);
       }
 
       BOOST_REQUIRE_EQUAL(t.wasm_assert_msg("powerup hasn't been initialized"), //
@@ -586,9 +586,9 @@ BOOST_AUTO_TEST_CASE(rent_tests) try {
    auto init = [](auto& t, bool rex) {
       // This test is flaky. It only passes when head block time is on the second.
       // https://github.com/AntelopeIO/reference-contracts/issues/104 tracks this issue.
-      if ((t.control->head_block_time().time_since_epoch().count() % 1000000ll) != 0) {
+      if ((t.control->head().block_time().time_since_epoch().count() % 1000000ll) != 0) {
          t.produce_block();
-         BOOST_REQUIRE_EQUAL((t.control->head_block_time().time_since_epoch().count() % 1000000ll), 0);
+         BOOST_REQUIRE_EQUAL((t.control->head().block_time().time_since_epoch().count() % 1000000ll), 0);
       }
 
       BOOST_REQUIRE_EQUAL("", t.configbw(t.make_config([&](auto& config) {

@@ -279,20 +279,13 @@ namespace eosiosystem {
       check( is_account(owner), "owner=" + owner.to_string() + " account does not exist");
       user_resources_table userres( get_self(), owner.value );
       auto res_itr = userres.find( owner.value );
-      if ( res_itr == userres.end() ) {
-         userres.emplace( owner, [&]( auto& res ) {
-            res.owner = owner;
-            res.net_weight = asset( 0, core_symbol() );
-            res.cpu_weight = asset( 0, core_symbol() );
-            res.ram_bytes = bytes;
-         });
-         set_resource_ram_bytes_limits( owner, bytes );
-      } else {
-         userres.modify( res_itr, same_payer, [&]( auto& res ) {
-            res.ram_bytes += bytes;
-         });
-         set_resource_ram_bytes_limits( owner, res_itr->ram_bytes );
-      }
+
+      //  row should exist as it is always created when creating the account, see `native::newaccount`
+      check( res_itr != userres.end(), "user_resource row missing for account " + owner.to_string() );
+      userres.modify( res_itr, same_payer, [&]( auto& res ) {
+         res.ram_bytes += bytes;
+      });
+      set_resource_ram_bytes_limits( owner, res_itr->ram_bytes );
 
       // logging
       system_contract::logramchange_action logramchange_act{ get_self(), { {get_self(), active_permission} } };

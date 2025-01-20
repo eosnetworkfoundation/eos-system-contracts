@@ -235,4 +235,35 @@ BOOST_FIXTURE_TEST_CASE( buy_ram_self, eosio_system_tester ) try {
 } FC_LOG_AND_RETHROW()
 
 
+// -----------------------------------------------------------------------------------------
+//             tests for encumbered RAM (`giftram` / `ungiftram`)
+// -----------------------------------------------------------------------------------------
+#if 0
+BOOST_FIXTURE_TEST_CASE( ramgift, eosio_system_tester ) try {
+   const std::vector<account_name> accounts = { "alice"_n, "bob"_n };
+   create_accounts_with_resources( accounts );
+   const account_name alice = accounts[0];
+   const account_name bob = accounts[1];
+
+   // burn all of Bob's ram
+   // ---------------------
+   const int64_t bob_before_burn = get_total_stake( bob )["ram_bytes"].as_int64();
+   BOOST_REQUIRE_EQUAL( success(), ramburn( bob, bob_before_burn, "burn RAM memo" ) );
+   BOOST_REQUIRE_EQUAL( get_total_stake( bob )["ram_bytes"].as_int64(), 0);
+
+   // let's have Alice gift 1000 RAM bytes to Bob (Alice started with 8,000 ram bytes
+   // from `create_accounts_with_resources()`
+   // -------------------------------------------------------------------------------
+   const char* expected_return_data = R"=====(
+{
+   "from": "alice",
+   "to": "bob",
+   "bytes": 1000,
+   "from_ram_bytes": 7000,
+   "to_ram_bytes": 1000
+}
+)=====";
+} FC_LOG_AND_RETHROW()
+#endif
+
 BOOST_AUTO_TEST_SUITE_END()
