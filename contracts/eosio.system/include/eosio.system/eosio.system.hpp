@@ -1884,8 +1884,6 @@ namespace eosiosystem {
          using unvest_action = eosio::action_wrapper<"unvest"_n, &system_contract::unvest>;
 
       private:
-         enum class ram_type_t { unencumbered, gifted, both };
-
          //defined in eosio.system.cpp
          static eosio_global_state get_default_parameters();
          static eosio_global_state4 get_default_inflation_parameters();
