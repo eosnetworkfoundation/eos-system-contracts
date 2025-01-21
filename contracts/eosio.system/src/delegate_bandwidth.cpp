@@ -197,6 +197,7 @@ namespace eosiosystem {
       gifted_ram_table giftedram(get_self(), get_self().value);
       auto giftedram_itr = giftedram.find(giftee.value);
       check(giftedram_itr != giftedram.end(), "Account " + giftee.to_string() + " does not hold any gifted RAM");
+      check(giftedram_itr->gifter == gifter, "Returning RAM to wrong gifter, should be: " + giftedram_itr->gifter.to_string());
       int64_t returned_bytes = giftedram_itr->ram_bytes;
 
       // we erase the `gifted_ram_table` row before the call to `ramtransfer`, so the `reduce_ram()` will work even

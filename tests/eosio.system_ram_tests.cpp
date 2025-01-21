@@ -239,6 +239,9 @@ BOOST_FIXTURE_TEST_CASE( buy_ram_self, eosio_system_tester ) try {
 //             tests for encumbered RAM (`giftram` / `ungiftram`)
 // -----------------------------------------------------------------------------------------
 BOOST_FIXTURE_TEST_CASE( ramgift, eosio_system_tester ) try {
+   const asset net = core_sym::from_string("100.0000");
+   const asset cpu = core_sym::from_string("100.0000");
+
    create_account_with_resources("gifter"_n, config::system_account_name, 1'100'000u);
    transfer(config::system_account_name, "gifter", core_sym::from_string("10000.0000"));
 
@@ -257,18 +260,16 @@ BOOST_FIXTURE_TEST_CASE( ramgift, eosio_system_tester ) try {
 
    create_account_with_resources("gft"_n, "gifter"_n, 1'000'000u);  // create gft account with plenty of RAM    
    transfer("eosio", "gft", core_sym::from_string("1000.0000"));    // and currency
+   stake_with_transfer("eosio", "gft", net, cpu);
 
    // finally create our two test accounts with only gifted ram
    // ---------------------------------------------------------
    static constexpr uint32_t initial_ram_gift = 5000u;
    const account_name bob = "bob.gft"_n;
-   const account_name dan = "dan.gft"_n;
    
    create_account_with_resources("bob.gft"_n, "gft"_n, 0, initial_ram_gift);
    transfer("eosio", "bob.gft", core_sym::from_string("1000.0000"));
-
-   create_account_with_resources("dan.gft"_n, "gft"_n, 0, initial_ram_gift);
-   transfer("eosio", "dan.gft", core_sym::from_string("1000.0000"));
+   stake_with_transfer("eosio", "bob.gft", net, cpu);
 
    // make sure gifted ram cannot be sold
    // -----------------------------------
@@ -278,23 +279,73 @@ BOOST_FIXTURE_TEST_CASE( ramgift, eosio_system_tester ) try {
    // ------------------------------------------------------------
    const uint64_t bob_initial_ram = (uint64_t)get_total_stake(bob)["ram_bytes"].as_int64();
    BOOST_REQUIRE_EQUAL(bob_initial_ram, initial_ram_gift);
-   
-   buyrambytes(bob, bob, 1000u);
-   uint64_t bob_ram_bytes =  (uint64_t)get_total_stake(bob)["ram_bytes"].as_int64();
-   BOOST_REQUIRE_GE(bob_ram_bytes, bob_initial_ram + 980); // account for some ram usage
 
-   // let's have Alice gift 1000 RAM bytes to Bob (Alice started with 8,000 ram bytes
-   // from `create_accounts_with_resources()`
-   // -------------------------------------------------------------------------------
-   const char* expected_return_data = R"=====(
-{
-   "from": "alice",
-   "to": "bob",
-   "bytes": 1000,
-   "from_ram_bytes": 7000,
-   "to_ram_bytes": 1000
-}
-)=====";
+   BOOST_REQUIRE_EQUAL(buyrambytes(bob, bob, 1000u), success());
+   uint64_t bob_ram_bytes =  (uint64_t)get_total_stake(bob)["ram_bytes"].as_int64();
+   BOOST_REQUIRE_GE(bob_ram_bytes, bob_initial_ram + 980); // account for incorrect conversion bytes -> cost incl. fee
+
+   // bob should not be able to sell even a single byte of what was gifted to him
+   // ---------------------------------------------------------------------------
+   BOOST_REQUIRE_EQUAL(sellram(bob, bob_ram_bytes - initial_ram_gift + 1),
+                       error("assertion failure with message: insufficient quota"));
+   BOOST_REQUIRE_EQUAL(sellram(bob, bob_ram_bytes - initial_ram_gift), success());
+
+   // Now bob holds only gifted ram
+   // -----------------------------
+   BOOST_REQUIRE_EQUAL(initial_ram_gift, (uint64_t)get_total_stake(bob)["ram_bytes"].as_int64());
+   
+   // bob should not be able to ungift the ram gift as he is using it and has no extra RAM
+   // ------------------------------------------------------------------------------------
+   BOOST_REQUIRE_EQUAL(ungiftram(bob, "gft"_n, ""),
+                       error("account bob.gft has insufficient ram; needs 3574 bytes has 1400 bytes"));
+
+   // bob should not be able to transfer any gifted ram either
+   // --------------------------------------------------------
+   BOOST_REQUIRE_EQUAL(ramtransfer(bob, "gft"_n, 1, ""), error("assertion failure with message: insufficient quota"));
+
+   // bob should not be able to receive a ram gift from another account while holding gifted ram already
+   // ---------------------------------------------------------------------------------------------------
+   BOOST_REQUIRE_EQUAL(giftram("gifter"_n, bob, 1, ""),
+      error("assertion failure with message: A single RAM gifter is allowed at any one time per account"));
+
+   // To return the gift, bob needs 3574 bytes. Let's buy 3000, so with the 1400 we'll have enough 
+   // to return the gift and also do a 1 byte ramtransfer
+   // ---------------------------------------------------------------------------------------------
+   BOOST_REQUIRE_EQUAL(buyrambytes(bob, bob, 3'000u), success());
+   BOOST_REQUIRE_EQUAL(ungiftram(bob, "gft"_n, ""), success());
+   BOOST_REQUIRE_EQUAL(ramtransfer(bob, "gft"_n, 1u, ""), success());
+
+   // Now that bob doesn't hold gifted RAM anymore, it can receive a RAM gift from another account
+   // --------------------------------------------------------------------------------------------
+   BOOST_REQUIRE_EQUAL(giftram("gifter"_n, bob, 1, ""), success());
+
+   // and it should be able to return it only to the correct account
+   // --------------------------------------------------------------
+   BOOST_REQUIRE_EQUAL(ungiftram(bob, "gft"_n, ""),
+                       error("assertion failure with message: Returning RAM to wrong gifter, should be: gifter"));
+   BOOST_REQUIRE_EQUAL(ungiftram(bob, "gifter"_n, ""), success());
+
+   // create another test account with a smaller initial gift
+   // -------------------------------------------------------
+   const account_name dan = "dan.gft"_n;
+   create_account_with_resources("dan.gft"_n, "gft"_n, 0, 2'000u);
+   transfer("eosio", "dan.gft", core_sym::from_string("1000.0000"));
+   stake_with_transfer("eosio", "dan.gft", net, cpu);
+
+   // Make sure we can gift more, and more than once
+   // ----------------------------------------------
+   BOOST_REQUIRE_EQUAL(giftram("gft"_n, dan, 1'000u, ""), success());
+   BOOST_REQUIRE_EQUAL(giftram("gft"_n, dan, 1'000u, ""), success());
+   BOOST_REQUIRE_EQUAL(2'000u + 1'000u + 1'000u, (uint64_t)get_total_stake(dan)["ram_bytes"].as_int64());
+
+   // Let's make sure that when gifter RAM is returned, it is unencumbered and can be sold.
+   // -------------------------------------------------------------------------------------
+   BOOST_REQUIRE_LE((uint64_t)get_total_stake(bob)["ram_bytes"].as_int64(), 5'000u); // make sure bob has <5000 ram bytes
+   BOOST_REQUIRE_EQUAL(buyrambytes(bob, bob, 10'000u), success());
+   BOOST_REQUIRE_EQUAL(giftram(bob, "gifter"_n, 10'000u, ""), success());
+   BOOST_REQUIRE_EQUAL(ungiftram("gifter"_n, bob, ""), success());
+   BOOST_REQUIRE_EQUAL(sellram(bob, 10'000u), success());
+
 } FC_LOG_AND_RETHROW()
 
 BOOST_AUTO_TEST_SUITE_END()
