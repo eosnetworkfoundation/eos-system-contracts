@@ -128,7 +128,11 @@ public:
       }
    }
 
-   transaction_trace_ptr create_account_with_resources( account_name a, account_name creator, uint32_t ram_bytes = 8000 ) {
+   transaction_trace_ptr create_account_with_resources(account_name a,
+                                                       account_name creator,
+                                                       uint32_t     ram_bytes        = 8000,
+                                                       uint32_t     gifted_ram_bytes = 0)
+   {
       signed_transaction trx;
       set_transaction_headers(trx);
 
@@ -143,12 +147,25 @@ public:
                                    .active   = authority( get_public_key( a, "active" ) )
                                 });
 
-      trx.actions.emplace_back( get_action( config::system_account_name, "buyrambytes"_n, vector<permission_level>{{creator,config::active_name}},
-                                            mvo()
-                                            ("payer", creator)
-                                            ("receiver", a)
-                                            ("bytes", ram_bytes) )
-                              );
+      if (ram_bytes) {
+         trx.actions.emplace_back( get_action( config::system_account_name, "buyrambytes"_n, vector<permission_level>{{creator,config::active_name}},
+                                               mvo()
+                                               ("payer", creator)
+                                               ("receiver", a)
+                                               ("bytes", ram_bytes) )
+            );
+      }
+
+      if (gifted_ram_bytes) {
+         trx.actions.emplace_back( get_action( config::system_account_name, "giftram"_n, vector<permission_level>{{creator,config::active_name}},
+                                               mvo()
+                                               ("gifter", creator)
+                                               ("giftee", a)
+                                               ("bytes", gifted_ram_bytes)
+                                               ("memo", "Initial RAM gift at account creation") )
+            );
+      }
+
       trx.actions.emplace_back( get_action( config::system_account_name, "delegatebw"_n, vector<permission_level>{{creator,config::active_name}},
                                             mvo()
                                             ("from", creator)
@@ -416,6 +433,16 @@ public:
    action_result ramtransfer(const account_name& from, const account_name& to, uint32_t bytes, const std::string& memo) {
       return push_action(from, "ramtransfer"_n,
                          mvo()("from", from)("to", to)("bytes", bytes)("memo", memo));
+   }
+
+   action_result giftram(const account_name& gifter, const account_name& giftee, uint32_t bytes, const std::string& memo) {
+      return push_action(gifter, "giftram"_n,
+                         mvo()("gifter", gifter)("giftee", giftee)("bytes", bytes)("memo", memo));
+   }
+
+   action_result ungiftram(const account_name& giftee, const account_name& gifter, const std::string& memo) {
+      return push_action(giftee, "ungiftram"_n,
+                         mvo()("giftee", giftee)("gifter", gifter)("memo", memo));
    }
 
    void validate_ramtransfer_return(const account_name& from, const account_name& to, uint32_t bytes, const std::string& memo,

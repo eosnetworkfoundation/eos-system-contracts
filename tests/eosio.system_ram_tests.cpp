@@ -238,18 +238,50 @@ BOOST_FIXTURE_TEST_CASE( buy_ram_self, eosio_system_tester ) try {
 // -----------------------------------------------------------------------------------------
 //             tests for encumbered RAM (`giftram` / `ungiftram`)
 // -----------------------------------------------------------------------------------------
-#if 0
 BOOST_FIXTURE_TEST_CASE( ramgift, eosio_system_tester ) try {
-   const std::vector<account_name> accounts = { "alice"_n, "bob"_n };
-   create_accounts_with_resources( accounts );
-   const account_name alice = accounts[0];
-   const account_name bob = accounts[1];
+   create_account_with_resources("gifter"_n, config::system_account_name, 1'100'000u);
+   transfer(config::system_account_name, "gifter", core_sym::from_string("10000.0000"));
 
-   // burn all of Bob's ram
-   // ---------------------
-   const int64_t bob_before_burn = get_total_stake( bob )["ram_bytes"].as_int64();
-   BOOST_REQUIRE_EQUAL( success(), ramburn( bob, bob_before_burn, "burn RAM memo" ) );
-   BOOST_REQUIRE_EQUAL( get_total_stake( bob )["ram_bytes"].as_int64(), 0);
+   stake_with_transfer(config::system_account_name, "gifter"_n, core_sym::from_string("80000000.0000"),
+                       core_sym::from_string("80000000.0000"));
+
+   regproducer(config::system_account_name);
+   BOOST_REQUIRE_EQUAL(success(), vote("gifter"_n, {config::system_account_name}));
+
+   produce_block(fc::days(14));                                     // wait 14 days after min required amount has been staked
+   produce_block();
+
+   bidname("gifter", "gft", core_sym::from_string("2.0000"));
+   produce_block(fc::days(1));
+   produce_block();
+
+   create_account_with_resources("gft"_n, "gifter"_n, 1'000'000u);  // create gft account with plenty of RAM    
+   transfer("eosio", "gft", core_sym::from_string("1000.0000"));    // and currency
+
+   // finally create our two test accounts with only gifted ram
+   // ---------------------------------------------------------
+   static constexpr uint32_t initial_ram_gift = 5000u;
+   const account_name bob = "bob.gft"_n;
+   const account_name dan = "dan.gft"_n;
+   
+   create_account_with_resources("bob.gft"_n, "gft"_n, 0, initial_ram_gift);
+   transfer("eosio", "bob.gft", core_sym::from_string("1000.0000"));
+
+   create_account_with_resources("dan.gft"_n, "gft"_n, 0, initial_ram_gift);
+   transfer("eosio", "dan.gft", core_sym::from_string("1000.0000"));
+
+   // make sure gifted ram cannot be sold
+   // -----------------------------------
+   BOOST_REQUIRE_EQUAL(error("assertion failure with message: insufficient quota"), sellram(bob, 100u));
+
+   // but if additional RAM is purchased, it can be sold of course
+   // ------------------------------------------------------------
+   const uint64_t bob_initial_ram = (uint64_t)get_total_stake(bob)["ram_bytes"].as_int64();
+   BOOST_REQUIRE_EQUAL(bob_initial_ram, initial_ram_gift);
+   
+   buyrambytes(bob, bob, 1000u);
+   uint64_t bob_ram_bytes =  (uint64_t)get_total_stake(bob)["ram_bytes"].as_int64();
+   BOOST_REQUIRE_GE(bob_ram_bytes, bob_initial_ram + 980); // account for some ram usage
 
    // let's have Alice gift 1000 RAM bytes to Bob (Alice started with 8,000 ram bytes
    // from `create_accounts_with_resources()`
@@ -264,6 +296,5 @@ BOOST_FIXTURE_TEST_CASE( ramgift, eosio_system_tester ) try {
 }
 )=====";
 } FC_LOG_AND_RETHROW()
-#endif
 
 BOOST_AUTO_TEST_SUITE_END()

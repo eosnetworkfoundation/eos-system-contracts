@@ -163,6 +163,9 @@ namespace eosiosystem {
 
    action_return_ramtransfer system_contract::giftram( const name gifter, const name giftee, int64_t bytes, const std::string& memo  ) {
       require_auth( gifter );
+      require_recipient(gifter);
+      require_recipient(giftee);
+      
       check( bytes > 0, "cannot add negative bytes" );
       check(is_account(giftee), "giftee=" + giftee.to_string() + " account does not exist");
 
@@ -187,6 +190,7 @@ namespace eosiosystem {
 
    action_return_ramtransfer system_contract::ungiftram( const name giftee, const name gifter, const std::string& memo ) {
       require_auth( giftee );
+      require_recipient(giftee);
       check(is_account(gifter), "gifter=" + gifter.to_string() + " account does not exist");
 
       // check the amount to return from `gifted_ram_table`
@@ -280,17 +284,30 @@ namespace eosiosystem {
       user_resources_table userres( get_self(), owner.value );
       auto res_itr = userres.find( owner.value );
 
-      //  row should exist as it is always created when creating the account, see `native::newaccount`
-      check( res_itr != userres.end(), "user_resource row missing for account " + owner.to_string() );
-      userres.modify( res_itr, same_payer, [&]( auto& res ) {
-         res.ram_bytes += bytes;
-      });
-      set_resource_ram_bytes_limits( owner, res_itr->ram_bytes );
+      int64_t updated_ram_bytes = 0;
+      if ( res_itr == userres.end() ) {
+         // only when `owner == null_account` can the row not be found (see `ramburn`)
+         userres.emplace( owner, [&]( auto& res ) {
+            res.owner = owner;
+            res.net_weight = asset( 0, core_symbol() );
+            res.cpu_weight = asset( 0, core_symbol() );
+            res.ram_bytes = bytes;
+         });
+         updated_ram_bytes = bytes;
+      } else {
+         // row should exist as it is always created when creating the account, see `native::newaccount`
+         userres.modify( res_itr, same_payer, [&]( auto& res ) {
+            res.ram_bytes += bytes;
+         });
+         updated_ram_bytes = res_itr->ram_bytes;
+      }
+
+      set_resource_ram_bytes_limits( owner, updated_ram_bytes );
 
       // logging
       system_contract::logramchange_action logramchange_act{ get_self(), { {get_self(), active_permission} } };
-      logramchange_act.send( owner, bytes, res_itr->ram_bytes );
-      return res_itr->ram_bytes;
+      logramchange_act.send( owner, bytes, updated_ram_bytes );
+      return updated_ram_bytes;
    }
 
    void system_contract::set_resource_ram_bytes_limits( const name& owner, int64_t res_bytes ) {
@@ -309,7 +326,6 @@ namespace eosiosystem {
       const int64_t vested = int64_t(total_vesting * double(current_time - base_time) / (10*seconds_per_year) );
       return { total_vesting, vested };
    }
-
 
    void validate_b1_vesting( int64_t new_stake, asset stake_change ) {
       const auto [total_vesting, vested] = get_b1_vesting_info();
