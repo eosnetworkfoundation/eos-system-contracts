@@ -455,6 +455,26 @@ public:
          type, json);
    }
 
+   void validate_giftram_return(const account_name& gifter, const account_name& giftee, uint32_t bytes,
+                                const std::string& memo, const type_name& type, const std::string& json) {
+      validate_action_return(
+         [&]() {
+            return base_tester::push_action(config::system_account_name, "giftram"_n, gifter,
+                                            mvo()("gifter", gifter)("giftee", giftee)("bytes", bytes)("memo", memo));
+         },
+         type, json);
+   }
+
+   void validate_ungiftram_return(const account_name& giftee, const account_name& gifter,
+                                  const std::string& memo, const type_name& type, const std::string& json) {
+      validate_action_return(
+         [&]() {
+            return base_tester::push_action(config::system_account_name, "ungiftram"_n, giftee,
+                                            mvo()("giftee", giftee)("gifter", gifter)("memo", memo));
+         },
+         type, json);
+   }
+
    action_result ramburn(const account_name& owner, uint32_t bytes, const std::string& memo)
    {
       return push_action(owner, "ramburn"_n, mvo()("owner", owner)("bytes", bytes)("memo", memo));

@@ -346,6 +346,41 @@ BOOST_FIXTURE_TEST_CASE( ramgift, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL(ungiftram("gifter"_n, bob, ""), success());
    BOOST_REQUIRE_EQUAL(sellram(bob, 10'000u), success());
 
+   // Let's check the return values for `giftram` and `ungiftram`
+   // -----------------------------------------------------------
+   stake_with_transfer("eosio", "dan.gft", net, cpu);
+   BOOST_REQUIRE_EQUAL(buyrambytes(bob, bob, 10'000u), success());  // first make sure they both start with 5000 ram bytes
+   BOOST_REQUIRE_EQUAL(buyrambytes(dan, dan, 10'000u), success());
+   BOOST_REQUIRE_EQUAL(ungiftram(dan, "gft"_n, ""), success());     // don't forget to return dan's gift
+   BOOST_REQUIRE_EQUAL(ramburn(bob, (uint64_t)get_total_stake(bob)["ram_bytes"].as_int64() - 5000u, ""), success());
+   BOOST_REQUIRE_EQUAL(ramburn(dan, (uint64_t)get_total_stake(dan)["ram_bytes"].as_int64() - 5000u, ""), success());
+   
+   
+   BOOST_REQUIRE_EQUAL((uint64_t)get_total_stake(bob)["ram_bytes"].as_int64(), 5000u);
+   BOOST_REQUIRE_EQUAL((uint64_t)get_total_stake(dan)["ram_bytes"].as_int64(), 5000u);
+
+   const char* giftram_expected_return_data = R"=====(
+{
+   "from": "bob.gft",
+   "to": "dan.gft",
+   "bytes": 1,
+   "from_ram_bytes": 4999,
+   "to_ram_bytes": 5001
+}
+)=====";
+   validate_giftram_return(bob, dan, 1, "", "action_return_ramtransfer", giftram_expected_return_data );
+
+   const char* ungiftram_expected_return_data = R"=====(
+{
+   "from": "dan.gft",
+   "to": "bob.gft",
+   "bytes": 1,
+   "from_ram_bytes": 5000,
+   "to_ram_bytes": 5000
+}
+)=====";
+   validate_ungiftram_return(dan, bob, "", "action_return_ramtransfer", ungiftram_expected_return_data );
+
 } FC_LOG_AND_RETHROW()
 
 BOOST_AUTO_TEST_SUITE_END()
