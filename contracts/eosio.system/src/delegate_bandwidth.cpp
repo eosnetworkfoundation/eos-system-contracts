@@ -179,7 +179,9 @@ namespace eosiosystem {
             res.ram_bytes = bytes;
          });
       } else {
-         check(giftedram_itr->gifter == gifter, "A single RAM gifter is allowed at any one time per account");
+         check(giftedram_itr->gifter == gifter,
+               "A single RAM gifter is allowed at any one time per account, currently holding RAM gifted by: " +
+                  giftedram_itr->gifter.to_string());
          giftedram.modify(giftedram_itr, same_payer, [&](auto& res) {
             res.ram_bytes += bytes;
          });

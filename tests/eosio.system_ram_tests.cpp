@@ -306,7 +306,7 @@ BOOST_FIXTURE_TEST_CASE( ramgift, eosio_system_tester ) try {
    // bob should not be able to receive a ram gift from another account while holding gifted ram already
    // ---------------------------------------------------------------------------------------------------
    BOOST_REQUIRE_EQUAL(giftram("gifter"_n, bob, 1, ""),
-      error("assertion failure with message: A single RAM gifter is allowed at any one time per account"));
+      error("assertion failure with message: A single RAM gifter is allowed at any one time per account, currently holding RAM gifted by: gft"));
 
    // To return the gift, bob needs 3574 bytes. Let's buy 3000, so with the 1400 we'll have enough 
    // to return the gift and also do a 1 byte ramtransfer

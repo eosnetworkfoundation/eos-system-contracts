@@ -1337,7 +1337,7 @@ namespace eosiosystem {
           *
           * In addition:
           *  - requires that giftee does not hold gifted ram by someone else than gifter,
-          *    as one account can only be hold gifted ram from one gifter at any time.
+          *    as one account can only hold gifted ram from one gifter at any time.
           *  - current gifter can gift additional ram to a giftee at any time (no restriction)
           *  - the fact of receiving gifted ram does not add any restriction to an
           *    account, besides the usage restictions on the gifted ram itself.
@@ -1360,8 +1360,8 @@ namespace eosiosystem {
          /**
           *  Return gifted ram (the full amount) to the gifter.
           *
-          *  - because an account can only hold gifted ram from one gifter at any time, the `gifter` 
-          *    parameter is not necessary.
+          *  - asserts that the `gifter` parameter is correct, i.e. that it matches the account which gifted the 
+          *    encumbered ram currently held by the `giftee` account.
           *  - there is currently no built-in incentive for a giftee to return gifted ram.
           *  - if giftee account is found to hold gifted ram, and giftee has enough 
           *    ram available to return the gift, this action will:
