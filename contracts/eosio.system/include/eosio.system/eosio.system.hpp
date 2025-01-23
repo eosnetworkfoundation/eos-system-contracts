@@ -1330,10 +1330,10 @@ namespace eosiosystem {
          action_return_sellram sellram( const name& account, int64_t bytes );
 
          /**
-          * Gift ram action, which transfers `bytes` of ram from  `gifter` to `giftee`, with the characteristic
-          * that the transfered ram is encumbered, meaning it can only be returned to the gifter via the
-          * `ungiftram` action. It cannot be traded, sold, re-gifted, or transfered otherwise.
-          * Its only use is for storing data.
+          * Gift ram action, which transfers `bytes` of ram from `gifter` (`from`) to `giftee` (`to`), 
+          * with the characteristic that the transfered ram is encumbered, meaning it can only be 
+          * returned to the gifter via the `ungiftram` action. It cannot be traded, sold, re-gifted, 
+          * or transfered otherwise. Its only use is for storing data.
           *
           * In addition:
           *  - requires that giftee does not hold gifted ram by someone else than gifter,
@@ -1349,21 +1349,21 @@ namespace eosiosystem {
           *  - the ram cost of adding a row in the gifted_ram table will be incurred
           *    by the gifter.
           *
-          * @param gifter - the account ram is transfered from,
-          * @param giftee - the account ram is transfered to,
+          * @param from   - the account ram is transfered from, i.e. the gifter
+          * @param to     - the account ram is transfered to, i.e. the giftee
           * @param bytes  - the amount of ram to be transfered in bytes,
           * @param memo   - the memo string to accompany the transaction.
           */
          [[eosio::action]]
-         action_return_ramtransfer giftram( const name gifter, const name giftee, int64_t bytes, const std::string& memo );
+         action_return_ramtransfer giftram( const name from, const name to, int64_t bytes, const std::string& memo );
 
          /**
           *  Return gifted ram (the full amount) to the gifter.
           *
-          *  - asserts that the `gifter` parameter is correct, i.e. that it matches the account which gifted the 
-          *    encumbered ram currently held by the `giftee` account.
+          *  - asserts that the `to` parameter is correct, i.e. that it matches the account which gifted the 
+          *    encumbered ram currently held by the `from` account.
           *  - there is currently no built-in incentive for a giftee to return gifted ram.
-          *  - if giftee account is found to hold gifted ram, and giftee has enough 
+          *  - if `from` account is found to hold gifted ram, and has enough 
           *    ram available to return the gift, this action will:
           *      a. transfer gifted ram back to gifter (full gifted amount)
           *      b. remove row from the gifted_ram table.
@@ -1373,12 +1373,12 @@ namespace eosiosystem {
           *  - returned ram is unencumbered, which means there are no restrictions
           *    on its use.
           *
-          * @param giftee - the account ram is transfered from,
-          * @param gifter - the account ram is transfered to,
+          * @param from   - the account ram is transfered from, i.e. the giftee returning the gifted RAM
+          * @param to     - the account ram is transfered to, i.e. the gifter
           * @param memo   - the memo string to accompany the transaction.
           */
          [[eosio::action]]
-         action_return_ramtransfer ungiftram( const name giftee, const name gifter, const std::string& memo );
+         action_return_ramtransfer ungiftram( const name from, const name to, const std::string& memo );
 
          /**
           * Logging for sellram action

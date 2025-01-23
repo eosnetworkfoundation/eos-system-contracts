@@ -161,25 +161,25 @@ namespace eosiosystem {
       require_recipient(account);
    }
 
-   action_return_ramtransfer system_contract::giftram( const name gifter, const name giftee, int64_t bytes, const std::string& memo  ) {
-      require_auth( gifter );
-      require_recipient(gifter);
-      require_recipient(giftee);
+   action_return_ramtransfer system_contract::giftram( const name from, const name to, int64_t bytes, const std::string& memo  ) {
+      require_auth( from );
+      require_recipient(from);
+      require_recipient(to);
       
       check( bytes > 0, "cannot add negative bytes" );
-      check(is_account(giftee), "giftee=" + giftee.to_string() + " account does not exist");
+      check(is_account(to), "to=" + to.to_string() + " account does not exist");
 
       // add ram gift to `gifted_ram_table`
       gifted_ram_table giftedram(get_self(), get_self().value);
-      auto giftedram_itr = giftedram.find(giftee.value);
+      auto giftedram_itr = giftedram.find(to.value);
       if (giftedram_itr == giftedram.end()) {
-         giftedram.emplace(gifter, [&](auto& res) { // gifter pays the ram costs for gift storage
-            res.giftee    = giftee;
-            res.gifter    = gifter;
+         giftedram.emplace(from, [&](auto& res) { // gifter pays the ram costs for gift storage
+            res.giftee    = to;
+            res.gifter    = from;
             res.ram_bytes = bytes;
          });
       } else {
-         check(giftedram_itr->gifter == gifter,
+         check(giftedram_itr->gifter == from,
                "A single RAM gifter is allowed at any one time per account, currently holding RAM gifted by: " +
                   giftedram_itr->gifter.to_string());
          giftedram.modify(giftedram_itr, same_payer, [&](auto& res) {
@@ -187,26 +187,26 @@ namespace eosiosystem {
          });
       }
 
-      return ramtransfer( gifter, giftee, bytes, memo );
+      return ramtransfer( from, to, bytes, memo );
    }
 
-   action_return_ramtransfer system_contract::ungiftram( const name giftee, const name gifter, const std::string& memo ) {
-      require_auth( giftee );
-      require_recipient(giftee);
-      check(is_account(gifter), "gifter=" + gifter.to_string() + " account does not exist");
+   action_return_ramtransfer system_contract::ungiftram( const name from, const name to, const std::string& memo ) {
+      require_auth( from );
+      require_recipient(from);
+      check(is_account(to), "to=" + to.to_string() + " account does not exist");
 
       // check the amount to return from `gifted_ram_table`
       gifted_ram_table giftedram(get_self(), get_self().value);
-      auto giftedram_itr = giftedram.find(giftee.value);
-      check(giftedram_itr != giftedram.end(), "Account " + giftee.to_string() + " does not hold any gifted RAM");
-      check(giftedram_itr->gifter == gifter, "Returning RAM to wrong gifter, should be: " + giftedram_itr->gifter.to_string());
+      auto giftedram_itr = giftedram.find(from.value);
+      check(giftedram_itr != giftedram.end(), "Account " + from.to_string() + " does not hold any gifted RAM");
+      check(giftedram_itr->gifter == to, "Returning RAM to wrong gifter, should be: " + giftedram_itr->gifter.to_string());
       int64_t returned_bytes = giftedram_itr->ram_bytes;
 
       // we erase the `gifted_ram_table` row before the call to `ramtransfer`, so the `reduce_ram()` will work even
       // if we just have `returned_bytes` available in `user_resources_table`
       giftedram.erase(giftedram_itr);
 
-      return ramtransfer( giftee, gifter, returned_bytes, memo );
+      return ramtransfer( from, to, returned_bytes, memo );
    }
 
    /**

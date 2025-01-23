@@ -159,8 +159,8 @@ public:
       if (gifted_ram_bytes) {
          trx.actions.emplace_back( get_action( config::system_account_name, "giftram"_n, vector<permission_level>{{creator,config::active_name}},
                                                mvo()
-                                               ("gifter", creator)
-                                               ("giftee", a)
+                                               ("from", creator)
+                                               ("to", a)
                                                ("bytes", gifted_ram_bytes)
                                                ("memo", "Initial RAM gift at account creation") )
             );
@@ -435,14 +435,14 @@ public:
                          mvo()("from", from)("to", to)("bytes", bytes)("memo", memo));
    }
 
-   action_result giftram(const account_name& gifter, const account_name& giftee, uint32_t bytes, const std::string& memo) {
-      return push_action(gifter, "giftram"_n,
-                         mvo()("gifter", gifter)("giftee", giftee)("bytes", bytes)("memo", memo));
+   action_result giftram(const account_name& from, const account_name& to, uint32_t bytes, const std::string& memo) {
+      return push_action(from, "giftram"_n,
+                         mvo()("from", from)("to", to)("bytes", bytes)("memo", memo));
    }
 
-   action_result ungiftram(const account_name& giftee, const account_name& gifter, const std::string& memo) {
-      return push_action(giftee, "ungiftram"_n,
-                         mvo()("giftee", giftee)("gifter", gifter)("memo", memo));
+   action_result ungiftram(const account_name& from, const account_name& to, const std::string& memo) {
+      return push_action(from, "ungiftram"_n,
+                         mvo()("from", from)("to", to)("memo", memo));
    }
 
    void validate_ramtransfer_return(const account_name& from, const account_name& to, uint32_t bytes, const std::string& memo,
@@ -455,22 +455,22 @@ public:
          type, json);
    }
 
-   void validate_giftram_return(const account_name& gifter, const account_name& giftee, uint32_t bytes,
+   void validate_giftram_return(const account_name& from, const account_name& to, uint32_t bytes,
                                 const std::string& memo, const type_name& type, const std::string& json) {
       validate_action_return(
          [&]() {
-            return base_tester::push_action(config::system_account_name, "giftram"_n, gifter,
-                                            mvo()("gifter", gifter)("giftee", giftee)("bytes", bytes)("memo", memo));
+            return base_tester::push_action(config::system_account_name, "giftram"_n, from,
+                                            mvo()("from", from)("to", to)("bytes", bytes)("memo", memo));
          },
          type, json);
    }
 
-   void validate_ungiftram_return(const account_name& giftee, const account_name& gifter,
+   void validate_ungiftram_return(const account_name& from, const account_name& to,
                                   const std::string& memo, const type_name& type, const std::string& json) {
       validate_action_return(
          [&]() {
-            return base_tester::push_action(config::system_account_name, "ungiftram"_n, giftee,
-                                            mvo()("giftee", giftee)("gifter", gifter)("memo", memo));
+            return base_tester::push_action(config::system_account_name, "ungiftram"_n, from,
+                                            mvo()("from", from)("to", to)("memo", memo));
          },
          type, json);
    }
