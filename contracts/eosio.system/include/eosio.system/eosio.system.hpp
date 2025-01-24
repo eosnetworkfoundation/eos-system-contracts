@@ -477,7 +477,6 @@ namespace eosiosystem {
       name      gifter;
       int64_t   ram_bytes = 0;
 
-      bool      is_empty()    const { return ram_bytes == 0; }
       uint64_t  primary_key() const { return giftee.value; } // unique as one giftee can only hold gifted ram from one gifter
    };
 
@@ -1851,6 +1850,8 @@ namespace eosiosystem {
          using buyrambytes_action = eosio::action_wrapper<"buyrambytes"_n, &system_contract::buyrambytes>;
          using logbuyram_action = eosio::action_wrapper<"logbuyram"_n, &system_contract::logbuyram>;
          using sellram_action = eosio::action_wrapper<"sellram"_n, &system_contract::sellram>;
+         using giftram_action = eosio::action_wrapper<"giftram"_n, &system_contract::giftram>;
+         using ungiftram_action = eosio::action_wrapper<"ungiftram"_n, &system_contract::ungiftram>;
          using logsellram_action = eosio::action_wrapper<"logsellram"_n, &system_contract::logsellram>;
          using ramtransfer_action = eosio::action_wrapper<"ramtransfer"_n, &system_contract::ramtransfer>;
          using ramburn_action = eosio::action_wrapper<"ramburn"_n, &system_contract::ramburn>;

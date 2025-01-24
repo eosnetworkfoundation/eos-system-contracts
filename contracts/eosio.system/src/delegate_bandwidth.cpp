@@ -166,7 +166,7 @@ namespace eosiosystem {
       require_recipient(from);
       require_recipient(to);
       
-      check( bytes > 0, "cannot add negative bytes" );
+      check( bytes > 0, "must gift positive bytes" );
       check(is_account(to), "to=" + to.to_string() + " account does not exist");
 
       // add ram gift to `gifted_ram_table`
