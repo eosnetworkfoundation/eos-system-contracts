@@ -193,6 +193,8 @@ namespace eosiosystem {
    action_return_ramtransfer system_contract::ungiftram( const name from, const name to, const std::string& memo ) {
       require_auth( from );
       require_recipient(from);
+      require_recipient(to);
+
       check(is_account(to), "to=" + to.to_string() + " account does not exist");
 
       // check the amount to return from `gifted_ram_table`
