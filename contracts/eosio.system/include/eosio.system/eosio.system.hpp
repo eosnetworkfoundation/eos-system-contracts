@@ -472,9 +472,19 @@ namespace eosiosystem {
    };
 
 
+   struct [[eosio::table, eosio::contract("eosio.system")]] gifted_ram {
+      name      giftee;
+      name      gifter;
+      int64_t   ram_bytes = 0;
+
+      uint64_t  primary_key() const { return giftee.value; } // unique as one giftee can only hold gifted ram from one gifter
+   };
+
+
    typedef eosio::multi_index< "userres"_n, user_resources >      user_resources_table;
    typedef eosio::multi_index< "delband"_n, delegated_bandwidth > del_bandwidth_table;
    typedef eosio::multi_index< "refunds"_n, refund_request >      refunds_table;
+   typedef eosio::multi_index< "giftedram"_n, gifted_ram >        gifted_ram_table;
 
    // `rex_pool` structure underlying the rex pool table. A rex pool table entry is defined by:
    // - `version` defaulted to zero,
@@ -1319,6 +1329,57 @@ namespace eosiosystem {
          action_return_sellram sellram( const name& account, int64_t bytes );
 
          /**
+          * Gift ram action, which transfers `bytes` of ram from `gifter` (`from`) to `giftee` (`to`), 
+          * with the characteristic that the transfered ram is encumbered, meaning it can only be 
+          * returned to the gifter via the `ungiftram` action. It cannot be traded, sold, re-gifted, 
+          * or transfered otherwise. Its only use is for storing data.
+          *
+          * In addition:
+          *  - requires that giftee does not hold gifted ram by someone else than gifter,
+          *    as one account can only hold gifted ram from one gifter at any time.
+          *  - current gifter can gift additional ram to a giftee at any time (no restriction)
+          *  - the fact of receiving gifted ram does not add any restriction to an
+          *    account, besides the usage restictions on the gifted ram itself.
+          *    For example, the account can purchase additional ram, and transfer,
+          *    trade or sell this additional ram freely.
+          *  - this will update both:
+          *      a. the `gifted_ram` table to record the gift
+          *      b. the `user_resources_table` to increase the usable ram
+          *  - the ram cost of adding a row in the gifted_ram table will be incurred
+          *    by the gifter.
+          *
+          * @param from   - the account ram is transfered from, i.e. the gifter
+          * @param to     - the account ram is transfered to, i.e. the giftee
+          * @param bytes  - the amount of ram to be transfered in bytes,
+          * @param memo   - the memo string to accompany the transaction.
+          */
+         [[eosio::action]]
+         action_return_ramtransfer giftram( const name from, const name to, int64_t bytes, const std::string& memo );
+
+         /**
+          *  Return gifted ram (the full amount) to the gifter.
+          *
+          *  - asserts that the `to` parameter is correct, i.e. that it matches the account which gifted the 
+          *    encumbered ram currently held by the `from` account.
+          *  - there is currently no built-in incentive for a giftee to return gifted ram.
+          *  - if `from` account is found to hold gifted ram, and has enough 
+          *    ram available to return the gift, this action will:
+          *      a. transfer gifted ram back to gifter (full gifted amount)
+          *      b. remove row from the gifted_ram table.
+          *      c. unlock ram in the giftee's account equal to the overhead of
+          *         removed row.
+          *      d. decrease `ram_bytes` by the returned amount in `user_resources_table`
+          *  - returned ram is unencumbered, which means there are no restrictions
+          *    on its use.
+          *
+          * @param from   - the account ram is transfered from, i.e. the giftee returning the gifted RAM
+          * @param to     - the account ram is transfered to, i.e. the gifter
+          * @param memo   - the memo string to accompany the transaction.
+          */
+         [[eosio::action]]
+         action_return_ramtransfer ungiftram( const name from, const name to, const std::string& memo );
+
+         /**
           * Logging for sellram action
           *
           * @param account - the ram seller,
@@ -1789,6 +1850,8 @@ namespace eosiosystem {
          using buyrambytes_action = eosio::action_wrapper<"buyrambytes"_n, &system_contract::buyrambytes>;
          using logbuyram_action = eosio::action_wrapper<"logbuyram"_n, &system_contract::logbuyram>;
          using sellram_action = eosio::action_wrapper<"sellram"_n, &system_contract::sellram>;
+         using giftram_action = eosio::action_wrapper<"giftram"_n, &system_contract::giftram>;
+         using ungiftram_action = eosio::action_wrapper<"ungiftram"_n, &system_contract::ungiftram>;
          using logsellram_action = eosio::action_wrapper<"logsellram"_n, &system_contract::logsellram>;
          using ramtransfer_action = eosio::action_wrapper<"ramtransfer"_n, &system_contract::ramtransfer>;
          using ramburn_action = eosio::action_wrapper<"ramburn"_n, &system_contract::ramburn>;
@@ -1868,7 +1931,7 @@ namespace eosiosystem {
          void changebw( name from, const name& receiver,
                         const asset& stake_net_quantity, const asset& stake_cpu_quantity, bool transfer );
          int64_t update_voting_power( const name& voter, const asset& total_update );
-         void set_resource_ram_bytes_limits( const name& owner );
+         void set_resource_ram_bytes_limits( const name& owner, int64_t bytes );
          int64_t reduce_ram( const name& owner, int64_t bytes );
          int64_t add_ram( const name& owner, int64_t bytes );
          void update_stake_delegated( const name from, const name receiver, const asset stake_net_delta, const asset stake_cpu_delta );

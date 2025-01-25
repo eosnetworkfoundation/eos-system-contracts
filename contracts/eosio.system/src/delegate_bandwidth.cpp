@@ -161,6 +161,56 @@ namespace eosiosystem {
       require_recipient(account);
    }
 
+   action_return_ramtransfer system_contract::giftram( const name from, const name to, int64_t bytes, const std::string& memo  ) {
+      require_auth( from );
+      require_recipient(from);
+      require_recipient(to);
+      
+      check( bytes > 0, "must gift positive bytes" );
+      check(is_account(to), "to=" + to.to_string() + " account does not exist");
+
+      // add ram gift to `gifted_ram_table`
+      gifted_ram_table giftedram(get_self(), get_self().value);
+      auto giftedram_itr = giftedram.find(to.value);
+      if (giftedram_itr == giftedram.end()) {
+         giftedram.emplace(from, [&](auto& res) { // gifter pays the ram costs for gift storage
+            res.giftee    = to;
+            res.gifter    = from;
+            res.ram_bytes = bytes;
+         });
+      } else {
+         check(giftedram_itr->gifter == from,
+               "A single RAM gifter is allowed at any one time per account, currently holding RAM gifted by: " +
+                  giftedram_itr->gifter.to_string());
+         giftedram.modify(giftedram_itr, same_payer, [&](auto& res) {
+            res.ram_bytes += bytes;
+         });
+      }
+
+      return ramtransfer( from, to, bytes, memo );
+   }
+
+   action_return_ramtransfer system_contract::ungiftram( const name from, const name to, const std::string& memo ) {
+      require_auth( from );
+      require_recipient(from);
+      require_recipient(to);
+
+      check(is_account(to), "to=" + to.to_string() + " account does not exist");
+
+      // check the amount to return from `gifted_ram_table`
+      gifted_ram_table giftedram(get_self(), get_self().value);
+      auto giftedram_itr = giftedram.find(from.value);
+      check(giftedram_itr != giftedram.end(), "Account " + from.to_string() + " does not hold any gifted RAM");
+      check(giftedram_itr->gifter == to, "Returning RAM to wrong gifter, should be: " + giftedram_itr->gifter.to_string());
+      int64_t returned_bytes = giftedram_itr->ram_bytes;
+
+      // we erase the `gifted_ram_table` row before the call to `ramtransfer`, so the `reduce_ram()` will work even
+      // if we just have `returned_bytes` available in `user_resources_table`
+      giftedram.erase(giftedram_itr);
+
+      return ramtransfer( from, to, returned_bytes, memo );
+   }
+
    /**
     * This action will transfer RAM bytes from one account to another.
     */
@@ -206,17 +256,26 @@ namespace eosiosystem {
       require_recipient( owner );
    }
 
+   // this is called when transfering or selling ram, and encumbered (gifted) ram cannot be sold or transferred.
+   // so if we hold some gifted ram, deduct the amount from the ram available to be sold or transfered.
    int64_t system_contract::reduce_ram( const name& owner, int64_t bytes ) {
       check( bytes > 0, "cannot reduce negative byte" );
+
       user_resources_table userres( get_self(), owner.value );
       auto res_itr = userres.find( owner.value );
       check( res_itr != userres.end(), "no resource row" );
-      check( res_itr->ram_bytes >= bytes, "insufficient quota" );
+
+      gifted_ram_table giftedram( get_self(), get_self().value );
+      auto giftedram_itr = giftedram.find( owner.value );
+      bool holding_gifted_ram = (giftedram_itr != giftedram.end());
+
+      auto available_bytes = holding_gifted_ram ? res_itr->ram_bytes - giftedram_itr->ram_bytes : res_itr->ram_bytes;
+      check( available_bytes >= bytes, "insufficient quota" );
 
       userres.modify( res_itr, same_payer, [&]( auto& res ) {
           res.ram_bytes -= bytes;
       });
-      set_resource_ram_bytes_limits( owner );
+      set_resource_ram_bytes_limits( owner, res_itr->ram_bytes );
 
       // logging
       system_contract::logramchange_action logramchange_act{ get_self(), { {get_self(), active_permission} }};
@@ -229,35 +288,39 @@ namespace eosiosystem {
       check( is_account(owner), "owner=" + owner.to_string() + " account does not exist");
       user_resources_table userres( get_self(), owner.value );
       auto res_itr = userres.find( owner.value );
+
+      int64_t updated_ram_bytes = 0;
       if ( res_itr == userres.end() ) {
+         // only when `owner == null_account` can the row not be found (see `ramburn`)
          userres.emplace( owner, [&]( auto& res ) {
             res.owner = owner;
             res.net_weight = asset( 0, core_symbol() );
             res.cpu_weight = asset( 0, core_symbol() );
             res.ram_bytes = bytes;
          });
+         updated_ram_bytes = bytes;
       } else {
+         // row should exist as it is always created when creating the account, see `native::newaccount`
          userres.modify( res_itr, same_payer, [&]( auto& res ) {
             res.ram_bytes += bytes;
          });
+         updated_ram_bytes = res_itr->ram_bytes;
       }
-      set_resource_ram_bytes_limits( owner );
+
+      set_resource_ram_bytes_limits( owner, updated_ram_bytes );
 
       // logging
       system_contract::logramchange_action logramchange_act{ get_self(), { {get_self(), active_permission} } };
-      logramchange_act.send( owner, bytes, res_itr->ram_bytes );
-      return res_itr->ram_bytes;
+      logramchange_act.send( owner, bytes, updated_ram_bytes );
+      return updated_ram_bytes;
    }
 
-   void system_contract::set_resource_ram_bytes_limits( const name& owner ) {
-      user_resources_table userres( get_self(), owner.value );
-      auto res_itr = userres.find( owner.value );
-
+   void system_contract::set_resource_ram_bytes_limits( const name& owner, int64_t res_bytes ) {
       auto voter_itr = _voters.find( owner.value );
       if ( voter_itr == _voters.end() || !has_field( voter_itr->flags1, voter_info::flags1_fields::ram_managed ) ) {
          int64_t ram_bytes, net, cpu;
          get_resource_limits( owner, ram_bytes, net, cpu );
-         set_resource_limits( owner, res_itr->ram_bytes + ram_gift_bytes, net, cpu );
+         set_resource_limits( owner, res_bytes + ram_gift_bytes, net, cpu );
       }
    }
 
@@ -268,7 +331,6 @@ namespace eosiosystem {
       const int64_t vested = int64_t(total_vesting * double(current_time - base_time) / (10*seconds_per_year) );
       return { total_vesting, vested };
    }
-
 
    void validate_b1_vesting( int64_t new_stake, asset stake_change ) {
       const auto [total_vesting, vested] = get_b1_vesting_info();
