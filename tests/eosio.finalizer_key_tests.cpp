@@ -728,4 +728,62 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_finalizers_replaced_test, final
 }
 FC_LOG_AND_RETHROW()
 
+struct peer_keys_tester : eosio_system_tester {
+   std::optional<fc::crypto::public_key> get_peer_key_info(const name& n) {
+      vector<char> data = get_row_by_id( config::system_account_name, config::system_account_name, "peerkeys"_n, n.to_uint64_t() );
+      if (data.empty())
+         return {};
+      auto s = abi_ser.binary_to_variant( "peer_key", data, abi_serializer_max_time )["key"].as_string();
+      return fc::crypto::public_key(s);
+   }
+
+    action_result regpeerkey( const name& proposer, const fc::crypto::public_key& key  ) {
+       return push_action(proposer, "regpeerkey"_n, mvo()("proposer_finalizer_name", proposer)("key", key));
+   }
+
+   action_result delpeerkey( const name& proposer, const fc::crypto::public_key& key ) {
+      return push_action(proposer, "delpeerkey"_n, mvo()("proposer_finalizer_name", proposer)("key", key));
+   }
+};
+
+BOOST_FIXTURE_TEST_CASE(peer_keys_test, peer_keys_tester) try {
+   const std::vector<account_name> accounts = { "alice"_n, "bob"_n };
+   const account_name alice = accounts[0];
+   const account_name bob = accounts[1];
+
+   create_accounts_with_resources(accounts);
+
+   // store Alice's peer key
+   // ----------------------
+   BOOST_REQUIRE_EQUAL(success(), regpeerkey(alice, get_public_key(alice)));
+   BOOST_REQUIRE(get_peer_key_info(alice) == get_public_key(alice));
+
+   // replace Alices's key with a new one
+   // -----------------------------------
+   auto new_key = get_public_key("alice.new"_n);
+   BOOST_REQUIRE_EQUAL(success(), regpeerkey(alice, new_key));
+   BOOST_REQUIRE(get_peer_key_info(alice) == new_key);
+
+   // Delete Alices's key
+   // -------------------
+   BOOST_REQUIRE_EQUAL(error("assertion failure with message: Current key does not match the provided one"),
+                       delpeerkey(alice, get_public_key(alice))); // not the right key, should be `new_key`
+   BOOST_REQUIRE_EQUAL(success(), delpeerkey(alice, new_key));
+   BOOST_REQUIRE(get_peer_key_info(alice) == std::optional<fc::crypto::public_key>{});
+
+   // But we can't delete it twice!
+   // -----------------------------
+   BOOST_REQUIRE_EQUAL(error("assertion failure with message: Key not present for name: alice"),
+                       delpeerkey(alice, new_key));
+
+   // store Alice's and Bob's peer keys
+   // ---------------------------------
+   BOOST_REQUIRE_EQUAL(success(), regpeerkey(alice, get_public_key(alice)));
+   BOOST_REQUIRE(get_peer_key_info(alice) == get_public_key(alice));
+   BOOST_REQUIRE_EQUAL(success(), regpeerkey(bob, get_public_key(bob)));
+   BOOST_REQUIRE(get_peer_key_info(bob) == get_public_key(bob));
+
+} FC_LOG_AND_RETHROW()
+
+
 BOOST_AUTO_TEST_SUITE_END()

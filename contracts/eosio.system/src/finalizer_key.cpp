@@ -347,6 +347,7 @@ namespace eosiosystem {
       peer_keys_table peers(get_self(), get_self().value);
       auto peers_itr = peers.find(proposer_finalizer_name.value);
       check(peers_itr != peers.end(), "Key not present for name: " + proposer_finalizer_name.to_string());
+      check(peers_itr->key == key, "Current key does not match the provided one");
       peers.erase(peers_itr);
    }
 
