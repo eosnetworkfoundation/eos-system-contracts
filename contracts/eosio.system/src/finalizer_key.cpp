@@ -325,4 +325,29 @@ namespace eosiosystem {
       // Remove the key from finalizer_keys table
       idx.erase( fin_key_itr );
    }
+
+   void system_contract::regpeerkey( const name& proposer_finalizer_name, const public_key& key ) {
+      require_auth(proposer_finalizer_name);
+      //check(key.valid(), "Provided public_key is not valid: " + key.to_string({}));
+
+      peer_keys_table peers(get_self(), get_self().value);
+      auto peers_itr = peers.find(proposer_finalizer_name.value);
+      if (peers_itr == peers.end()) {
+         peers.emplace(proposer_finalizer_name, [&](auto& res) { 
+            res = peer_key{ proposer_finalizer_name, key };
+         });
+      } else {
+         peers.modify(peers_itr, same_payer, [&](auto& res) { res.key = key; });
+      }
+   }
+
+   void system_contract::delpeerkey( const name& proposer_finalizer_name, const public_key& key ) {
+      require_auth(proposer_finalizer_name);
+
+      peer_keys_table peers(get_self(), get_self().value);
+      auto peers_itr = peers.find(proposer_finalizer_name.value);
+      check(peers_itr != peers.end(), "Key not present for name: " + proposer_finalizer_name.to_string());
+      peers.erase(peers_itr);
+   }
+
 } /// namespace eosiosystem
