@@ -481,10 +481,18 @@ namespace eosiosystem {
    };
 
 
+   struct [[eosio::table("peerkeys"), eosio::contract("eosio.system")]] peer_key {
+      name                 proposer_finalizer_name;
+      eosio::public_key    key;                            // used to verify peer gossip
+
+      uint64_t  primary_key() const { return proposer_finalizer_name.value; }
+   };
+
    typedef eosio::multi_index< "userres"_n, user_resources >      user_resources_table;
    typedef eosio::multi_index< "delband"_n, delegated_bandwidth > del_bandwidth_table;
    typedef eosio::multi_index< "refunds"_n, refund_request >      refunds_table;
    typedef eosio::multi_index< "giftedram"_n, gifted_ram >        gifted_ram_table;
+   typedef eosio::multi_index< "peerkeys"_n, peer_key >           peer_keys_table;
 
    // `rex_pool` structure underlying the rex pool table. A rex pool table entry is defined by:
    // - `version` defaulted to zero,
@@ -1546,6 +1554,22 @@ namespace eosiosystem {
           */
          [[eosio::action]]
          void delfinkey( const name& finalizer_name, const std::string& finalizer_key );
+
+         /**
+          * Action to register a public key for a proposer or finalizer name.
+          * This key will be used to validate a network peer's identity.
+          * A proposer or finalizer can only have have one public key registered at a time.
+          * If a key is already registered for `proposer_finalizer_name`, and `regpeerkey` is
+          * called with a different key, the new key replaces the previous one in `peer_keys_table`
+          */
+         [[eosio::action]]
+         void regpeerkey( const name& proposer_finalizer_name, const public_key& key );
+
+         /**
+          * Action to delete a public key for a proposer or finalizer name.
+          */
+         [[eosio::action]]
+         void delpeerkey( const name& proposer_finalizer_name, const public_key& key );
 
          /**
           * Set ram action sets the ram supply.
