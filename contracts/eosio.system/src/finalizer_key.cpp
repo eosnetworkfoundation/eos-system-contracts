@@ -328,7 +328,6 @@ namespace eosiosystem {
 
    void system_contract::regpeerkey( const name& proposer_finalizer_name, const public_key& key ) {
       require_auth(proposer_finalizer_name);
-      //check(key.valid(), "Provided public_key is not valid: " + key.to_string({}));
 
       peer_keys_table peers(get_self(), get_self().value);
       auto peers_itr = peers.find(proposer_finalizer_name.value);
