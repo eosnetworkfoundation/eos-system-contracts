@@ -589,7 +589,7 @@ namespace eosiosystem {
    }
 
    // -------------------------------------------------------------------------------------------
-   struct pattern_t
+   struct canon_name_t
    {
       uint64_t _value; // all significant characters are shifted to the least significant position
       uint64_t _size;  // number of significant characters
@@ -598,15 +598,14 @@ namespace eosiosystem {
       uint64_t size() const { return _size; }
 
       // starts from the end, so n[0] is the last significant character of the name
-      uint64_t operator[](uint64_t i) const { return i == 0 ? _value & 0xF : (_value >> (4 + 5 * (i - 1))) & 0x1F; }
+      uint64_t operator[](uint64_t i) const { return (_value >> (5 * i)) & 0x1F; }
 
-      pattern_t(name n) {
+      canon_name_t(name n) {
          uint64_t v         = n.value;
          auto     num_zeros = std::countr_zero(v);
          check(num_zeros >= 4, "Account names and patterns should be less than 13 characters long");
          
-         uint64_t shift = 4;
-         shift += ((num_zeros - 4) / 5) * 5;
+         uint64_t shift = 4 + ((num_zeros - 4) / 5) * 5;
          _value  = v >> shift;
          auto sig_bits = 64 - shift;
          assert(sig_bits % 5 == 0);
@@ -615,22 +614,22 @@ namespace eosiosystem {
          assert((_value & mask()) == _value);
       }
 
-      // returns true if target ends with the same characters as `this`, preceded by a `.` (zero) character
-      bool is_suffix_of(pattern_t target) const {
-         assert(_size < target._size);
-         if (((_value ^ target._value) & mask()) != 0)
+      // returns true if account_name ends with the same characters as `this`, preceded by a `.` (zero) character
+      bool is_suffix_of(canon_name_t account_name) const {
+         assert(_size < account_name._size);
+         if (((_value ^ account_name._value) & mask()) != 0)
             return false;
 
-         // pattern matches the end of target. To be a suffix it has to be preceded by a dot in target
-         return target[size()] == 0;
+         // pattern matches the end of account_name. To be a suffix it has to be preceded by a dot in account_name
+         return account_name[size()] == 0;
       }
 
-      bool found_in(pattern_t target) const {
-         assert(_size < target._size);
+      bool found_in(canon_name_t account_name) const {
+         assert(_size < account_name._size);
          auto   sz   = size();
-         size_t diff = target.size() - sz + 1;
+         size_t diff = account_name.size() - sz + 1;
          for (size_t i = 0; i < diff; ++i)
-            if (((_value ^ (target._value >> (5 * i))) & mask()) == 0)
+            if (((_value ^ (account_name._value >> (5 * i))) & mask()) == 0)
                return true;
          return false;
       }
@@ -638,13 +637,14 @@ namespace eosiosystem {
 
    // -------------------------------------------------------------------------------------------
    bool name_allowed(name account, name patt) {
-      pattern_t pattern(patt);
-      pattern_t target(account);
-      if (pattern.size() >= target.size())
+      canon_name_t pattern(patt);
+      canon_name_t account_name(account);
+      
+      if (pattern.size() >= account_name.size())
          return true;
-      if (pattern.is_suffix_of(target))
+      if (pattern.is_suffix_of(account_name))
          return true;
-      if (pattern.found_in(target))
+      if (pattern.found_in(account_name))
          return false;
       return true;
    }
@@ -693,9 +693,9 @@ namespace eosiosystem {
 
          if (present) {
             const std::vector<name>& blacklist{itr->disallowed};
-            for (name n : blacklist) {
-               check(name_allowed(new_account_name, n),
-                     "Account name " + new_account_name.to_string() + " disallowed by rule: " + n.to_string());
+            for (auto pattern : blacklist) {
+               check(name_allowed(new_account_name, pattern),
+                     "Account name " + new_account_name.to_string() + " disallowed by rule: " + pattern.to_string());
             }
          }
       }
