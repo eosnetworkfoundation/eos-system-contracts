@@ -378,6 +378,19 @@ namespace eosiosystem {
 
    typedef eosio::multi_index< "finkeyidgen"_n, fin_key_id_generator_info >  fin_key_id_gen_table;
 
+   // A single entry storing a vector of names, each of which is a pattern that new account names
+   // are checked against (when the `newaccount` is called), in order to reject the creation
+   // of accounts whose name matches patterns in the blacklist.
+   struct [[eosio::table("accountnmbl"), eosio::contract("eosio.system")]] account_name_blacklist {
+      std::vector<name> disallowed;
+
+      uint64_t primary_key() const { return 0; }
+
+      EOSLIB_SERIALIZE( account_name_blacklist, (disallowed) )
+   };
+
+   typedef eosio::multi_index< "accountnmbl"_n, account_name_blacklist >  account_name_blacklist_table;
+
    // Voter info. Voter info stores information about the voter:
    // - `owner` the voter
    // - `proxy` the proxy set by the voter, if any
@@ -957,6 +970,34 @@ namespace eosiosystem {
           */
          [[eosio::action]]
          void setacctcpu( const name& account, const std::optional<int64_t>& cpu_weight );
+
+         /**
+          * Add names to the `account_name_blacklist` singleton.
+          *
+          * The `account_name_blacklist` singleton contains a vector of names, each of which is a pattern that
+          * new account names are checked against (when the `newaccount` is called), in order to reject the creation
+          * of accounts whose name matches patterns in the blacklist.
+          *
+          * requires "eosio"_n permission
+          *
+          * @param blacklisted_name_patterns - vector of name patterns to add to the blacklist
+          */
+         [[eosio::action]]
+         void addblnames( const std::vector<name>& blacklisted_name_patterns );
+
+         /**
+          * Remove names from the `account_name_blacklist` singleton.
+          *
+          * The `account_name_blacklist` singleton contains a vector of names, each of which is a pattern that
+          * new account names are checked against (when the `newaccount` is called), in order to reject the creation
+          * of accounts whose name matches patterns in the blacklist.
+          *
+          * requires "eosio"_n permission
+          *
+          * @param allowed_name_patterns - vector of name patterns to remove from the blacklist
+          */
+         [[eosio::action]]
+         void rmblnames( const std::vector<name>& allowed_name_patterns );
 
 
          /**

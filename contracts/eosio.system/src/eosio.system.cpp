@@ -397,6 +397,94 @@ namespace eosiosystem {
       set_resource_limits( account, current_ram, current_net, cpu );
    }
 
+   // --------------------------------------------------------------------------
+   struct blacklist_manager {
+      blacklist_manager(std::vector<name>& blacklist) : _blacklist(blacklist) {}
+
+      void add(const std::vector<name>& patterns) const {
+         std::unordered_set<name, _hash> already;
+
+         for (auto n : _blacklist)
+            already.insert(n);
+
+         for (auto n : patterns) {
+            if (!already.contains(n))
+               _blacklist.push_back(n);
+         }
+      }
+
+      void remove(const std::vector<name>& patterns) const {
+         std::unordered_set<name, _hash> already;
+
+         for (auto n : _blacklist)
+            already.insert(n);
+
+         for (auto n : patterns) {
+            if (already.contains(n))
+               std::erase(_blacklist, n);
+         }
+      }
+
+   private:
+      // hash function removing least significant zero characters
+      struct _hash {
+         std::size_t operator()(const name& n) const noexcept {
+            uint64_t v = n.value;
+            auto num_zeros = std::countr_zero(v);
+            check(num_zeros >= 4, "bad account name");
+            uint64_t shift = 4 + ((num_zeros - 4) / 5) * 5;
+            return v >> shift;
+         }
+      };
+
+      std::vector<name>&    _blacklist;
+   };
+
+   void system_contract::addblnames( const std::vector<name>& blacklisted_name_patterns ) {
+      require_auth( get_self() );
+
+      check(!blacklisted_name_patterns.empty(), "Empty list of blacklisted name patterns provided");
+      check(blacklisted_name_patterns.size() <= 512, "Cannot provide more than 512 patterns in one action call");
+
+      account_name_blacklist_table bl_table(get_self(), get_self().value);
+      auto itr = bl_table.begin();
+      bool present = (itr != bl_table.end());
+
+      if (present) {
+         std::vector<name> current(itr->disallowed);
+
+         blacklist_manager mgr(current);
+         mgr.add(blacklisted_name_patterns);
+         bl_table.modify(itr, same_payer, [&](auto& blacklist) {
+            std::swap(blacklist.disallowed, current);
+         });
+      } else {
+         bl_table.emplace(get_self(), [&](auto& blacklist) {
+            blacklist.disallowed = blacklisted_name_patterns;
+         });
+      }
+   }
+
+   void system_contract::rmblnames( const std::vector<name>& allowed_name_patterns ) {
+      require_auth( get_self() );
+
+      check(!allowed_name_patterns.empty(), "Empty list of blacklisted name patterns provided");
+      check(allowed_name_patterns.size() <= 512, "Cannot provide more than 512 patterns in one action call");
+
+      account_name_blacklist_table bl_table(get_self(), get_self().value);
+      auto itr = bl_table.begin();
+      bool present = (itr != bl_table.end());
+      check(present, "Current list of blacklisted name patterns is empty... cannot remove");
+
+      std::vector<name> current(itr->disallowed);
+
+      blacklist_manager mgr(current);
+      mgr.remove(allowed_name_patterns);
+      bl_table.modify(itr, same_payer, [&](auto& blacklist) {
+         std::swap(blacklist.disallowed, current);
+      });
+   }
+
    void system_contract::activate( const eosio::checksum256& feature_digest ) {
       require_auth( get_self() );
       preactivate_feature( feature_digest );
@@ -500,6 +588,67 @@ namespace eosiosystem {
       return false;
    }
 
+   // -------------------------------------------------------------------------------------------
+   struct pattern_t
+   {
+      uint64_t _value; // all significant characters are shifted to the least significant position
+      uint64_t _size;  // number of significant characters
+
+      uint64_t mask() const { return (1ull << (_size * 5)) - 1; }
+      uint64_t size() const { return _size; }
+
+      // starts from the end, so n[0] is the last significant character of the name
+      uint64_t operator[](uint64_t i) const { return i == 0 ? _value & 0xF : (_value >> (4 + 5 * (i - 1))) & 0x1F; }
+
+      pattern_t(name n) {
+         uint64_t v         = n.value;
+         auto     num_zeros = std::countr_zero(v);
+         check(num_zeros >= 4, "Account names and patterns should be less than 13 characters long");
+         
+         uint64_t shift = 4;
+         shift += ((num_zeros - 4) / 5) * 5;
+         _value  = v >> shift;
+         auto sig_bits = 64 - shift;
+         assert(sig_bits % 5 == 0);
+         _size = sig_bits / 5;
+         assert((_value & ~mask()) == 0);
+         assert((_value & mask()) == _value);
+      }
+
+      // returns true if target ends with the same characters as `this`, preceded by a `.` (zero) character
+      bool is_suffix_of(pattern_t target) const {
+         assert(_size < target._size);
+         if (((_value ^ target._value) & mask()) != 0)
+            return false;
+
+         // pattern matches the end of target. To be a suffix it has to be preceded by a dot in target
+         return target[size()] == 0;
+      }
+
+      bool found_in(pattern_t target) const {
+         assert(_size < target._size);
+         auto   sz   = size();
+         size_t diff = target.size() - sz + 1;
+         for (size_t i = 0; i < diff; ++i)
+            if (((_value ^ (target._value >> (5 * i))) & mask()) == 0)
+               return true;
+         return false;
+      }
+   };
+
+   // -------------------------------------------------------------------------------------------
+   bool name_allowed(name account, name patt) {
+      pattern_t pattern(patt);
+      pattern_t target(account);
+      if (pattern.size() >= target.size())
+         return true;
+      if (pattern.is_suffix_of(target))
+         return true;
+      if (pattern.found_in(target))
+         return false;
+      return true;
+   }
+
    /**
     *  Called after a new account is created. This code enforces resource-limits rules
     *  for new accounts as well as new account naming conventions.
@@ -533,6 +682,20 @@ namespace eosiosystem {
                bids.erase( current );
             } else {
                check( creator == suffix, "only suffix may create this account" );
+            }
+         }
+
+         // also check that the account does not match a blacklist pattern stored in `account_name_blacklist_table`
+         // -------------------------------------------------------------------------------------------------------
+         account_name_blacklist_table bl_table(get_self(), get_self().value);
+         auto itr = bl_table.begin();
+         bool present = (itr != bl_table.end());
+
+         if (present) {
+            const std::vector<name>& blacklist{itr->disallowed};
+            for (name n : blacklist) {
+               check(name_allowed(new_account_name, n),
+                     "Account name " + new_account_name.to_string() + " disallowed by rule: " + n.to_string());
             }
          }
       }
