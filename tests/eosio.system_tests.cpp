@@ -6029,6 +6029,11 @@ BOOST_FIXTURE_TEST_CASE( buy_pin_sell_ram, eosio_system_tester ) try {
 
 } FC_LOG_AND_RETHROW()
 
+
+BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_AUTO_TEST_SUITE(eosio_system_account_name_restriction)
+
 // -----------------------------------------------------------------------------------------
 //             tests for account name restrictions (blacklist patterns)
 // -----------------------------------------------------------------------------------------
@@ -6044,7 +6049,7 @@ auto cat(Vs&&... vs) {
     return res;
 }
 
-BOOST_FIXTURE_TEST_CASE( name_restrictions_update, eosio_system_tester ) try {
+BOOST_FIXTURE_TEST_CASE( restrictions_update, eosio_system_tester ) try {
    const std::vector<account_name> accounts = { "alice"_n };
    create_accounts_with_resources( accounts );
    const account_name alice = accounts[0];
@@ -6083,30 +6088,113 @@ BOOST_FIXTURE_TEST_CASE( name_restrictions_update, eosio_system_tester ) try {
 } FC_LOG_AND_RETHROW()
 
 
-BOOST_FIXTURE_TEST_CASE( name_restrictions_checking, eosio_system_tester ) try {
+// check restrictions on names
+// ---------------------------
+struct name_restrictions {
+   std::pair<bool, base_tester::action_result> check_allowed(name n) {
+      auto suffix = n.suffix();
+      auto actual_creator = suffix == n || creator == "eosio"_n ? creator : suffix;
+      try {
+         tester.create_account_with_resources(n, actual_creator, 100'000u);
+         if (suffix.empty()) {
+            tester.transfer("eosio"_n, n, core_sym::from_string("1000.0000"));
+            tester.stake_with_transfer("eosio"_n, n, core_sym::from_string("100.0000"), core_sym::from_string("100.0000"));
+         }
+         return {true, tester.success()};
+      } catch (const fc::exception& ex) {
+         return {false, tester.error(ex.top_message())};
+      }
+   }
 
+   void check_allowed(const std::initializer_list<name>& l) {
+      for (auto n : l) {
+         auto [allowed, action_res] = check_allowed(n);
+         BOOST_CHECK_MESSAGE(allowed, action_res);
+      }
+   }
+
+   void check_disallowed(const std::initializer_list<name>& l) {
+      for (auto n : l) {
+         auto [allowed, action_res] = check_allowed(n);
+         BOOST_CHECK_MESSAGE(!allowed, n.to_string() << " should be disallowed");
+      }
+   }
+
+   eosio_system_tester& tester;
+   name creator;
+};
+
+
+
+BOOST_FIXTURE_TEST_CASE( restrictions_checking, eosio_system_tester ) try {
+   // first get some name suffixes used in tests
+   // ------------------------------------------
    const asset net = core_sym::from_string("100.0000");
    const asset cpu = core_sym::from_string("100.0000");
 
-   create_account_with_resources("gifter"_n, config::system_account_name, 1'100'000u);
-   transfer(config::system_account_name, "gifter", core_sym::from_string("10000.0000"));
+   create_account_with_resources("fred"_n, config::system_account_name, 1'100'000u);
+   transfer(config::system_account_name, "fred", core_sym::from_string("10000.0000"));
 
-   stake_with_transfer(config::system_account_name, "gifter"_n, core_sym::from_string("80000000.0000"),
+   stake_with_transfer(config::system_account_name, "fred"_n, core_sym::from_string("80000000.0000"),
                        core_sym::from_string("80000000.0000"));
 
    regproducer(config::system_account_name);
-   BOOST_REQUIRE_EQUAL(success(), vote("gifter"_n, {config::system_account_name}));
+   BOOST_REQUIRE_EQUAL(success(), vote("fred"_n, {config::system_account_name}));
 
    produce_block(fc::days(14));                                     // wait 14 days after min required amount has been staked
    produce_block();
-
-   bidname("gifter", "gft", core_sym::from_string("2.0000"));
-   produce_block(fc::days(1));
    produce_block();
 
-   create_account_with_resources("gft"_n, "gifter"_n, 1'000'000u);  // create gft account with plenty of RAM
-   transfer("eosio", "gft", core_sym::from_string("1000.0000"));    // and currency
-   stake_with_transfer("eosio", "gft", net, cpu);
+   auto create_accounts = [&](std::vector<name> v, bool create) {
+      for (auto n : v) {
+         bidname("fred"_n, n, core_sym::from_string("2.0000"));
+
+         produce_block(fc::days(1));
+         produce_block();
+
+         if (create) {
+            create_account_with_resources(n, "fred"_n, 1'000'000u);
+            transfer("eosio"_n, n, core_sym::from_string("1000.0000"));
+            stake_with_transfer("eosio"_n, n, net, cpu);
+         }
+      }
+   };
+
+   create_accounts({"xyz"_n, "e12"_n, "fe"_n, "safe"_n}, true);
+   create_accounts({"thereal3safe"_n, "esafe"_n}, false);
+   
+   // and then do the actual tests
+   // ----------------------------
+   const std::vector<account_name> accounts = { "alice"_n };
+   create_accounts_with_resources( accounts );
+   const account_name alice = accounts[0];
+
+   name_restrictions r{*this, "fred"_n};
+
+   std::vector<name> add { "esafe"_n, "e.safe"_n };
+   BOOST_REQUIRE_EQUAL(addblnames("eosio"_n, add), success());
+
+   r.check_disallowed(
+      {
+           "therealesafe"_n
+        ,  "esafe.xyz"_n
+        ,  "e.safe.abc"_n
+        ,  "12e.safe.abc"_n
+        ,  "esafe.e.safe"_n
+      });
+
+   r.check_allowed(
+      {
+           "thereal3safe"_n
+        ,  "esafe"_n
+        ,  "esave.xyz"_n
+        ,  "esaf.e12"_n
+        ,  "esa.fe"_n
+        ,  "esafe.esafe"_n
+        ,  "e.esafe"_n
+        ,  "e.safe"_n
+        ,  "a.e.safe"_n
+      });
    
 } FC_LOG_AND_RETHROW()
 
