@@ -437,7 +437,7 @@ namespace eosiosystem {
          }
       };
 
-      std::vector<name>&    _blacklist;
+      std::vector<name>& _blacklist;
    };
 
    void system_contract::addblnames( const std::vector<name>& blacklisted_name_patterns ) {
@@ -695,7 +695,7 @@ namespace eosiosystem {
             const std::vector<name>& blacklist{itr->disallowed};
             for (auto pattern : blacklist) {
                check(name_allowed(new_account_name, pattern),
-                     "Account name " + new_account_name.to_string() + " disallowed by rule: " + pattern.to_string());
+                     "Account name " + new_account_name.to_string() + " creation disallowed by rule: " + pattern.to_string());
             }
          }
       }
