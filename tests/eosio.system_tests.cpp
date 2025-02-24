@@ -6029,4 +6029,86 @@ BOOST_FIXTURE_TEST_CASE( buy_pin_sell_ram, eosio_system_tester ) try {
 
 } FC_LOG_AND_RETHROW()
 
+// -----------------------------------------------------------------------------------------
+//             tests for account name restrictions (blacklist patterns)
+// -----------------------------------------------------------------------------------------
+
+template<class T>
+concept VectorLike = requires(T v) { v.begin(); v.end(); (void)v[0]; };
+
+template<VectorLike... Vs>  // returns a new vector which is the concatenation of the vectors passed as arguments
+auto cat(Vs&&... vs) {
+    std::common_type_t<Vs...> res;
+    res.reserve((0 + ... + vs.size()));
+    (..., (res.insert(res.end(), std::begin(std::forward<Vs>(vs)), std::end(std::forward<Vs>(vs)))));
+    return res;
+}
+
+BOOST_FIXTURE_TEST_CASE( name_restrictions_update, eosio_system_tester ) try {
+   const std::vector<account_name> accounts = { "alice"_n };
+   create_accounts_with_resources( accounts );
+   const account_name alice = accounts[0];
+
+   // make sure `addblnames` requires "eosio"_n auth
+   // ----------------------------------------------
+   BOOST_REQUIRE_EQUAL(addblnames(alice, {"bob"_n, "bob.yxz"_n}), error("missing authority of eosio"));
+
+   // check that `addblnames` and `rmblnames` update the blacklist as expected
+   // ------------------------------------------------------------------------
+   BOOST_REQUIRE_EQUAL(addblnames("eosio"_n, {}), error("assertion failure with message: Empty list of blacklisted name patterns provided"));
+   
+   std::vector<name> add1 {"bob"_n, "bob.yxz"_n};
+   BOOST_REQUIRE_EQUAL(addblnames("eosio"_n, add1), success());
+   BOOST_REQUIRE(get_blacklisted_names() == add1);                         // initial add works
+
+   std::vector<name> add2 {"alice.xyz.x"_n, "alice"_n};
+   BOOST_REQUIRE_EQUAL(addblnames("eosio"_n, add2), success());            // appending works
+   BOOST_REQUIRE(get_blacklisted_names() == cat(add1, add2));
+
+   std::vector<name> add3 {"bob.yxz"_n, "alice"_n};
+   BOOST_REQUIRE_EQUAL(addblnames("eosio"_n, add3), success());            // duplicates are ignored
+   BOOST_REQUIRE(get_blacklisted_names() == cat(add1, add2));
+
+   BOOST_REQUIRE_EQUAL(rmblnames("eosio"_n, add1), success());
+   BOOST_REQUIRE(get_blacklisted_names() == add2);                         // removing names work
+
+   BOOST_REQUIRE_EQUAL(rmblnames("eosio"_n, add1), success());             // `rmblnames` silently ignores names not present
+
+   BOOST_REQUIRE_EQUAL(rmblnames("eosio"_n, add2), success());             // removing all remaining names work
+   BOOST_REQUIRE(get_blacklisted_names() == std::vector<name>{});
+
+   BOOST_REQUIRE_EQUAL(addblnames("eosio"_n, add2), success());            // and adding some names again for good measure
+   BOOST_REQUIRE(get_blacklisted_names() == add2);
+
+} FC_LOG_AND_RETHROW()
+
+
+BOOST_FIXTURE_TEST_CASE( name_restrictions_checking, eosio_system_tester ) try {
+
+   const asset net = core_sym::from_string("100.0000");
+   const asset cpu = core_sym::from_string("100.0000");
+
+   create_account_with_resources("gifter"_n, config::system_account_name, 1'100'000u);
+   transfer(config::system_account_name, "gifter", core_sym::from_string("10000.0000"));
+
+   stake_with_transfer(config::system_account_name, "gifter"_n, core_sym::from_string("80000000.0000"),
+                       core_sym::from_string("80000000.0000"));
+
+   regproducer(config::system_account_name);
+   BOOST_REQUIRE_EQUAL(success(), vote("gifter"_n, {config::system_account_name}));
+
+   produce_block(fc::days(14));                                     // wait 14 days after min required amount has been staked
+   produce_block();
+
+   bidname("gifter", "gft", core_sym::from_string("2.0000"));
+   produce_block(fc::days(1));
+   produce_block();
+
+   create_account_with_resources("gft"_n, "gifter"_n, 1'000'000u);  // create gft account with plenty of RAM
+   transfer("eosio", "gft", core_sym::from_string("1000.0000"));    // and currency
+   stake_with_transfer("eosio", "gft", net, cpu);
+   
+} FC_LOG_AND_RETHROW()
+
+
 BOOST_AUTO_TEST_SUITE_END()

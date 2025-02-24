@@ -602,6 +602,29 @@ public:
       return push_transaction( trx );
    }
 
+   action_result _newaccount(name creator, name account) {
+      return push_action(creator, "newaccount"_n, mvo()
+                         ("creator", creator)
+                         ("name",    account)
+                         ("owner",   authority(get_public_key(account, "owner")))
+                         ("active",  authority(get_public_key(account, "active"))));
+   }
+
+   action_result addblnames(name acct, const std::vector<name>& blacklisted_name_patterns) {
+      return push_action(acct, "addblnames"_n, mvo()("blacklisted_name_patterns", blacklisted_name_patterns));
+   }
+
+   action_result rmblnames(name acct, const std::vector<name>& allowed_name_patterns) {
+      return push_action(acct, "rmblnames"_n, mvo()("allowed_name_patterns", allowed_name_patterns));
+   }
+
+   std::vector<name> get_blacklisted_names() const {
+      vector<char> data = get_row_by_id( config::system_account_name, config::system_account_name, "accountnmbl"_n, 0);
+      if (data.empty())
+         return {};
+      return abi_ser.binary_to_variant("account_name_blacklist", data, abi_serializer_max_time)["disallowed"].as<std::vector<name>>();
+   }
+
    action_result push_action( const account_name& signer, const action_name &name, const variant_object &data, bool auth = true ) {
          string action_type_name = abi_ser.get_action_type(name);
 
