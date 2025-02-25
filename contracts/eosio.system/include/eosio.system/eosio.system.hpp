@@ -983,7 +983,7 @@ namespace eosiosystem {
           * @param blacklisted_name_patterns - vector of name patterns to add to the blacklist
           */
          [[eosio::action]]
-         void addblnames( const std::vector<name>& blacklisted_name_patterns );
+         void addblnames( std::vector<name> blacklisted_name_patterns );
 
          /**
           * Remove names from the `account_name_blacklist` singleton.
@@ -997,7 +997,7 @@ namespace eosiosystem {
           * @param allowed_name_patterns - vector of name patterns to remove from the blacklist
           */
          [[eosio::action]]
-         void rmblnames( const std::vector<name>& allowed_name_patterns );
+         void rmblnames( std::vector<name> allowed_name_patterns );
 
 
          /**

@@ -399,7 +399,7 @@ namespace eosiosystem {
 
    // --------------------------------------------------------------------------
    struct blacklist_manager {
-      blacklist_manager(std::vector<name>& blacklist) : _blacklist(blacklist) {}
+      explicit blacklist_manager(std::vector<name>& blacklist) : _blacklist(blacklist) {}
 
       void add(const std::vector<name>& patterns) const {
          std::unordered_set<name, _hash> already;
@@ -440,7 +440,7 @@ namespace eosiosystem {
       std::vector<name>& _blacklist;
    };
 
-   void system_contract::addblnames( const std::vector<name>& blacklisted_name_patterns ) {
+   void system_contract::addblnames( std::vector<name> blacklisted_name_patterns ) {
       require_auth( get_self() );
 
       check(!blacklisted_name_patterns.empty(), "Empty list of blacklisted name patterns provided");
@@ -456,16 +456,16 @@ namespace eosiosystem {
          blacklist_manager mgr(current);
          mgr.add(blacklisted_name_patterns);
          bl_table.modify(itr, same_payer, [&](auto& blacklist) {
-            std::swap(blacklist.disallowed, current);
+            blacklist.disallowed = std::move(current);
          });
       } else {
          bl_table.emplace(get_self(), [&](auto& blacklist) {
-            blacklist.disallowed = blacklisted_name_patterns;
+            blacklist.disallowed = std::move(blacklisted_name_patterns);
          });
       }
    }
 
-   void system_contract::rmblnames( const std::vector<name>& allowed_name_patterns ) {
+   void system_contract::rmblnames( std::vector<name> allowed_name_patterns ) {
       require_auth( get_self() );
 
       check(!allowed_name_patterns.empty(), "Empty list of blacklisted name patterns provided");
@@ -481,7 +481,7 @@ namespace eosiosystem {
       blacklist_manager mgr(current);
       mgr.remove(allowed_name_patterns);
       bl_table.modify(itr, same_payer, [&](auto& blacklist) {
-         std::swap(blacklist.disallowed, current);
+         blacklist.disallowed = std::move(current);
       });
    }
 
