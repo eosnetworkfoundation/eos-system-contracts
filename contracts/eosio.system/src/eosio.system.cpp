@@ -402,10 +402,7 @@ namespace eosiosystem {
       explicit blacklist_manager(std::vector<name>& blacklist) : _blacklist(blacklist) {}
 
       void add(const std::vector<name>& patterns) const {
-         std::unordered_set<name, _hash> already;
-
-         for (auto n : _blacklist)
-            already.insert(n);
+         std::unordered_set<name, _hash> already(std::cbegin(_blacklist), std::cend(_blacklist));
 
          for (auto n : patterns) {
             if (!already.contains(n))
@@ -414,10 +411,7 @@ namespace eosiosystem {
       }
 
       void remove(const std::vector<name>& patterns) const {
-         std::unordered_set<name, _hash> already;
-
-         for (auto n : _blacklist)
-            already.insert(n);
+         std::unordered_set<name, _hash> already(std::cbegin(_blacklist), std::cend(_blacklist));
 
          for (auto n : patterns) {
             if (already.contains(n))
@@ -676,16 +670,16 @@ namespace eosiosystem {
             if( suffix == new_account_name ) {
                name_bid_table bids(get_self(), get_self().value);
                auto current = bids.find( new_account_name.value );
-               check( current != bids.end(), "no active bid for name" );
+               check( current != bids.end(), "no active bid for name: " + new_account_name.to_string());
                check( current->high_bidder == creator, "only highest bidder can claim" );
                check( current->high_bid < 0, "auction for name is not closed yet" );
                bids.erase( current );
             } else {
-               check( creator == suffix, "only suffix may create this account" );
+               check( creator == suffix, "only " + suffix.to_string() + " may create " + new_account_name.to_string());
             }
          }
-
-         // also check that the account does not match a blacklist pattern stored in `account_name_blacklist_table`
+    
+         // check that the account does not match a blacklist pattern stored in `account_name_blacklist_table`
          // -------------------------------------------------------------------------------------------------------
          account_name_blacklist_table bl_table(get_self(), get_self().value);
          auto itr = bl_table.begin();
