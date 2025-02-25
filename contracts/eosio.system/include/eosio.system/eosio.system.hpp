@@ -381,7 +381,7 @@ namespace eosiosystem {
    // A single entry storing a vector of names, each of which is a pattern that new account names
    // are checked against (when the `newaccount` is called), in order to reject the creation
    // of accounts whose name matches patterns in the blacklist.
-   struct [[eosio::table("accountnmbl"), eosio::contract("eosio.system")]] account_name_blacklist {
+   struct [[eosio::table("actblacklist"), eosio::contract("eosio.system")]] account_name_blacklist {
       std::vector<name> disallowed;
 
       uint64_t primary_key() const { return 0; }
@@ -389,7 +389,7 @@ namespace eosiosystem {
       EOSLIB_SERIALIZE( account_name_blacklist, (disallowed) )
    };
 
-   typedef eosio::multi_index< "accountnmbl"_n, account_name_blacklist >  account_name_blacklist_table;
+   typedef eosio::multi_index< "actblacklist"_n, account_name_blacklist >  account_name_blacklist_table;
 
    // Voter info. Voter info stores information about the voter:
    // - `owner` the voter
@@ -823,7 +823,7 @@ namespace eosiosystem {
     * the contract level (`newaccount`, `updateauth`, `deleteauth`, `linkauth`, `unlinkauth`, `canceldelay`, `onerror`,
     * `setabi`, `setcode`), they are just declared in the contract so they will show in the contract's ABI and users
     * will be able to push those actions to the chain via the account holding the `eosio.system` contract, but the
-    * implementation is at the EOSIO core level. They are referred to as EOSIO native actions.
+    * implementation is at the core level. They are referred to as host native actions.
     *
     * - Users can stake tokens for CPU and Network bandwidth, and then vote for producers or
     *    delegate their vote to a proxy.

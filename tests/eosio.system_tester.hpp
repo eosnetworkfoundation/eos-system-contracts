@@ -619,7 +619,7 @@ public:
    }
 
    std::vector<name> get_blacklisted_names() const {
-      vector<char> data = get_row_by_id( config::system_account_name, config::system_account_name, "accountnmbl"_n, 0);
+      vector<char> data = get_row_by_id( config::system_account_name, config::system_account_name, "actblacklist"_n, 0);
       if (data.empty())
          return {};
       return abi_ser.binary_to_variant("account_name_blacklist", data, abi_serializer_max_time)["disallowed"].as<std::vector<name>>();
