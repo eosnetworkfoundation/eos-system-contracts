@@ -6090,20 +6090,52 @@ BOOST_FIXTURE_TEST_CASE( restrictions_update, eosio_system_tester ) try {
 
 // check restrictions on names
 // ---------------------------
-struct name_restrictions {
+struct name_restrictions_checker : public eosio_system_tester {
+   name_restrictions_checker(name creator_account) : creator(creator_account) {
+      if (creator_account != "eosio"_n) {
+         create_account_with_resources(creator, config::system_account_name, 10'000'000u);
+         transfer(config::system_account_name, creator, core_sym::from_string("10000.0000"));
+
+         stake_with_transfer(config::system_account_name, creator,  core_sym::from_string("80000000.0000"),
+                             core_sym::from_string("80000000.0000"));
+
+         regproducer(config::system_account_name);
+         BOOST_REQUIRE_EQUAL(success(), vote(creator, {config::system_account_name}));
+
+         produce_block(fc::days(14)); // wait 14 days after min required amount has been staked
+         produce_block();
+         produce_block();
+      }
+   }
+
+   void create_accounts(std::vector<name> v, bool create) {
+      for (auto n : v) {
+         bidname(creator, n, core_sym::from_string("2.0000"));
+
+         produce_block(fc::days(1));
+         produce_block();
+
+         if (create) {
+            create_account_with_resources(n, creator, 1'000'000u);
+            transfer("eosio"_n, n, core_sym::from_string("1000.0000"));
+            stake_with_transfer("eosio"_n, n, net, cpu);
+         }
+      }
+   }
+
    std::pair<bool, base_tester::action_result> check_allowed(name n) {
       auto suffix = n.suffix();
-      bool toplevel_account = suffix == n;
+      bool toplevel_account = (suffix == n);
       auto actual_creator = (toplevel_account || creator == "eosio"_n) ? creator : suffix;
       try {
-         tester.create_account_with_resources(n, actual_creator, 100'000u);
+         create_account_with_resources(n, actual_creator, 100'000u);
          if (toplevel_account) {
-            tester.transfer("eosio"_n, n, core_sym::from_string("1000.0000"));
-            tester.stake_with_transfer("eosio"_n, n, core_sym::from_string("100.0000"), core_sym::from_string("100.0000"));
+            transfer("eosio"_n, n, core_sym::from_string("1000.0000"));
+            stake_with_transfer("eosio"_n, n, core_sym::from_string("100.0000"), core_sym::from_string("100.0000"));
          }
-         return {true, tester.success()};
+         return {true, success()};
       } catch (const fc::exception& ex) {
-         return {false, tester.error(ex.top_message())};
+         return {false, error(ex.top_message())};
       }
    }
 
@@ -6121,55 +6153,23 @@ struct name_restrictions {
       }
    }
 
-   eosio_system_tester& tester;
    name creator;
-};
-
-
-
-BOOST_FIXTURE_TEST_CASE( restrictions_checking, eosio_system_tester ) try {
-   // first get some name suffixes used in tests
-   // ------------------------------------------
    const asset net = core_sym::from_string("100.0000");
    const asset cpu = core_sym::from_string("100.0000");
+};
 
-   create_account_with_resources("fred"_n, config::system_account_name, 1'100'000u);
-   transfer(config::system_account_name, "fred", core_sym::from_string("10000.0000"));
+// check restrictions when creating accounts using a non-privileged account, here "fred"
+// -------------------------------------------------------------------------------------
+BOOST_AUTO_TEST_CASE( restrictions_checking ) try {
+   name_restrictions_checker r{"fred"_n};
 
-   stake_with_transfer(config::system_account_name, "fred"_n, core_sym::from_string("80000000.0000"),
-                       core_sym::from_string("80000000.0000"));
-
-   regproducer(config::system_account_name);
-   BOOST_REQUIRE_EQUAL(success(), vote("fred"_n, {config::system_account_name}));
-
-   produce_block(fc::days(14));                                     // wait 14 days after min required amount has been staked
-   produce_block();
-   produce_block();
-
-   auto create_accounts = [&](std::vector<name> v, bool create) {
-      for (auto n : v) {
-         bidname("fred"_n, n, core_sym::from_string("2.0000"));
-
-         produce_block(fc::days(1));
-         produce_block();
-
-         if (create) {
-            create_account_with_resources(n, "fred"_n, 1'000'000u);
-            transfer("eosio"_n, n, core_sym::from_string("1000.0000"));
-            stake_with_transfer("eosio"_n, n, net, cpu);
-         }
-      }
-   };
-
-   create_accounts({"xyz"_n, "e12"_n, "fe"_n, "safe"_n}, true);
-   create_accounts({"thereal3safe"_n, "esafe"_n}, false);
-   
-   // and then do the actual tests
-   // ----------------------------
-   name_restrictions r{*this, "fred"_n};
+   // first get some name suffixes used in tests
+   // ------------------------------------------
+   r.create_accounts({"xyz"_n, "e12"_n, "fe"_n, "safe"_n}, true);
+   r.create_accounts({"thereal3safe"_n, "esafe"_n}, false); // false means just bid for the name but don't create the account
 
    std::vector<name> add { "esafe"_n, "e.safe"_n };
-   BOOST_REQUIRE_EQUAL(addblnames("eosio"_n, add), success());
+   BOOST_REQUIRE_EQUAL(r.addblnames("eosio"_n, add), r.success());
 
    r.check_disallowed(
       {
@@ -6193,6 +6193,43 @@ BOOST_FIXTURE_TEST_CASE( restrictions_checking, eosio_system_tester ) try {
         ,  "a.e.safe"_n
       });
    
+} FC_LOG_AND_RETHROW()
+
+// check that "eosio"_n is not subject to account name restrictions.
+// -----------------------------------------------------------------
+BOOST_AUTO_TEST_CASE( eosio_restrictions_checking ) try {
+   name_restrictions_checker r{"eosio"_n};
+
+   // first get some name suffixes used in tests
+   // ------------------------------------------
+   r.create_accounts({"xyz"_n, "e12"_n, "fe"_n, "safe"_n}, true);
+   r.create_accounts({"thereal3safe"_n, "esafe"_n}, false);  // false means just bid for the name but don't create the account
+
+   std::vector<name> add { "esafe"_n, "e.safe"_n };
+   BOOST_REQUIRE_EQUAL(r.addblnames("eosio"_n, add), r.success());
+
+   r.check_allowed(   // these are allowed for "eosio"_n because "eosio"_n is not restricted.
+      {
+           "therealesafe"_n
+        ,  "esafe.xyz"_n
+        ,  "e.safe.abc"_n
+        ,  "12e.safe.abc"_n
+        ,  "esafe.e.safe"_n
+      });
+
+   r.check_allowed(
+      {
+           "thereal3safe"_n
+        ,  "esafe"_n
+        ,  "esave.xyz"_n
+        ,  "esaf.e12"_n
+        ,  "esa.fe"_n
+        ,  "esafe.esafe"_n
+        ,  "e.esafe"_n
+        ,  "e.safe"_n
+        ,  "a.e.safe"_n
+      });
+
 } FC_LOG_AND_RETHROW()
 
 
