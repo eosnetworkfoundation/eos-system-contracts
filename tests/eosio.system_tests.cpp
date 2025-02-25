@@ -6093,10 +6093,11 @@ BOOST_FIXTURE_TEST_CASE( restrictions_update, eosio_system_tester ) try {
 struct name_restrictions {
    std::pair<bool, base_tester::action_result> check_allowed(name n) {
       auto suffix = n.suffix();
-      auto actual_creator = suffix == n || creator == "eosio"_n ? creator : suffix;
+      bool toplevel_account = suffix == n;
+      auto actual_creator = (toplevel_account || creator == "eosio"_n) ? creator : suffix;
       try {
          tester.create_account_with_resources(n, actual_creator, 100'000u);
-         if (suffix.empty()) {
+         if (toplevel_account) {
             tester.transfer("eosio"_n, n, core_sym::from_string("1000.0000"));
             tester.stake_with_transfer("eosio"_n, n, core_sym::from_string("100.0000"), core_sym::from_string("100.0000"));
          }
@@ -6165,10 +6166,6 @@ BOOST_FIXTURE_TEST_CASE( restrictions_checking, eosio_system_tester ) try {
    
    // and then do the actual tests
    // ----------------------------
-   const std::vector<account_name> accounts = { "alice"_n };
-   create_accounts_with_resources( accounts );
-   const account_name alice = accounts[0];
-
    name_restrictions r{*this, "fred"_n};
 
    std::vector<name> add { "esafe"_n, "e.safe"_n };
