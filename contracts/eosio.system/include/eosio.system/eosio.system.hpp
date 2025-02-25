@@ -103,7 +103,7 @@ namespace eosiosystem {
     * the contract level (`newaccount`, `updateauth`, `deleteauth`, `linkauth`, `unlinkauth`, `canceldelay`, `onerror`,
     * `setabi`, `setcode`), they are just declared in the contract so they will show in the contract's ABI and users
     * will be able to push those actions to the chain via the account holding the `eosio.system` contract, but the
-    * implementation is at the EOSIO core level. They are referred to as EOSIO native actions.
+    * implementation is at the core level. They are referred to as host native actions.
     *
     * - Users can stake tokens for CPU and Network bandwidth, and then vote for producers or
     *    delegate their vote to a proxy.
