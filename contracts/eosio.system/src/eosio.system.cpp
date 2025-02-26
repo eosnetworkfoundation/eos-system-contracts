@@ -412,6 +412,10 @@ namespace eosiosystem {
       auto add_patterns_to = [&patterns](auto& current) {
          // number of blackcklist name patterns expected to be small, so quadratic check OK
          for (auto n : patterns) {
+            // pattern should not be empty or more than 12 character long
+            if (n.value == 0 || (n.value & 0xF) != 0)
+               continue; // silently ignore incorrect patterns
+
             if (std::find(std::cbegin(current), std::cend(current), n) == std::cend(current))
                current.push_back(n);
          }
