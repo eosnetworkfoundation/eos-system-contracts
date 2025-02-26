@@ -397,7 +397,7 @@ namespace eosiosystem {
       set_resource_limits( account, current_ram, current_net, cpu );
    }
 
-   void system_contract::denynames( std::vector<name> patterns ) {
+   void system_contract::denynames( const std::vector<name>& patterns ) {
       require_auth( get_self() );
 
       check(!patterns.empty(), "Empty list of blacklisted name patterns provided");
@@ -407,24 +407,26 @@ namespace eosiosystem {
       auto itr = bl_table.begin();
       bool present = (itr != bl_table.end());
 
+      auto add_patterns_to = [&patterns](auto& current) {
+         // number of blackcklist name patterns expected to be small, so quadratic check OK
+         for (auto n : patterns) {
+            if (std::find(std::cbegin(current), std::cend(current), n) == std::cend(current))
+               current.push_back(n);
+         }
+      };
+
       if (present) {
          bl_table.modify(itr, same_payer, [&](auto& blacklist) {
-            auto& current = blacklist.disallowed;
-
-            // number of blackcklist name patterns expected to be small, so quadratic check OK
-            for (auto n : patterns) {
-               if (std::find(std::cbegin(current), std::cend(current), n) == std::cend(current))
-                  current.push_back(n);
-            }
+            add_patterns_to(blacklist.disallowed);
          });
       } else {
          bl_table.emplace(get_self(), [&](auto& blacklist) {
-            blacklist.disallowed = std::move(patterns);
+            add_patterns_to(blacklist.disallowed);
          });
       }
    }
 
-   void system_contract::undenynames( std::vector<name> patterns ) {
+   void system_contract::undenynames( const std::vector<name>& patterns ) {
       require_auth( get_self() );
 
       check(!patterns.empty(), "Empty list of blacklisted name patterns provided");
