@@ -16,7 +16,6 @@
 #include <optional>
 #include <string>
 #include <type_traits>
-#include <unordered_set>
 
 #ifdef CHANNEL_RAM_AND_NAMEBID_FEES_TO_REX
 #undef CHANNEL_RAM_AND_NAMEBID_FEES_TO_REX
