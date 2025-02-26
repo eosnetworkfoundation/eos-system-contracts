@@ -397,43 +397,6 @@ namespace eosiosystem {
       set_resource_limits( account, current_ram, current_net, cpu );
    }
 
-   // --------------------------------------------------------------------------
-   struct blacklist_manager {
-      explicit blacklist_manager(std::vector<name>& blacklist) : _blacklist(blacklist) {}
-
-      void add(const std::vector<name>& patterns) const {
-         std::unordered_set<name, _hash> already(std::cbegin(_blacklist), std::cend(_blacklist));
-
-         for (auto n : patterns) {
-            if (!already.contains(n))
-               _blacklist.push_back(n);
-         }
-      }
-
-      void remove(const std::vector<name>& patterns) const {
-         std::unordered_set<name, _hash> already(std::cbegin(_blacklist), std::cend(_blacklist));
-
-         for (auto n : patterns) {
-            if (already.contains(n))
-               std::erase(_blacklist, n);
-         }
-      }
-
-   private:
-      // hash function removing least significant zero characters
-      struct _hash {
-         std::size_t operator()(const name& n) const noexcept {
-            uint64_t v = n.value;
-            auto num_zeros = std::countr_zero(v);
-            check(num_zeros >= 4, "bad account name");
-            uint64_t shift = 4 + ((num_zeros - 4) / 5) * 5;
-            return v >> shift;
-         }
-      };
-
-      std::vector<name>& _blacklist;
-   };
-
    void system_contract::addblnames( std::vector<name> blacklisted_name_patterns ) {
       require_auth( get_self() );
 
@@ -447,8 +410,12 @@ namespace eosiosystem {
       if (present) {
          std::vector<name> current(itr->disallowed);
 
-         blacklist_manager mgr(current);
-         mgr.add(blacklisted_name_patterns);
+         // number of blackcklist name patterns expected to be small, so quadratic check OK
+         for (auto n : blacklisted_name_patterns) {
+            if (std::find(std::cbegin(current), std::cend(current), n) == std::cend(current))
+               current.push_back(n);
+         }
+
          bl_table.modify(itr, same_payer, [&](auto& blacklist) {
             blacklist.disallowed = std::move(current);
          });
@@ -472,8 +439,12 @@ namespace eosiosystem {
 
       std::vector<name> current(itr->disallowed);
 
-      blacklist_manager mgr(current);
-      mgr.remove(allowed_name_patterns);
+      // number of blackcklist name patterns expected to be small, so quadratic check OK
+      for (auto n : allowed_name_patterns) {
+         if (auto itr = std::find(std::begin(current), std::end(current), n); itr != std::end(current))
+            current.erase(itr);
+      }
+
       bl_table.modify(itr, same_payer, [&](auto& blacklist) {
          blacklist.disallowed = std::move(current);
       });
