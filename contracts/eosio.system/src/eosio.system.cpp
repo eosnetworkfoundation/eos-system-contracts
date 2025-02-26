@@ -415,8 +415,8 @@ namespace eosiosystem {
          for (auto n : patterns) {
             // check that pattern is valid (pattern should not be empty or more than 12 character long)
             canon_name_t pattern(n);
-            if (!pattern.valid())
-               continue; // silently ignore incorrect patterns
+            check(pattern.valid(),
+                  n.value ? ("Pattern " + n.to_string() + " is not valid") : "Empty patterns are not allowed");
 
             if (std::find(std::cbegin(current), std::cend(current), n) == std::cend(current))
                current.push_back(n);

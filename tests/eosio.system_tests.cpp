@@ -6075,8 +6075,10 @@ BOOST_FIXTURE_TEST_CASE( restrictions_update, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL(denynames("eosio"_n, cat(add4, add4, add4)), success()); // duplicates are ignored even within one call
    BOOST_REQUIRE(get_blacklisted_names() == cat(add1, add2, add4));
 
-   std::vector<name> add5 {""_n, "alice1alice2a"_n};
-   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, add5), success());             // invalid names are ignored
+   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, {""_n}),
+                       error("assertion failure with message: Empty patterns are not allowed"));
+   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, {"alice1alice2a"_n}),
+                       error("assertion failure with message: Pattern alice1alice2a is not valid"));
    BOOST_REQUIRE(get_blacklisted_names() == cat(add1, add2, add4));
 
    BOOST_REQUIRE_EQUAL(undenynames("eosio"_n, {}), success());             // empty list is silently ignored.
