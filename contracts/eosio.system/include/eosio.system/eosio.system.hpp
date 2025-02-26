@@ -975,11 +975,12 @@ namespace eosiosystem {
           *
           * The `account_name_blacklist` singleton contains a vector of names, each of which is a pattern that
           * new account names are checked against (when the `newaccount` is called), in order to reject the creation
-          * of accounts whose name matches patterns in the blacklist.
+          * of accounts whose name includes patterns in the blacklist.
+          * The "eosio"_n account is not subject to the blacklist restrictions.
           *
           * requires "eosio"_n permission
           *
-          * @param blacklisted_name_patterns - vector of name patterns to add to the blacklist
+          * @param patterns - vector of name patterns to add to the blacklist
           */
          [[eosio::action]]
          void addblnames( std::vector<name> patterns );
@@ -989,11 +990,12 @@ namespace eosiosystem {
           *
           * The `account_name_blacklist` singleton contains a vector of names, each of which is a pattern that
           * new account names are checked against (when the `newaccount` is called), in order to reject the creation
-          * of accounts whose name matches patterns in the blacklist.
+          * of accounts whose name includes patterns in the blacklist.
+          * The "eosio"_n account is not subject to the blacklist restrictions.
           *
           * requires "eosio"_n permission
           *
-          * @param allowed_name_patterns - vector of name patterns to remove from the blacklist
+          * @param patterns - vector of name patterns to remove from the blacklist
           */
          [[eosio::action]]
          void rmblnames( std::vector<name> patterns );
