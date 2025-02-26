@@ -6026,4 +6026,220 @@ BOOST_FIXTURE_TEST_CASE( buy_pin_sell_ram, eosio_system_tester ) try {
 
 } FC_LOG_AND_RETHROW()
 
+
+BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_AUTO_TEST_SUITE(eosio_system_account_name_restriction)
+
+// -----------------------------------------------------------------------------------------
+//             tests for account name restrictions (blacklist patterns)
+// -----------------------------------------------------------------------------------------
+
+template<class T>
+concept VectorLike = requires(T v) { v.begin(); v.end(); (void)v[0]; };
+
+template<VectorLike... Vs>  // returns a new vector which is the concatenation of the vectors passed as arguments
+auto cat(Vs&&... vs) {
+    std::common_type_t<Vs...> res;
+    res.reserve((0 + ... + vs.size()));
+    (..., (res.insert(res.end(), std::begin(std::forward<Vs>(vs)), std::end(std::forward<Vs>(vs)))));
+    return res;
+}
+
+BOOST_FIXTURE_TEST_CASE( restrictions_update, eosio_system_tester ) try {
+   const std::vector<account_name> accounts = { "alice"_n };
+   create_accounts_with_resources( accounts );
+   const account_name alice = accounts[0];
+
+   // make sure `denynames` requires "eosio"_n auth
+   // ----------------------------------------------
+   BOOST_REQUIRE_EQUAL(denynames(alice, {"bob"_n, "bob.yxz"_n}), error("missing authority of eosio"));
+
+   // check that `denynames` and `undenynames` update the blacklist as expected
+   // ------------------------------------------------------------------------
+   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, {}), success());                // empty list is silently ignored.
+   
+   std::vector<name> add1 {"bob"_n, "bob.yxz"_n};
+   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, add1), success());
+   BOOST_REQUIRE(get_blacklisted_names() == add1);                          // initial add works
+
+   std::vector<name> add2 {"alice.xyz.x"_n, "alice"_n};
+   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, add2), success());              // appending works
+   BOOST_REQUIRE(get_blacklisted_names() == cat(add1, add2));
+
+   std::vector<name> add3 {"bob.yxz"_n, "alice"_n};
+   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, add3), success());              // duplicates are ignored
+   BOOST_REQUIRE(get_blacklisted_names() == cat(add1, add2));
+
+   std::vector<name> add4 {"fred.xyz.x"_n, "fred"_n};
+   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, cat(add4, add4, add4)), success()); // duplicates are ignored even within one call
+   BOOST_REQUIRE(get_blacklisted_names() == cat(add1, add2, add4));
+
+   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, {""_n}),
+                       error("assertion failure with message: Empty patterns are not allowed"));
+   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, {"alice1alice2a"_n}),
+                       error("assertion failure with message: Pattern alice1alice2a is not valid"));
+   BOOST_REQUIRE(get_blacklisted_names() == cat(add1, add2, add4));
+
+   BOOST_REQUIRE_EQUAL(undenynames("eosio"_n, {}), success());             // empty list is silently ignored.
+
+   BOOST_REQUIRE_EQUAL(undenynames("eosio"_n, cat(add1, add4)), success());
+   BOOST_REQUIRE(get_blacklisted_names() == add2);                         // removing names work
+
+   BOOST_REQUIRE_EQUAL(undenynames("eosio"_n, add1), success());           // `undenynames` silently ignores names not present
+
+   BOOST_REQUIRE_EQUAL(undenynames("eosio"_n, add2), success());           // removing all remaining names work
+   BOOST_REQUIRE(get_blacklisted_names() == std::vector<name>{});
+
+   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, add2), success());             // and adding some names again for good measure
+   BOOST_REQUIRE(get_blacklisted_names() == add2);
+
+} FC_LOG_AND_RETHROW()
+
+
+// check restrictions on names
+// ---------------------------
+struct name_restrictions_checker : public eosio_system_tester {
+   name_restrictions_checker(name creator_account) : creator(creator_account) {
+      if (creator_account != "eosio"_n) {
+         create_account_with_resources(creator, config::system_account_name, 10'000'000u);
+         transfer(config::system_account_name, creator, core_sym::from_string("10000.0000"));
+
+         stake_with_transfer(config::system_account_name, creator,  core_sym::from_string("80000000.0000"),
+                             core_sym::from_string("80000000.0000"));
+
+         regproducer(config::system_account_name);
+         BOOST_REQUIRE_EQUAL(success(), vote(creator, {config::system_account_name}));
+
+         produce_block(fc::days(14)); // wait 14 days after min required amount has been staked
+         produce_block();
+         produce_block();
+      }
+   }
+
+   void create_accounts(std::vector<name> v, bool create) {
+      for (auto n : v) {
+         bidname(creator, n, core_sym::from_string("2.0000"));
+
+         produce_block(fc::days(1));
+         produce_block();
+
+         if (create) {
+            create_account_with_resources(n, creator, 1'000'000u);
+            transfer("eosio"_n, n, core_sym::from_string("1000.0000"));
+            stake_with_transfer("eosio"_n, n, net, cpu);
+         }
+      }
+   }
+
+   std::pair<bool, base_tester::action_result> check_allowed(name n) {
+      auto suffix = n.suffix();
+      bool toplevel_account = (suffix == n);
+      auto actual_creator = (toplevel_account || creator == "eosio"_n) ? creator : suffix;
+      try {
+         create_account_with_resources(n, actual_creator, 100'000u);
+         if (toplevel_account) {
+            transfer("eosio"_n, n, core_sym::from_string("1000.0000"));
+            stake_with_transfer("eosio"_n, n, core_sym::from_string("100.0000"), core_sym::from_string("100.0000"));
+         }
+         return {true, success()};
+      } catch (const fc::exception& ex) {
+         return {false, error(ex.top_message())};
+      }
+   }
+
+   void check_allowed(const std::initializer_list<name>& l) {
+      for (auto n : l) {
+         auto [allowed, action_res] = check_allowed(n);
+         BOOST_CHECK_MESSAGE(allowed, action_res);
+      }
+   }
+
+   void check_disallowed(const std::initializer_list<name>& l) {
+      for (auto n : l) {
+         auto [allowed, action_res] = check_allowed(n);
+         BOOST_CHECK_MESSAGE(!allowed, n.to_string() << " should be disallowed");
+      }
+   }
+
+   name creator;
+   const asset net = core_sym::from_string("100.0000");
+   const asset cpu = core_sym::from_string("100.0000");
+};
+
+// check restrictions when creating accounts using a non-privileged account, here "fred"
+// -------------------------------------------------------------------------------------
+BOOST_AUTO_TEST_CASE( restrictions_checking ) try {
+   name_restrictions_checker r{"fred"_n};
+
+   // first get some name suffixes used in tests
+   // ------------------------------------------
+   r.create_accounts({"xyz"_n, "e12"_n, "fe"_n, "safe"_n}, true);
+   r.create_accounts({"thereal3safe"_n, "esafe"_n}, false); // false means just bid for the name but don't create the account
+
+   std::vector<name> add { "esafe"_n, "e.safe"_n };
+   BOOST_REQUIRE_EQUAL(r.denynames("eosio"_n, add), r.success());
+
+   r.check_disallowed(
+      {
+           "therealesafe"_n
+        ,  "esafe.xyz"_n
+        ,  "e.safe.abc"_n
+        ,  "12e.safe.abc"_n
+        ,  "esafe.e.safe"_n
+      });
+
+   r.check_allowed(
+      {
+           "thereal3safe"_n
+        ,  "esafe"_n
+        ,  "esave.xyz"_n
+        ,  "esaf.e12"_n
+        ,  "esa.fe"_n
+        ,  "esafe.esafe"_n
+        ,  "e.esafe"_n
+        ,  "e.safe"_n
+        ,  "a.e.safe"_n
+      });
+   
+} FC_LOG_AND_RETHROW()
+
+// check that "eosio"_n is not subject to account name restrictions.
+// -----------------------------------------------------------------
+BOOST_AUTO_TEST_CASE( eosio_restrictions_checking ) try {
+   name_restrictions_checker r{"eosio"_n};
+
+   // first get some name suffixes used in tests
+   // ------------------------------------------
+   r.create_accounts({"xyz"_n, "e12"_n, "fe"_n, "safe"_n}, true);
+   r.create_accounts({"thereal3safe"_n, "esafe"_n}, false);  // false means just bid for the name but don't create the account
+
+   std::vector<name> add { "esafe"_n, "e.safe"_n };
+   BOOST_REQUIRE_EQUAL(r.denynames("eosio"_n, add), r.success());
+
+   r.check_allowed(   // these are allowed for "eosio"_n because "eosio"_n is not restricted.
+      {
+           "therealesafe"_n
+        ,  "esafe.xyz"_n
+        ,  "e.safe.abc"_n
+        ,  "12e.safe.abc"_n
+        ,  "esafe.e.safe"_n
+      });
+
+   r.check_allowed(
+      {
+           "thereal3safe"_n
+        ,  "esafe"_n
+        ,  "esave.xyz"_n
+        ,  "esaf.e12"_n
+        ,  "esa.fe"_n
+        ,  "esafe.esafe"_n
+        ,  "e.esafe"_n
+        ,  "e.safe"_n
+        ,  "a.e.safe"_n
+      });
+
+} FC_LOG_AND_RETHROW()
+
+
 BOOST_AUTO_TEST_SUITE_END()

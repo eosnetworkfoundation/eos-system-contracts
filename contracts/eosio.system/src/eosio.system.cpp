@@ -1,4 +1,5 @@
 #include <eosio.system/eosio.system.hpp>
+#include <eosio.system/canon_name.hpp>
 #include <eosio.token/eosio.token.hpp>
 
 #include <eosio/crypto.hpp>
@@ -397,6 +398,67 @@ namespace eosiosystem {
       set_resource_limits( account, current_ram, current_net, cpu );
    }
 
+   void system_contract::denynames( const std::vector<name>& patterns ) {
+      require_auth( get_self() );
+
+      if (patterns.empty())
+         return; // no-op for empty list, consistent with ignoring duplicate names.
+
+      check(patterns.size() <= 512, "Cannot provide more than 512 patterns in one action call");
+
+      account_name_blacklist_table bl_table(get_self(), get_self().value);
+      auto itr = bl_table.begin();
+      bool present = (itr != bl_table.end());
+
+      auto add_patterns_to = [&patterns](auto& current) {
+         // number of blackcklist name patterns expected to be small, so quadratic check OK
+         for (auto n : patterns) {
+            // check that pattern is valid (pattern should not be empty or more than 12 character long)
+            canon_name_t pattern(n);
+            check(pattern.valid(),
+                  n.value ? ("Pattern " + n.to_string() + " is not valid") : "Empty patterns are not allowed");
+
+            if (std::find(std::cbegin(current), std::cend(current), n) == std::cend(current))
+               current.push_back(n);
+         }
+      };
+
+      if (present) {
+         bl_table.modify(itr, same_payer, [&](auto& blacklist) {
+            add_patterns_to(blacklist.disallowed);
+         });
+      } else {
+         bl_table.emplace(get_self(), [&](auto& blacklist) {
+            add_patterns_to(blacklist.disallowed);
+         });
+      }
+   }
+
+   void system_contract::undenynames( const std::vector<name>& patterns ) {
+      require_auth( get_self() );
+
+      if (patterns.empty())
+         return; // no-op for empty list, consistent with ignoring duplicate names.
+      
+      check(patterns.size() <= 512, "Cannot provide more than 512 patterns in one action call");
+
+      account_name_blacklist_table bl_table(get_self(), get_self().value);
+      auto itr = bl_table.begin();
+      bool present = (itr != bl_table.end());
+      if (!present)
+         return; // no-op for empty blacklist table, consistent with ignoring names not in the list
+
+      bl_table.modify(itr, same_payer, [&](auto& blacklist) {
+         auto& current = blacklist.disallowed;
+
+         // number of blackcklist name patterns expected to be small, so quadratic check OK
+         for (auto n : patterns) {
+            if (auto itr = std::find(std::begin(current), std::end(current), n); itr != std::end(current))
+               current.erase(itr);
+         }
+      });
+   }
+
    void system_contract::activate( const eosio::checksum256& feature_digest ) {
       require_auth( get_self() );
       preactivate_feature( feature_digest );
@@ -533,6 +595,20 @@ namespace eosiosystem {
                bids.erase( current );
             } else {
                check( creator == suffix, "only " + suffix.to_string() + " may create " + new_account_name.to_string());
+            }
+         }
+    
+         // check that the account does not match a blacklist pattern stored in `account_name_blacklist_table`
+         // -------------------------------------------------------------------------------------------------------
+         account_name_blacklist_table bl_table(get_self(), get_self().value);
+         auto itr = bl_table.begin();
+         bool present = (itr != bl_table.end());
+
+         if (present) {
+            const std::vector<name>& blacklist{itr->disallowed};
+            for (auto pattern : blacklist) {
+               check(name_allowed(new_account_name, pattern),
+                     "Account name " + new_account_name.to_string() + " creation disallowed by rule: " + pattern.to_string());
             }
          }
       }

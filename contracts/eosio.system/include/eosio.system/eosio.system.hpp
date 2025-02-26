@@ -16,7 +16,6 @@
 #include <optional>
 #include <string>
 #include <type_traits>
-#include <unordered_set>
 
 #ifdef CHANNEL_RAM_AND_NAMEBID_FEES_TO_REX
 #undef CHANNEL_RAM_AND_NAMEBID_FEES_TO_REX
@@ -95,19 +94,23 @@ namespace eosiosystem {
    using blockchain_parameters_t = eosio::blockchain_parameters;
 #endif
 
-  /**
-   * The `eosio.system` smart contract is provided by `block.one` as a sample system contract, and it defines the structures and actions needed for blockchain's core functionality.
-   *
-   * Just like in the `eosio.bios` sample contract implementation, there are a few actions which are not implemented at the contract level (`newaccount`, `updateauth`, `deleteauth`, `linkauth`, `unlinkauth`, `canceldelay`, `onerror`, `setabi`, `setcode`), they are just declared in the contract so they will show in the contract's ABI and users will be able to push those actions to the chain via the account holding the `eosio.system` contract, but the implementation is at the EOSIO core level. They are referred to as EOSIO native actions.
-   *
-   * - Users can stake tokens for CPU and Network bandwidth, and then vote for producers or
-   *    delegate their vote to a proxy.
-   * - Producers register in order to be voted for, and can claim per-block and per-vote rewards.
-   * - Users can buy and sell RAM at a market-determined price.
-   * - Users can bid on premium names.
-   * - A resource exchange system (REX) allows token holders to lend their tokens,
-   *    and users to rent CPU and Network resources in return for a market-determined fee.
-   */
+   /**
+    * The `eosio.system` smart contract defines the structures and actions needed for blockchain's core functionality.
+    *
+    * Just like in the `eosio.bios` sample contract implementation, there are a few actions which are not implemented at
+    * the contract level (`newaccount`, `updateauth`, `deleteauth`, `linkauth`, `unlinkauth`, `canceldelay`, `onerror`,
+    * `setabi`, `setcode`), they are just declared in the contract so they will show in the contract's ABI and users
+    * will be able to push those actions to the chain via the account holding the `eosio.system` contract, but the
+    * implementation is at the core level. They are referred to as host native actions.
+    *
+    * - Users can stake tokens for CPU and Network bandwidth, and then vote for producers or
+    *    delegate their vote to a proxy.
+    * - Producers register in order to be voted for, and can claim per-block and per-vote rewards.
+    * - Users can buy and sell RAM at a market-determined price.
+    * - Users can bid on premium names.
+    * - A resource exchange system (REX) allows token holders to lend their tokens,
+    *    and users to rent CPU and Network resources in return for a market-determined fee.
+    */
 
    // A name bid, which consists of:
    // - a `newname` name that the bid is for
@@ -372,6 +375,19 @@ namespace eosiosystem {
    };
 
    typedef eosio::multi_index< "finkeyidgen"_n, fin_key_id_generator_info >  fin_key_id_gen_table;
+
+   // A single entry storing a vector of names, each of which is a pattern that new account names
+   // are checked against (when the `newaccount` is called), in order to reject the creation
+   // of accounts whose name matches patterns in the blacklist.
+   struct [[eosio::table("acctdenylist"), eosio::contract("eosio.system")]] account_name_blacklist {
+      std::vector<name> disallowed;
+
+      uint64_t primary_key() const { return 0; }
+
+      EOSLIB_SERIALIZE( account_name_blacklist, (disallowed) )
+   };
+
+   typedef eosio::multi_index< "acctdenylist"_n, account_name_blacklist >  account_name_blacklist_table;
 
    // Voter info. Voter info stores information about the voter:
    // - `owner` the voter
@@ -798,9 +814,13 @@ namespace eosiosystem {
                                > powerup_order_table;
 
    /**
-    * The `eosio.system` smart contract is provided by `block.one` as a sample system contract, and it defines the structures and actions needed for blockchain's core functionality.
+    * The `eosio.system` smart contract defines the structures and actions needed for blockchain's core functionality.
     *
-    * Just like in the `eosio.bios` sample contract implementation, there are a few actions which are not implemented at the contract level (`newaccount`, `updateauth`, `deleteauth`, `linkauth`, `unlinkauth`, `canceldelay`, `onerror`, `setabi`, `setcode`), they are just declared in the contract so they will show in the contract's ABI and users will be able to push those actions to the chain via the account holding the `eosio.system` contract, but the implementation is at the EOSIO core level. They are referred to as EOSIO native actions.
+    * Just like in the `eosio.bios` sample contract implementation, there are a few actions which are not implemented at
+    * the contract level (`newaccount`, `updateauth`, `deleteauth`, `linkauth`, `unlinkauth`, `canceldelay`, `onerror`,
+    * `setabi`, `setcode`), they are just declared in the contract so they will show in the contract's ABI and users
+    * will be able to push those actions to the chain via the account holding the `eosio.system` contract, but the
+    * implementation is at the core level. They are referred to as host native actions.
     *
     * - Users can stake tokens for CPU and Network bandwidth, and then vote for producers or
     *    delegate their vote to a proxy.
@@ -948,6 +968,35 @@ namespace eosiosystem {
          [[eosio::action]]
          void setacctcpu( const name& account, const std::optional<int64_t>& cpu_weight );
 
+         /**
+          * Add names to the `account_name_blacklist` singleton.
+          *
+          * The `account_name_blacklist` singleton contains a vector of names, each of which is a pattern that
+          * new account names are checked against (when the `newaccount` is called), in order to reject the creation
+          * of accounts whose name includes patterns in the blacklist.
+          * The "eosio"_n account is not subject to the blacklist restrictions.
+          *
+          * requires "eosio"_n permission
+          *
+          * @param patterns - vector of name patterns to add to the blacklist
+          */
+         [[eosio::action]]
+         void denynames( const std::vector<name>& patterns );
+
+         /**
+          * Remove names from the `account_name_blacklist` singleton.
+          *
+          * The `account_name_blacklist` singleton contains a vector of names, each of which is a pattern that
+          * new account names are checked against (when the `newaccount` is called), in order to reject the creation
+          * of accounts whose name includes patterns in the blacklist.
+          * The "eosio"_n account is not subject to the blacklist restrictions.
+          *
+          * requires "eosio"_n permission
+          *
+          * @param patterns - vector of name patterns to remove from the blacklist
+          */
+         [[eosio::action]]
+         void undenynames( const std::vector<name>& patterns );
 
          /**
           * The activate action, activates a protocol feature
