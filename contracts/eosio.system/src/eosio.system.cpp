@@ -397,56 +397,52 @@ namespace eosiosystem {
       set_resource_limits( account, current_ram, current_net, cpu );
    }
 
-   void system_contract::addblnames( std::vector<name> blacklisted_name_patterns ) {
+   void system_contract::addblnames( std::vector<name> patterns ) {
       require_auth( get_self() );
 
-      check(!blacklisted_name_patterns.empty(), "Empty list of blacklisted name patterns provided");
-      check(blacklisted_name_patterns.size() <= 512, "Cannot provide more than 512 patterns in one action call");
+      check(!patterns.empty(), "Empty list of blacklisted name patterns provided");
+      check(patterns.size() <= 512, "Cannot provide more than 512 patterns in one action call");
 
       account_name_blacklist_table bl_table(get_self(), get_self().value);
       auto itr = bl_table.begin();
       bool present = (itr != bl_table.end());
 
       if (present) {
-         std::vector<name> current(itr->disallowed);
-
-         // number of blackcklist name patterns expected to be small, so quadratic check OK
-         for (auto n : blacklisted_name_patterns) {
-            if (std::find(std::cbegin(current), std::cend(current), n) == std::cend(current))
-               current.push_back(n);
-         }
-
          bl_table.modify(itr, same_payer, [&](auto& blacklist) {
-            blacklist.disallowed = std::move(current);
+            auto& current = blacklist.disallowed;
+
+            // number of blackcklist name patterns expected to be small, so quadratic check OK
+            for (auto n : patterns) {
+               if (std::find(std::cbegin(current), std::cend(current), n) == std::cend(current))
+                  current.push_back(n);
+            }
          });
       } else {
          bl_table.emplace(get_self(), [&](auto& blacklist) {
-            blacklist.disallowed = std::move(blacklisted_name_patterns);
+            blacklist.disallowed = std::move(patterns);
          });
       }
    }
 
-   void system_contract::rmblnames( std::vector<name> allowed_name_patterns ) {
+   void system_contract::rmblnames( std::vector<name> patterns ) {
       require_auth( get_self() );
 
-      check(!allowed_name_patterns.empty(), "Empty list of blacklisted name patterns provided");
-      check(allowed_name_patterns.size() <= 512, "Cannot provide more than 512 patterns in one action call");
+      check(!patterns.empty(), "Empty list of blacklisted name patterns provided");
+      check(patterns.size() <= 512, "Cannot provide more than 512 patterns in one action call");
 
       account_name_blacklist_table bl_table(get_self(), get_self().value);
       auto itr = bl_table.begin();
       bool present = (itr != bl_table.end());
       check(present, "Current list of blacklisted name patterns is empty... cannot remove");
 
-      std::vector<name> current(itr->disallowed);
-
-      // number of blackcklist name patterns expected to be small, so quadratic check OK
-      for (auto n : allowed_name_patterns) {
-         if (auto itr = std::find(std::begin(current), std::end(current), n); itr != std::end(current))
-            current.erase(itr);
-      }
-
       bl_table.modify(itr, same_payer, [&](auto& blacklist) {
-         blacklist.disallowed = std::move(current);
+         auto& current = blacklist.disallowed;
+
+         // number of blackcklist name patterns expected to be small, so quadratic check OK
+         for (auto n : patterns) {
+            if (auto itr = std::find(std::begin(current), std::end(current), n); itr != std::end(current))
+               current.erase(itr);
+         }
       });
    }
 

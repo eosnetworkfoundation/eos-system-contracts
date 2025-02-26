@@ -610,12 +610,12 @@ public:
                          ("active",  authority(get_public_key(account, "active"))));
    }
 
-   action_result addblnames(name acct, const std::vector<name>& blacklisted_name_patterns) {
-      return push_action(acct, "addblnames"_n, mvo()("blacklisted_name_patterns", blacklisted_name_patterns));
+   action_result addblnames(name acct, const std::vector<name>& patterns) {
+      return push_action(acct, "addblnames"_n, mvo()("patterns", patterns));
    }
 
-   action_result rmblnames(name acct, const std::vector<name>& allowed_name_patterns) {
-      return push_action(acct, "rmblnames"_n, mvo()("allowed_name_patterns", allowed_name_patterns));
+   action_result rmblnames(name acct, const std::vector<name>& patterns) {
+      return push_action(acct, "rmblnames"_n, mvo()("patterns", patterns));
    }
 
    std::vector<name> get_blacklisted_names() const {
