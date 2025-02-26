@@ -397,7 +397,7 @@ namespace eosiosystem {
       set_resource_limits( account, current_ram, current_net, cpu );
    }
 
-   void system_contract::addblnames( std::vector<name> patterns ) {
+   void system_contract::denynames( std::vector<name> patterns ) {
       require_auth( get_self() );
 
       check(!patterns.empty(), "Empty list of blacklisted name patterns provided");
@@ -424,7 +424,7 @@ namespace eosiosystem {
       }
    }
 
-   void system_contract::rmblnames( std::vector<name> patterns ) {
+   void system_contract::undenynames( std::vector<name> patterns ) {
       require_auth( get_self() );
 
       check(!patterns.empty(), "Empty list of blacklisted name patterns provided");

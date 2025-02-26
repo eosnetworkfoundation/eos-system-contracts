@@ -981,7 +981,7 @@ namespace eosiosystem {
           * @param patterns - vector of name patterns to add to the blacklist
           */
          [[eosio::action]]
-         void addblnames( std::vector<name> patterns );
+         void denynames( std::vector<name> patterns );
 
          /**
           * Remove names from the `account_name_blacklist` singleton.
@@ -996,8 +996,7 @@ namespace eosiosystem {
           * @param patterns - vector of name patterns to remove from the blacklist
           */
          [[eosio::action]]
-         void rmblnames( std::vector<name> patterns );
-
+         void undenynames( std::vector<name> patterns );
 
          /**
           * The activate action, activates a protocol feature

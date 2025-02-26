@@ -6051,39 +6051,39 @@ BOOST_FIXTURE_TEST_CASE( restrictions_update, eosio_system_tester ) try {
    create_accounts_with_resources( accounts );
    const account_name alice = accounts[0];
 
-   // make sure `addblnames` requires "eosio"_n auth
+   // make sure `denynames` requires "eosio"_n auth
    // ----------------------------------------------
-   BOOST_REQUIRE_EQUAL(addblnames(alice, {"bob"_n, "bob.yxz"_n}), error("missing authority of eosio"));
+   BOOST_REQUIRE_EQUAL(denynames(alice, {"bob"_n, "bob.yxz"_n}), error("missing authority of eosio"));
 
-   // check that `addblnames` and `rmblnames` update the blacklist as expected
+   // check that `denynames` and `undenynames` update the blacklist as expected
    // ------------------------------------------------------------------------
-   BOOST_REQUIRE_EQUAL(addblnames("eosio"_n, {}), error("assertion failure with message: Empty list of blacklisted name patterns provided"));
+   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, {}), error("assertion failure with message: Empty list of blacklisted name patterns provided"));
    
    std::vector<name> add1 {"bob"_n, "bob.yxz"_n};
-   BOOST_REQUIRE_EQUAL(addblnames("eosio"_n, add1), success());
-   BOOST_REQUIRE(get_blacklisted_names() == add1);                         // initial add works
+   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, add1), success());
+   BOOST_REQUIRE(get_blacklisted_names() == add1);                        // initial add works
 
    std::vector<name> add2 {"alice.xyz.x"_n, "alice"_n};
-   BOOST_REQUIRE_EQUAL(addblnames("eosio"_n, add2), success());            // appending works
+   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, add2), success());            // appending works
    BOOST_REQUIRE(get_blacklisted_names() == cat(add1, add2));
 
    std::vector<name> add3 {"bob.yxz"_n, "alice"_n};
-   BOOST_REQUIRE_EQUAL(addblnames("eosio"_n, add3), success());            // duplicates are ignored
+   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, add3), success());            // duplicates are ignored
    BOOST_REQUIRE(get_blacklisted_names() == cat(add1, add2));
 
    std::vector<name> add4 {"fred.xyz.x"_n, "fred"_n};
-   BOOST_REQUIRE_EQUAL(addblnames("eosio"_n, cat(add4, add4, add4)), success()); // duplicates are ignored even within one call
+   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, cat(add4, add4, add4)), success()); // duplicates are ignored even within one call
    BOOST_REQUIRE(get_blacklisted_names() == cat(add1, add2, add4));
 
-   BOOST_REQUIRE_EQUAL(rmblnames("eosio"_n, cat(add1, add4)), success());
+   BOOST_REQUIRE_EQUAL(undenynames("eosio"_n, cat(add1, add4)), success());
    BOOST_REQUIRE(get_blacklisted_names() == add2);                         // removing names work
 
-   BOOST_REQUIRE_EQUAL(rmblnames("eosio"_n, add1), success());             // `rmblnames` silently ignores names not present
+   BOOST_REQUIRE_EQUAL(undenynames("eosio"_n, add1), success());           // `undenynames` silently ignores names not present
 
-   BOOST_REQUIRE_EQUAL(rmblnames("eosio"_n, add2), success());             // removing all remaining names work
+   BOOST_REQUIRE_EQUAL(undenynames("eosio"_n, add2), success());           // removing all remaining names work
    BOOST_REQUIRE(get_blacklisted_names() == std::vector<name>{});
 
-   BOOST_REQUIRE_EQUAL(addblnames("eosio"_n, add2), success());            // and adding some names again for good measure
+   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, add2), success());            // and adding some names again for good measure
    BOOST_REQUIRE(get_blacklisted_names() == add2);
 
 } FC_LOG_AND_RETHROW()
@@ -6170,7 +6170,7 @@ BOOST_AUTO_TEST_CASE( restrictions_checking ) try {
    r.create_accounts({"thereal3safe"_n, "esafe"_n}, false); // false means just bid for the name but don't create the account
 
    std::vector<name> add { "esafe"_n, "e.safe"_n };
-   BOOST_REQUIRE_EQUAL(r.addblnames("eosio"_n, add), r.success());
+   BOOST_REQUIRE_EQUAL(r.denynames("eosio"_n, add), r.success());
 
    r.check_disallowed(
       {
@@ -6207,7 +6207,7 @@ BOOST_AUTO_TEST_CASE( eosio_restrictions_checking ) try {
    r.create_accounts({"thereal3safe"_n, "esafe"_n}, false);  // false means just bid for the name but don't create the account
 
    std::vector<name> add { "esafe"_n, "e.safe"_n };
-   BOOST_REQUIRE_EQUAL(r.addblnames("eosio"_n, add), r.success());
+   BOOST_REQUIRE_EQUAL(r.denynames("eosio"_n, add), r.success());
 
    r.check_allowed(   // these are allowed for "eosio"_n because "eosio"_n is not restricted.
       {
