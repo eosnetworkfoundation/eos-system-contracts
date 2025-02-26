@@ -398,9 +398,10 @@ namespace eosiosystem {
    }
 
    void system_contract::denynames( const std::vector<name>& patterns ) {
-      require_auth( get_self() );
+      if (patterns.empty())
+         return; // no-op for empty list, consistent with ignoring duplicate names.
 
-      check(!patterns.empty(), "Empty list of blacklisted name patterns provided");
+      require_auth( get_self() );
       check(patterns.size() <= 512, "Cannot provide more than 512 patterns in one action call");
 
       account_name_blacklist_table bl_table(get_self(), get_self().value);
@@ -427,9 +428,10 @@ namespace eosiosystem {
    }
 
    void system_contract::undenynames( const std::vector<name>& patterns ) {
+      if (patterns.empty())
+         return; // no-op for empty list, consistent with ignoring duplicate names.
+      
       require_auth( get_self() );
-
-      check(!patterns.empty(), "Empty list of blacklisted name patterns provided");
       check(patterns.size() <= 512, "Cannot provide more than 512 patterns in one action call");
 
       account_name_blacklist_table bl_table(get_self(), get_self().value);
