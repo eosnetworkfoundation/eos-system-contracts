@@ -95,8 +95,7 @@ namespace eosiosystem {
 #endif
 
    /**
-    * The `eosio.system` smart contract is provided by `block.one` as a sample system contract, and it defines the
-    * structures and actions needed for blockchain's core functionality.
+    * The `eosio.system` smart contract defines the structures and actions needed for blockchain's core functionality.
     *
     * Just like in the `eosio.bios` sample contract implementation, there are a few actions which are not implemented at
     * the contract level (`newaccount`, `updateauth`, `deleteauth`, `linkauth`, `unlinkauth`, `canceldelay`, `onerror`,
@@ -815,8 +814,7 @@ namespace eosiosystem {
                                > powerup_order_table;
 
    /**
-    * The `eosio.system` smart contract is provided by `block.one` as a sample system contract, and it defines the
-    * structures and actions needed for blockchain's core functionality.
+    * The `eosio.system` smart contract defines the structures and actions needed for blockchain's core functionality.
     *
     * Just like in the `eosio.bios` sample contract implementation, there are a few actions which are not implemented at
     * the contract level (`newaccount`, `updateauth`, `deleteauth`, `linkauth`, `unlinkauth`, `canceldelay`, `onerror`,
