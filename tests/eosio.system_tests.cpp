@@ -1505,7 +1505,7 @@ BOOST_FIXTURE_TEST_CASE(producer_pay, eosio_system_tester, * boost::unit_test::t
       const auto     global_state      = get_global_state();
       const uint64_t claim_time        = microseconds_since_epoch_of_iso_string( global_state["last_pervote_bucket_fill"] );
       const int64_t  pervote_bucket    = global_state["pervote_bucket"].as<int64_t>();
-      const int64_t  perblock_bucket   = global_state["perblock_bucket"].as<int64_t>();
+      [[maybe_unused]] const int64_t  perblock_bucket   = global_state["perblock_bucket"].as<int64_t>();
       const int64_t  savings           = get_balance("eosio.saving"_n).get_amount();
       const uint32_t tot_unpaid_blocks = global_state["total_unpaid_blocks"].as<uint32_t>();
 
@@ -1563,7 +1563,7 @@ BOOST_FIXTURE_TEST_CASE(producer_pay, eosio_system_tester, * boost::unit_test::t
       const auto     initial_global_state      = get_global_state();
       const uint64_t initial_claim_time        = microseconds_since_epoch_of_iso_string( initial_global_state["last_pervote_bucket_fill"] );
       const int64_t  initial_pervote_bucket    = initial_global_state["pervote_bucket"].as<int64_t>();
-      const int64_t  initial_perblock_bucket   = initial_global_state["perblock_bucket"].as<int64_t>();
+      [[maybe_unused]] const int64_t  initial_perblock_bucket   = initial_global_state["perblock_bucket"].as<int64_t>();
       const int64_t  initial_savings           = get_balance("eosio.saving"_n).get_amount();
       const uint32_t initial_tot_unpaid_blocks = initial_global_state["total_unpaid_blocks"].as<uint32_t>();
       const double   initial_tot_vote_weight   = initial_global_state["total_producer_vote_weight"].as<double>();
@@ -1586,7 +1586,7 @@ BOOST_FIXTURE_TEST_CASE(producer_pay, eosio_system_tester, * boost::unit_test::t
       const auto global_state          = get_global_state();
       const uint64_t claim_time        = microseconds_since_epoch_of_iso_string( global_state["last_pervote_bucket_fill"] );
       const int64_t  pervote_bucket    = global_state["pervote_bucket"].as<int64_t>();
-      const int64_t  perblock_bucket   = global_state["perblock_bucket"].as<int64_t>();
+      [[maybe_unused]] const int64_t  perblock_bucket   = global_state["perblock_bucket"].as<int64_t>();
       const int64_t  savings           = get_balance("eosio.saving"_n).get_amount();
       const uint32_t tot_unpaid_blocks = global_state["total_unpaid_blocks"].as<uint32_t>();
 
@@ -1932,13 +1932,13 @@ BOOST_FIXTURE_TEST_CASE(multiple_producer_pay, eosio_system_tester, * boost::uni
 
       const auto     initial_global_state      = get_global_state();
       const uint64_t initial_claim_time        = microseconds_since_epoch_of_iso_string( initial_global_state["last_pervote_bucket_fill"] );
-      const int64_t  initial_pervote_bucket    = initial_global_state["pervote_bucket"].as<int64_t>();
-      const int64_t  initial_perblock_bucket   = initial_global_state["perblock_bucket"].as<int64_t>();
+      [[maybe_unused]] const int64_t  initial_pervote_bucket    = initial_global_state["pervote_bucket"].as<int64_t>();
+      [[maybe_unused]] const int64_t  initial_perblock_bucket   = initial_global_state["perblock_bucket"].as<int64_t>();
       const int64_t  initial_savings           = get_balance("eosio.saving"_n).get_amount();
       const uint32_t initial_tot_unpaid_blocks = initial_global_state["total_unpaid_blocks"].as<uint32_t>();
       const asset    initial_supply            = get_token_supply();
-      const asset    initial_bpay_balance      = get_balance("eosio.bpay"_n);
-      const asset    initial_vpay_balance      = get_balance("eosio.vpay"_n);
+      [[maybe_unused]] const asset    initial_bpay_balance      = get_balance("eosio.bpay"_n);
+      [[maybe_unused]] const asset    initial_vpay_balance      = get_balance("eosio.vpay"_n);
       const asset    initial_balance           = get_balance(prod_name);
       const uint32_t initial_unpaid_blocks     = get_producer_info(prod_name)["unpaid_blocks"].as<uint32_t>();
 
@@ -1957,7 +1957,7 @@ BOOST_FIXTURE_TEST_CASE(multiple_producer_pay, eosio_system_tester, * boost::uni
       const uint32_t unpaid_blocks     = get_producer_info(prod_name)["unpaid_blocks"].as<uint32_t>();
 
       const uint64_t usecs_between_fills = claim_time - initial_claim_time;
-      const int32_t secs_between_fills = static_cast<int32_t>(usecs_between_fills / 1000000);
+      [[maybe_unused]] const int32_t secs_between_fills = static_cast<int32_t>(usecs_between_fills / 1000000);
 
       const double expected_supply_growth = initial_supply.get_amount() * double(usecs_between_fills) * cont_rate / usecs_per_year;
       BOOST_REQUIRE_EQUAL( int64_t(expected_supply_growth), supply.get_amount() - initial_supply.get_amount() );
@@ -2013,8 +2013,8 @@ BOOST_FIXTURE_TEST_CASE(multiple_producer_pay, eosio_system_tester, * boost::uni
       const int64_t  initial_savings           = get_balance("eosio.saving"_n).get_amount();
       const uint32_t initial_tot_unpaid_blocks = initial_global_state["total_unpaid_blocks"].as<uint32_t>();
       const asset    initial_supply            = get_token_supply();
-      const asset    initial_bpay_balance      = get_balance("eosio.bpay"_n);
-      const asset    initial_vpay_balance      = get_balance("eosio.vpay"_n);
+      [[maybe_unused]] const asset    initial_bpay_balance      = get_balance("eosio.bpay"_n);
+      [[maybe_unused]] const asset    initial_vpay_balance      = get_balance("eosio.vpay"_n);
       const asset    initial_balance           = get_balance(prod_name);
       const uint32_t initial_unpaid_blocks     = get_producer_info(prod_name)["unpaid_blocks"].as<uint32_t>();
 
@@ -2149,7 +2149,7 @@ BOOST_FIXTURE_TEST_CASE(multiple_producer_pay, eosio_system_tester, * boost::uni
       const asset    initial_supply            = get_token_supply();
       const asset    initial_balance           = get_balance(prod_name);
       const uint32_t initial_unpaid_blocks     = initial_prod_info["unpaid_blocks"].as<uint32_t>();
-      const uint64_t initial_claim_time        = microseconds_since_epoch_of_iso_string( initial_prod_info["last_claim_time"] );
+      [[maybe_unused]] const uint64_t initial_claim_time = microseconds_since_epoch_of_iso_string( initial_prod_info["last_claim_time"] );
       const uint64_t initial_prod_update_time  = microseconds_since_epoch_of_iso_string( initial_prod_info2["last_votepay_share_update"] );
 
       BOOST_TEST_REQUIRE( 0 == get_producer_info2(prod_name)["votepay_share"].as_double() );
@@ -2161,11 +2161,11 @@ BOOST_FIXTURE_TEST_CASE(multiple_producer_pay, eosio_system_tester, * boost::uni
       const uint64_t vpay_state_update = microseconds_since_epoch_of_iso_string( get_global_state3()["last_vpay_state_update"] );
       const uint64_t bucket_fill_time  = microseconds_since_epoch_of_iso_string( global_state["last_pervote_bucket_fill"] );
       const int64_t  pervote_bucket    = global_state["pervote_bucket"].as<int64_t>();
-      const int64_t  perblock_bucket   = global_state["perblock_bucket"].as<int64_t>();
-      const uint32_t tot_unpaid_blocks = global_state["total_unpaid_blocks"].as<uint32_t>();
+      [[maybe_unused]] const int64_t  perblock_bucket   = global_state["perblock_bucket"].as<int64_t>();
+      [[maybe_unused]] const uint32_t tot_unpaid_blocks = global_state["total_unpaid_blocks"].as<uint32_t>();
       const asset    supply            = get_token_supply();
       const asset    balance           = get_balance(prod_name);
-      const uint32_t unpaid_blocks     = prod_info["unpaid_blocks"].as<uint32_t>();
+      [[maybe_unused]] const uint32_t unpaid_blocks = prod_info["unpaid_blocks"].as<uint32_t>();
       const uint64_t claim_time        = microseconds_since_epoch_of_iso_string( prod_info["last_claim_time"] );
       const uint64_t prod_update_time  = microseconds_since_epoch_of_iso_string( prod_info2["last_votepay_share_update"] );
 
@@ -3314,7 +3314,7 @@ BOOST_FIXTURE_TEST_CASE( buyname, eosio_system_tester ) try {
    produce_block();
 
    BOOST_REQUIRE_EXCEPTION( create_accounts_with_resources( { "fail"_n }, "dan"_n ), // dan shouldn't be able to create fail
-                            eosio_assert_message_exception, eosio_assert_message_is( "no active bid for name" ) );
+                            eosio_assert_message_exception, eosio_assert_message_is( "no active bid for name: fail" ) );
    bidname( "dan", "nofail", core_sym::from_string( "1.0000" ) );
    BOOST_REQUIRE_EQUAL( "assertion failure with message: must increase bid by 10%", bidname( "sam", "nofail", core_sym::from_string( "1.0000" ) )); // didn't increase bid by 10%
    BOOST_REQUIRE_EQUAL( success(), bidname( "sam", "nofail", core_sym::from_string( "2.0000" ) )); // didn't increase bid by 10%
@@ -3330,7 +3330,7 @@ BOOST_FIXTURE_TEST_CASE( buyname, eosio_system_tester ) try {
    create_accounts_with_resources( { "test.nofail"_n }, "nofail"_n ); // only nofail can create test.nofail
    //wlog( "verify dan cannot create test.fail" );
    BOOST_REQUIRE_EXCEPTION( create_accounts_with_resources( { "test.fail"_n }, "dan"_n ), // dan shouldn't be able to do this
-                            eosio_assert_message_exception, eosio_assert_message_is( "only suffix may create this account" ) );
+                            eosio_assert_message_exception, eosio_assert_message_is( "only fail may create test.fail" ) );
 
    create_accounts_with_resources( { "goodgoodgood"_n }, "dan"_n ); /// 12 char names should succeed
 } FC_LOG_AND_RETHROW()
@@ -3455,7 +3455,7 @@ BOOST_FIXTURE_TEST_CASE( multiple_namebids, eosio_system_tester ) try {
                             fc::exception, fc_assert_exception_message_is( not_closed_message ) );
    // attemp to create account with no bid
    BOOST_REQUIRE_EXCEPTION( create_account_with_resources( "prefg"_n, "alice"_n ),
-                            fc::exception, fc_assert_exception_message_is( "no active bid for name" ) );
+                            fc::exception, fc_assert_exception_message_is( "no active bid for name: prefg" ) );
    // changing highest bid pushes auction closing time by 24 hours
    BOOST_REQUIRE_EQUAL( success(),
                         bidname( "eve",  "prefb", core_sym::from_string("2.1880") ) );
@@ -3485,7 +3485,7 @@ BOOST_FIXTURE_TEST_CASE( multiple_namebids, eosio_system_tester ) try {
    create_account_with_resources( "prefe"_n, "carl"_n );
    // prefe can now create *.prefe
    BOOST_REQUIRE_EXCEPTION( create_account_with_resources( "xyz.prefe"_n, "carl"_n ),
-                            fc::exception, fc_assert_exception_message_is("only suffix may create this account") );
+                            fc::exception, fc_assert_exception_message_is("only prefe may create xyz.prefe") );
    transfer( config::system_account_name, "prefe"_n, core_sym::from_string("10000.0000") );
    create_account_with_resources( "xyz.prefe"_n, "prefe"_n );
 
@@ -3874,8 +3874,8 @@ BOOST_FIXTURE_TEST_CASE( eosioram_ramusage, eosio_system_tester ) try {
    transfer( "eosio", "alice1111111", core_sym::from_string("1000.0000"), "eosio" );
    BOOST_REQUIRE_EQUAL( success(), stake( "eosio", "alice1111111", core_sym::from_string("200.0000"), core_sym::from_string("100.0000") ) );
 
-   const asset initial_ram_balance = get_balance("eosio.ram"_n);
-   const asset initial_fees_balance = get_balance("eosio.fees"_n);
+   [[maybe_unused]] const asset initial_ram_balance = get_balance("eosio.ram"_n);
+   [[maybe_unused]] const asset initial_fees_balance = get_balance("eosio.fees"_n);
    BOOST_REQUIRE_EQUAL( success(), buyram( "alice1111111", "alice1111111", core_sym::from_string("1000.0000") ) );
 
    BOOST_REQUIRE_EQUAL( false, get_row_by_account( "eosio.token"_n, "alice1111111"_n, "accounts"_n, account_name(symbol{CORE_SYM}.to_symbol_code()) ).empty() );
@@ -3955,7 +3955,7 @@ BOOST_FIXTURE_TEST_CASE( rex_rounding_issue, eosio_system_tester ) try {
     const asset one_eos      = core_sym::from_string("1.0000");
    const asset one_rex      = asset::from_string("1.0000 REX");
    const asset init_balance = core_sym::from_string("1000.0000");
-   const asset whale_balance = core_sym::from_string("1000000.0000");
+   [[maybe_unused]] const asset whale_balance = core_sym::from_string("1000000.0000");
 
    setup_rex_accounts( accounts, init_balance );
    // create_accounts_with_resources({ bob, whale });
@@ -4100,7 +4100,7 @@ BOOST_FIXTURE_TEST_CASE( buy_sell_rex, eosio_system_tester ) try {
    const asset   init_rent    = core_sym::from_string("20000.0000");
    const asset   init_balance = core_sym::from_string("1000.0000");
    const std::vector<account_name> accounts = { "aliceaccount"_n, "bobbyaccount"_n, "carolaccount"_n, "emilyaccount"_n, "frankaccount"_n };
-   account_name alice = accounts[0], bob = accounts[1], carol = accounts[2], emily = accounts[3], frank = accounts[4];
+   account_name alice = accounts[0], bob = accounts[1], carol = accounts[2];
    setup_rex_accounts( accounts, init_balance );
 
    const asset one_unit = core_sym::from_string("0.0001");
@@ -4287,7 +4287,7 @@ BOOST_FIXTURE_TEST_CASE( unstake_buy_rex, eosio_system_tester, * boost::unit_tes
    {
       const asset net_stake = core_sym::from_string("130.5000");
       const asset cpu_stake = core_sym::from_string("220.0800");
-      const asset tot_stake = net_stake + cpu_stake;
+      [[maybe_unused]] const asset tot_stake = net_stake + cpu_stake;
       BOOST_REQUIRE_EQUAL( success(),                               stake_with_transfer( emily, frank, net_stake, cpu_stake ) );
       BOOST_REQUIRE_EQUAL( wasm_assert_msg("delegated bandwidth record does not exist"),
                            unstaketorex( emily, frank, net_stake, cpu_stake ) );
@@ -4308,7 +4308,7 @@ BOOST_FIXTURE_TEST_CASE( buy_rent_rex, eosio_system_tester ) try {
    const asset   init_net     = core_sym::from_string("70.0000");
    const asset   init_cpu     = core_sym::from_string("90.0000");
    const std::vector<account_name> accounts = { "aliceaccount"_n, "bobbyaccount"_n, "carolaccount"_n, "emilyaccount"_n, "frankaccount"_n };
-   account_name alice = accounts[0], bob = accounts[1], carol = accounts[2], emily = accounts[3], frank = accounts[4];
+   account_name alice = accounts[0], bob = accounts[1], carol = accounts[2], emily = accounts[3];
    setup_rex_accounts( accounts, init_balance, init_net, init_cpu );
 
    const int64_t init_cpu_limit = get_cpu_limit( alice );
@@ -4323,7 +4323,7 @@ BOOST_FIXTURE_TEST_CASE( buy_rent_rex, eosio_system_tester ) try {
    const asset   init_tot_unlent   = rex_pool["total_unlent"].as<asset>();
    const asset   init_tot_lendable = rex_pool["total_lendable"].as<asset>();
    const asset   init_tot_rent     = rex_pool["total_rent"].as<asset>();
-   const int64_t init_stake        = get_voter_info(alice)["staked"].as<int64_t>();
+   [[maybe_unused]] const int64_t init_stake        = get_voter_info(alice)["staked"].as<int64_t>();
    BOOST_REQUIRE_EQUAL( core_sym::from_string("0.0000"),        rex_pool["total_lent"].as<asset>() );
    BOOST_REQUIRE_EQUAL( ratio * init_tot_lendable.get_amount(), rex_pool["total_rex"].as<asset>().get_amount() );
    BOOST_REQUIRE_EQUAL( rex_pool["total_rex"].as<asset>(),      get_rex_balance(alice) );
@@ -4411,8 +4411,8 @@ BOOST_FIXTURE_TEST_CASE( buy_sell_sell_rex, eosio_system_tester ) try {
    account_name alice = accounts[0], bob = accounts[1], carol = accounts[2];
    setup_rex_accounts( accounts, init_balance, init_net, init_cpu );
 
-   const int64_t init_cpu_limit = get_cpu_limit( alice );
-   const int64_t init_net_limit = get_net_limit( alice );
+   [[maybe_unused]] const int64_t init_cpu_limit = get_cpu_limit( alice );
+   [[maybe_unused]] const int64_t init_net_limit = get_net_limit( alice );
 
    // alice lends rex
    const asset payment = core_sym::from_string("30250.0000");
@@ -4420,10 +4420,10 @@ BOOST_FIXTURE_TEST_CASE( buy_sell_sell_rex, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL( success(),              buyrex( bob, core_sym::from_string("0.0005") ) );
    BOOST_REQUIRE_EQUAL( init_balance - payment, get_rex_fund(alice) );
    auto rex_pool = get_rex_pool();
-   const asset   init_tot_unlent   = rex_pool["total_unlent"].as<asset>();
+   [[maybe_unused]] const asset   init_tot_unlent   = rex_pool["total_unlent"].as<asset>();
    const asset   init_tot_lendable = rex_pool["total_lendable"].as<asset>();
    const asset   init_tot_rent     = rex_pool["total_rent"].as<asset>();
-   const int64_t init_stake        = get_voter_info(alice)["staked"].as<int64_t>();
+   [[maybe_unused]] const int64_t init_stake        = get_voter_info(alice)["staked"].as<int64_t>();
    BOOST_REQUIRE_EQUAL( core_sym::from_string("0.0000"),        rex_pool["total_lent"].as<asset>() );
    BOOST_REQUIRE_EQUAL( ratio * init_tot_lendable.get_amount(), rex_pool["total_rex"].as<asset>().get_amount() );
    BOOST_REQUIRE_EQUAL( rex_pool["total_rex"].as<asset>(),      get_rex_balance(alice) + get_rex_balance(bob) );
@@ -4504,7 +4504,7 @@ BOOST_FIXTURE_TEST_CASE( buy_sell_claim_rex, eosio_system_tester ) try {
    const auto    init_rex_pool        = get_rex_pool();
    const int64_t total_lendable       = init_rex_pool["total_lendable"].as<asset>().get_amount();
    const int64_t total_rex            = init_rex_pool["total_rex"].as<asset>().get_amount();
-   const int64_t init_alice_rex_stake = ( eosio::chain::uint128_t(init_alice_rex.get_amount()) * total_lendable ) / total_rex;
+   [[maybe_unused]] const int64_t init_alice_rex_stake = ( eosio::chain::uint128_t(init_alice_rex.get_amount()) * total_lendable ) / total_rex;
 
    BOOST_REQUIRE_EQUAL( success(), sellrex( alice, asset( 3 * get_rex_balance(alice).get_amount() / 4, symbol{SY(4,REX)} ) ) );
 
@@ -4610,11 +4610,10 @@ BOOST_FIXTURE_TEST_CASE( buy_sell_claim_rex, eosio_system_tester ) try {
 
 BOOST_FIXTURE_TEST_CASE( rex_loans, eosio_system_tester ) try {
 
-   const int64_t ratio        = 10000;
    const asset   init_balance = core_sym::from_string("40000.0000");
    const asset   one_unit     = core_sym::from_string("0.0001");
    const std::vector<account_name> accounts = { "aliceaccount"_n, "bobbyaccount"_n, "carolaccount"_n, "emilyaccount"_n, "frankaccount"_n };
-   account_name alice = accounts[0], bob = accounts[1], carol = accounts[2], emily = accounts[3], frank = accounts[4];
+   account_name alice = accounts[0], bob = accounts[1], emily = accounts[3], frank = accounts[4];
    setup_rex_accounts( accounts, init_balance  );
 
    BOOST_REQUIRE_EQUAL( success(), buyrex( alice, core_sym::from_string("25000.0000") ) );
@@ -4750,7 +4749,6 @@ BOOST_FIXTURE_TEST_CASE( rex_loans, eosio_system_tester ) try {
 
 BOOST_FIXTURE_TEST_CASE( rex_loan_checks, eosio_system_tester ) try {
 
-   const int64_t ratio        = 10000;
    const asset   init_balance = core_sym::from_string("40000.0000");
    const std::vector<account_name> accounts = { "aliceaccount"_n, "bobbyaccount"_n };
    account_name alice = accounts[0], bob = accounts[1];
@@ -4781,10 +4779,9 @@ BOOST_FIXTURE_TEST_CASE( rex_loan_checks, eosio_system_tester ) try {
 
 BOOST_FIXTURE_TEST_CASE( ramfee_namebid_to_rex, eosio_system_tester ) try {
 
-   const int64_t ratio        = 10000;
    const asset   init_balance = core_sym::from_string("10000.0000");
    const std::vector<account_name> accounts = { "aliceaccount"_n, "bobbyaccount"_n, "carolaccount"_n, "emilyaccount"_n, "frankaccount"_n };
-   account_name alice = accounts[0], bob = accounts[1], carol = accounts[2], emily = accounts[3], frank = accounts[4];
+   account_name alice = accounts[0], bob = accounts[1], carol = accounts[2], frank = accounts[4];
    setup_rex_accounts( accounts, init_balance, core_sym::from_string("80.0000"), core_sym::from_string("80.0000"), false );
 
    asset cur_fees_balance = get_balance( "eosio.fees"_n );
@@ -4999,7 +4996,7 @@ BOOST_FIXTURE_TEST_CASE( rex_savings, eosio_system_tester ) try {
 
    const asset init_balance = core_sym::from_string("100000.0000");
    const std::vector<account_name> accounts = { "aliceaccount"_n, "bobbyaccount"_n, "carolaccount"_n, "emilyaccount"_n, "frankaccount"_n };
-   account_name alice = accounts[0], bob = accounts[1], carol = accounts[2], emily = accounts[3], frank = accounts[4];
+   account_name alice = accounts[0], bob = accounts[1], carol = accounts[2];
    setup_rex_accounts( accounts, init_balance );
 
    const int64_t rex_ratio = 10000;
@@ -5216,7 +5213,7 @@ BOOST_FIXTURE_TEST_CASE( update_rex, eosio_system_tester, * boost::unit_test::to
 
    const asset init_balance = core_sym::from_string("30000.0000");
    const std::vector<account_name> accounts = { "aliceaccount"_n, "bobbyaccount"_n, "carolaccount"_n, "emilyaccount"_n };
-   account_name alice = accounts[0], bob = accounts[1], carol = accounts[2], emily = accounts[3];
+   account_name alice = accounts[0], bob = accounts[1], emily = accounts[3];
    setup_rex_accounts( accounts, init_balance );
 
    const int64_t init_stake = get_voter_info( alice )["staked"].as<int64_t>();
@@ -5311,7 +5308,7 @@ BOOST_FIXTURE_TEST_CASE( update_rex_vote, eosio_system_tester, * boost::unit_tes
 
    const asset init_balance = core_sym::from_string("30000.0000");
    const std::vector<account_name> accounts = { "aliceaccount"_n, "bobbyaccount"_n, "carolaccount"_n, "emilyaccount"_n };
-   account_name alice = accounts[0], bob = accounts[1], carol = accounts[2], emily = accounts[3];
+   account_name alice = accounts[0], bob = accounts[1], emily = accounts[3];
    setup_rex_accounts( accounts, init_balance );
 
    const int64_t init_stake_amount = get_voter_info( alice )["staked"].as<int64_t>();
@@ -5373,7 +5370,7 @@ BOOST_FIXTURE_TEST_CASE( deposit_rex_fund, eosio_system_tester ) try {
    const asset init_net     = core_sym::from_string("70.0000");
    const asset init_cpu     = core_sym::from_string("90.0000");
    const std::vector<account_name> accounts = { "aliceaccount"_n, "bobbyaccount"_n };
-   account_name alice = accounts[0], bob = accounts[1];
+   account_name alice = accounts[0];
    setup_rex_accounts( accounts, init_balance, init_net, init_cpu, false );
 
    BOOST_REQUIRE_EQUAL( core_sym::from_string("0.0000"),                   get_rex_fund( alice ) );
