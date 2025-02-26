@@ -6074,7 +6074,11 @@ BOOST_FIXTURE_TEST_CASE( restrictions_update, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL(addblnames("eosio"_n, add3), success());            // duplicates are ignored
    BOOST_REQUIRE(get_blacklisted_names() == cat(add1, add2));
 
-   BOOST_REQUIRE_EQUAL(rmblnames("eosio"_n, add1), success());
+   std::vector<name> add4 {"fred.xyz.x"_n, "fred"_n};
+   BOOST_REQUIRE_EQUAL(addblnames("eosio"_n, cat(add4, add4, add4)), success()); // duplicates are ignored even within one call
+   BOOST_REQUIRE(get_blacklisted_names() == cat(add1, add2, add4));
+
+   BOOST_REQUIRE_EQUAL(rmblnames("eosio"_n, cat(add1, add4)), success());
    BOOST_REQUIRE(get_blacklisted_names() == add2);                         // removing names work
 
    BOOST_REQUIRE_EQUAL(rmblnames("eosio"_n, add1), success());             // `rmblnames` silently ignores names not present
