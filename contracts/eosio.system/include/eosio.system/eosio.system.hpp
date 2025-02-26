@@ -379,7 +379,7 @@ namespace eosiosystem {
    // A single entry storing a vector of names, each of which is a pattern that new account names
    // are checked against (when the `newaccount` is called), in order to reject the creation
    // of accounts whose name matches patterns in the blacklist.
-   struct [[eosio::table("actblacklist"), eosio::contract("eosio.system")]] account_name_blacklist {
+   struct [[eosio::table("acctdenylist"), eosio::contract("eosio.system")]] account_name_blacklist {
       std::vector<name> disallowed;
 
       uint64_t primary_key() const { return 0; }
@@ -387,7 +387,7 @@ namespace eosiosystem {
       EOSLIB_SERIALIZE( account_name_blacklist, (disallowed) )
    };
 
-   typedef eosio::multi_index< "actblacklist"_n, account_name_blacklist >  account_name_blacklist_table;
+   typedef eosio::multi_index< "acctdenylist"_n, account_name_blacklist >  account_name_blacklist_table;
 
    // Voter info. Voter info stores information about the voter:
    // - `owner` the voter
