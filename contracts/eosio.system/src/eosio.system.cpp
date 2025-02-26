@@ -439,7 +439,8 @@ namespace eosiosystem {
       account_name_blacklist_table bl_table(get_self(), get_self().value);
       auto itr = bl_table.begin();
       bool present = (itr != bl_table.end());
-      check(present, "Current list of blacklisted name patterns is empty... cannot remove");
+      if (!present)
+         return; // no-op for empty blacklist table, consistent with ignoring names not in the list
 
       bl_table.modify(itr, same_payer, [&](auto& blacklist) {
          auto& current = blacklist.disallowed;
