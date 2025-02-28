@@ -398,17 +398,39 @@ namespace eosiosystem {
       set_resource_limits( account, current_ram, current_net, cpu );
    }
 
-   void system_contract::denynames( const std::vector<name>& patterns ) {
+   checksum256 system_contract::denyhashcalc( const std::vector<name>& patterns ) {
+      check(!patterns.empty(), "Cannot compute hash on empty vector");
+      for (auto n : patterns) {
+         // check that pattern is valid (pattern should not be empty or more than 12 character long)
+         canon_name_t pattern(n);
+         check(pattern.valid(),
+               n.value ? ("Pattern " + n.to_string() + " is not valid") : "Empty patterns are not allowed");
+      }
+      return eosio::sha256(reinterpret_cast<const char*>(patterns.data()), patterns.size() * sizeof(name));
+   }
+
+   void system_contract::denyhashadd( const checksum256& hash ) {
       require_auth( get_self() );
 
+      deny_hash_table dh_table(get_self(), get_self().value);
+      const auto idx = dh_table.get_index<"byhash"_n>();
+      auto itr = idx.find(hash);
+      check(itr == idx.end(), "Trying to add a deny hash which is already present");
+      dh_table.emplace(get_self(), [&](auto& row) { row.hash = hash; });
+   }
+
+   void system_contract::denynames( const std::vector<name>& patterns ) {
+      // no auth necessary since the hash verification is enough
+      
       if (patterns.empty())
          return; // no-op for empty list, consistent with ignoring duplicate names.
 
       check(patterns.size() <= 512, "Cannot provide more than 512 patterns in one action call");
 
-      account_name_blacklist_table bl_table(get_self(), get_self().value);
-      auto itr = bl_table.begin();
-      bool present = (itr != bl_table.end());
+      deny_hash_table dh_table(get_self(), get_self().value);
+      auto dh_idx = dh_table.get_index<"byhash"_n>();
+      auto dh_itr = dh_idx.find(denyhashcalc(patterns));
+      check(dh_itr != dh_idx.end(), "Verification hash not found in denyhash table");
 
       auto add_patterns_to = [&patterns](auto& current) {
          // number of blackcklist name patterns expected to be small, so quadratic check OK
@@ -423,8 +445,10 @@ namespace eosiosystem {
          }
       };
 
-      if (present) {
-         bl_table.modify(itr, same_payer, [&](auto& blacklist) {
+      account_name_blacklist_table bl_table(get_self(), get_self().value);
+      
+      if (auto bl_itr = bl_table.begin(); bl_itr != bl_table.end()) {
+         bl_table.modify(bl_itr, same_payer, [&](auto& blacklist) {
             add_patterns_to(blacklist.disallowed);
          });
       } else {
@@ -432,6 +456,8 @@ namespace eosiosystem {
             add_patterns_to(blacklist.disallowed);
          });
       }
+
+      dh_idx.erase(dh_itr); // names patterns have been added - remove hash
    }
 
    void system_contract::undenynames( const std::vector<name>& patterns ) {
@@ -443,20 +469,19 @@ namespace eosiosystem {
       check(patterns.size() <= 512, "Cannot provide more than 512 patterns in one action call");
 
       account_name_blacklist_table bl_table(get_self(), get_self().value);
-      auto itr = bl_table.begin();
-      bool present = (itr != bl_table.end());
-      if (!present)
-         return; // no-op for empty blacklist table, consistent with ignoring names not in the list
 
-      bl_table.modify(itr, same_payer, [&](auto& blacklist) {
-         auto& current = blacklist.disallowed;
+      if (auto itr = bl_table.begin(); itr != bl_table.end()) {
+         bl_table.modify(itr, same_payer, [&](auto& blacklist) {
+            auto& current = blacklist.disallowed;
 
-         // number of blackcklist name patterns expected to be small, so quadratic check OK
-         for (auto n : patterns) {
-            if (auto itr = std::find(std::begin(current), std::end(current), n); itr != std::end(current))
-               current.erase(itr);
-         }
-      });
+            // number of blackcklist name patterns expected to be small, so quadratic check OK
+            for (auto n : patterns) {
+               if (auto itr = std::find(std::begin(current), std::end(current), n); itr != std::end(current))
+                  current.erase(itr);
+            }
+         });
+      }
+      // no-op for empty blacklist table, consistent with ignoring names not in the list
    }
 
    void system_contract::activate( const eosio::checksum256& feature_digest ) {
