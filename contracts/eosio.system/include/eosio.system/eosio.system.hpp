@@ -391,10 +391,10 @@ namespace eosiosystem {
 
    // Store hash values allowing account blacklist names to be added to `account_name_blacklist_table`
    struct [[eosio::table("acctdenyhash"), eosio::contract("eosio.system")]] deny_hash {
-      uint64_t       id;                   // automatically generated ID for the key in the table
-      checksum256  hash;                 // sha256 hash computed over a `vector<name>` and allowing
-                                           // said vector to be added to `account_name_blacklist_table`
-      uint64_t       primary_key() const { return id; }
+      uint64_t     id;                       // automatically generated ID for the key in the table
+      checksum256  hash;                     // sha256 hash computed over a `vector<name>` and allowing
+                                             // said vector to be added to `account_name_blacklist_table`
+      uint64_t     primary_key() const { return id; }
       checksum256  by_hash()     const { return hash; }
    };
 
