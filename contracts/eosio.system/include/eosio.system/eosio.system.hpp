@@ -992,7 +992,7 @@ namespace eosiosystem {
          /**
           * Store a hash value computed from a vector of names.
           *
-          * Once this hash has been store in the blockchain (a privileged operation), any account can call the
+          * Once this hash has been stored in the blockchain (a privileged operation), any account can call the
           * `denynames` action to add the vector of name patterns that this hash was computed from to the
           * `account_name_blacklist`.
           *

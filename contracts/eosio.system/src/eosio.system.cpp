@@ -406,6 +406,7 @@ namespace eosiosystem {
          check(pattern.valid(),
                n.value ? ("Pattern " + n.to_string() + " is not valid") : "Empty patterns are not allowed");
       }
+      static_assert(sizeof(name) == sizeof(uint64_t));
       return eosio::sha256(reinterpret_cast<const char*>(patterns.data()), patterns.size() * sizeof(name));
    }
 
