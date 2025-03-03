@@ -436,9 +436,7 @@ namespace eosiosystem {
    void system_contract::denynames( const std::vector<name>& patterns ) {
       // no auth necessary since the hash verification is enough
       
-      if (patterns.empty())
-         return; // no-op for empty list, consistent with ignoring duplicate names.
-
+      check(!patterns.empty(), "No patterns provided");
       check(patterns.size() <= 512, "Cannot provide more than 512 patterns in one action call");
 
       deny_hash_table dh_table(get_self(), get_self().value);

@@ -6071,7 +6071,8 @@ BOOST_FIXTURE_TEST_CASE( restrictions_update, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL(denynames(alice, add1), success());                  // and then anyone (alice here) can deny the name patterns
    BOOST_REQUIRE(get_blacklisted_names() == add1);                          // newly added names are present in blacklist
 
-   BOOST_REQUIRE_EQUAL(denynames(alice, {}), success());                    // empty list is silently ignored.
+   BOOST_REQUIRE_EQUAL(denynames(alice, {}),
+                       error("assertion failure with message: No patterns provided"));
    
    BOOST_REQUIRE_EQUAL(denynames(alice, add1),                              // hash was removed when we added the `add1` names above
                        error("assertion failure with message: Verification hash not found in denyhash table"));
