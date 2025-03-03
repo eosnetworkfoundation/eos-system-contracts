@@ -6051,34 +6051,57 @@ BOOST_FIXTURE_TEST_CASE( restrictions_update, eosio_system_tester ) try {
    create_accounts_with_resources( accounts );
    const account_name alice = accounts[0];
 
-   // make sure `denynames` requires "eosio"_n auth
-   // ----------------------------------------------
-   BOOST_REQUIRE_EQUAL(denynames(alice, {"bob"_n, "bob.yxz"_n}), error("missing authority of eosio"));
-
-   // check that `denynames` and `undenynames` update the blacklist as expected
-   // ------------------------------------------------------------------------
-   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, {}), success());                // empty list is silently ignored.
-   
    std::vector<name> add1 {"bob"_n, "bob.yxz"_n};
-   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, add1), success());
-   BOOST_REQUIRE(get_blacklisted_names() == add1);                          // initial add works
+
+   auto hash = denyhashcalc(alice, add1);
+   BOOST_REQUIRE(hash);                                                     // no auth required to calculate a hash
+
+   BOOST_REQUIRE(!denyhashcalc(alice, {""_n}));                             // but it fails if the vector contains invalid names
+   BOOST_REQUIRE(!denyhashcalc(alice, {"alice1alice2a"_n}));                // either empty or 13 characters long
+
+   BOOST_REQUIRE_EQUAL(denyhashadd(alice, *hash),
+                       error("missing authority of eosio"));                // alice cannot add the hash
+   BOOST_REQUIRE_EQUAL(denynames(alice, add1),
+                       error("assertion failure with message: Verification hash not found in denyhash table"));
+   BOOST_REQUIRE_EQUAL(denyhashrm("eosio"_n, *hash),
+                       error("assertion failure with message: Trying to remove a deny hash which is not present"));  
+   BOOST_REQUIRE(get_blacklisted_names().empty());                          // `denynames` failed so the blacklist is still empty
+   
+   BOOST_REQUIRE_EQUAL(denyhashadd("eosio"_n, *hash), success());           // "eosio"_n can add a hash
+   BOOST_REQUIRE_EQUAL(denynames(alice, add1), success());                  // and then anyone (alice here) can deny the name patterns
+   BOOST_REQUIRE(get_blacklisted_names() == add1);                          // newly added names are present in blacklist
+
+   BOOST_REQUIRE_EQUAL(denynames(alice, {}),
+                       error("assertion failure with message: No patterns provided"));
+   
+   BOOST_REQUIRE_EQUAL(denynames(alice, add1),                              // hash was removed when we added the `add1` names above
+                       error("assertion failure with message: Verification hash not found in denyhash table"));
 
    std::vector<name> add2 {"alice.xyz.x"_n, "alice"_n};
-   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, add2), success());              // appending works
+   auto add2_hash = *denyhashcalc(alice, add2);
+   BOOST_REQUIRE_EQUAL(denyhashadd("eosio"_n, add2_hash), success());       
+   BOOST_REQUIRE_EQUAL(denyhashrm("eosio"_n, add2_hash), success());        // check that hash can be removed
+   BOOST_REQUIRE_EQUAL(denynames(alice, add2),                              // and then appending fails since hash was removes
+                       error("assertion failure with message: Verification hash not found in denyhash table"));
+   BOOST_REQUIRE_EQUAL(denyhashadd("eosio"_n, add2_hash), success());       // add the hash again
+   BOOST_REQUIRE_EQUAL(denynames(alice, add2), success());                  // appending works
    BOOST_REQUIRE(get_blacklisted_names() == cat(add1, add2));
 
+   // add two hashes in a row to make sure the table supports multiple rows.
    std::vector<name> add3 {"bob.yxz"_n, "alice"_n};
-   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, add3), success());              // duplicates are ignored
+   BOOST_REQUIRE_EQUAL(denyhashadd("eosio"_n, *denyhashcalc(alice, add3)),
+                       success());
+   std::vector<name> add4 {"fred.xyz.x"_n, "fred"_n};
+   BOOST_REQUIRE_EQUAL(denyhashadd("eosio"_n, *denyhashcalc(alice, cat(add4, add4, add4))),
+                       success());
+   
+   BOOST_REQUIRE_EQUAL(denynames(alice, add3), success());                  // duplicates are ignored
    BOOST_REQUIRE(get_blacklisted_names() == cat(add1, add2));
 
-   std::vector<name> add4 {"fred.xyz.x"_n, "fred"_n};
-   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, cat(add4, add4, add4)), success()); // duplicates are ignored even within one call
-   BOOST_REQUIRE(get_blacklisted_names() == cat(add1, add2, add4));
+   BOOST_REQUIRE_EQUAL(denynames(alice, add3),                              // but the hash was removed
+                       error("assertion failure with message: Verification hash not found in denyhash table"));
 
-   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, {""_n}),
-                       error("assertion failure with message: Empty patterns are not allowed"));
-   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, {"alice1alice2a"_n}),
-                       error("assertion failure with message: Pattern alice1alice2a is not valid"));
+   BOOST_REQUIRE_EQUAL(denynames(alice, cat(add4, add4, add4)), success()); // duplicates are ignored even within one call
    BOOST_REQUIRE(get_blacklisted_names() == cat(add1, add2, add4));
 
    BOOST_REQUIRE_EQUAL(undenynames("eosio"_n, {}), success());             // empty list is silently ignored.
@@ -6091,7 +6114,9 @@ BOOST_FIXTURE_TEST_CASE( restrictions_update, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL(undenynames("eosio"_n, add2), success());           // removing all remaining names work
    BOOST_REQUIRE(get_blacklisted_names() == std::vector<name>{});
 
-   BOOST_REQUIRE_EQUAL(denynames("eosio"_n, add2), success());             // and adding some names again for good measure
+   BOOST_REQUIRE_EQUAL(denyhashadd("eosio"_n, *denyhashcalc(alice, add2)),
+                       success());
+   BOOST_REQUIRE_EQUAL(denynames(alice, add2), success());                 // and adding some names again for good measure
    BOOST_REQUIRE(get_blacklisted_names() == add2);
 
 } FC_LOG_AND_RETHROW()
@@ -6178,7 +6203,8 @@ BOOST_AUTO_TEST_CASE( restrictions_checking ) try {
    r.create_accounts({"thereal3safe"_n, "esafe"_n}, false); // false means just bid for the name but don't create the account
 
    std::vector<name> add { "esafe"_n, "e.safe"_n };
-   BOOST_REQUIRE_EQUAL(r.denynames("eosio"_n, add), r.success());
+   BOOST_REQUIRE_EQUAL(r.denyhashadd("eosio"_n, *r.denyhashcalc("fred"_n, add)), r.success());
+   BOOST_REQUIRE_EQUAL(r.denynames("fred"_n, add), r.success());
 
    r.check_disallowed(
       {
@@ -6204,8 +6230,8 @@ BOOST_AUTO_TEST_CASE( restrictions_checking ) try {
    
 } FC_LOG_AND_RETHROW()
 
-// check that "eosio"_n is not subject to account name restrictions.
-// -----------------------------------------------------------------
+// check that "eosio"_n is not subject to account name restrictions and does not need to add a hash
+// ------------------------------------------------------------------------------------------------
 BOOST_AUTO_TEST_CASE( eosio_restrictions_checking ) try {
    name_restrictions_checker r{"eosio"_n};
 
@@ -6214,8 +6240,22 @@ BOOST_AUTO_TEST_CASE( eosio_restrictions_checking ) try {
    r.create_accounts({"xyz"_n, "e12"_n, "fe"_n, "safe"_n}, true);
    r.create_accounts({"thereal3safe"_n, "esafe"_n}, false);  // false means just bid for the name but don't create the account
 
-   std::vector<name> add { "esafe"_n, "e.safe"_n };
-   BOOST_REQUIRE_EQUAL(r.denynames("eosio"_n, add), r.success());
+   // "eosio"_n can add a deny list by adding a hash first
+   // ----------------------------------------------------
+   std::vector<name> add1 { "esafe"_n };
+   auto add1_hash = *r.denyhashcalc("eosio"_n, add1);
+   BOOST_REQUIRE_EQUAL(r.denyhashadd("eosio"_n, add1_hash), r.success());
+   BOOST_REQUIRE_EQUAL(r.denyhashadd("eosio"_n, add1_hash),
+                       r.error("assertion failure with message: Trying to add a deny hash which is already present"));
+
+   BOOST_REQUIRE_EQUAL(r.denynames("eosio"_n, add1), r.success());        // `denynames` will remove add1_hash
+   BOOST_REQUIRE_EQUAL(r.denyhashrm("eosio"_n, add1_hash),
+                       r.error("assertion failure with message: Trying to remove a deny hash which is not present"));  
+
+   // but also can do it without adding a hash first
+   // ----------------------------------------------
+   std::vector<name> add2 { "e.safe"_n };
+   BOOST_REQUIRE_EQUAL(r.denynames("eosio"_n, add2), r.success());
 
    r.check_allowed(   // these are allowed for "eosio"_n because "eosio"_n is not restricted.
       {

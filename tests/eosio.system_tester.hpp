@@ -610,6 +610,25 @@ public:
                          ("active",  authority(get_public_key(account, "active"))));
    }
 
+   std::optional<fc::sha256> denyhashcalc(name acct, const std::vector<name>& patterns) {
+      try {
+         auto trace = base_tester::push_action(config::system_account_name, "denyhashcalc"_n, acct, mvo()("patterns", patterns));
+         auto v = trace->action_traces[0].return_value;
+         fc::sha256 hash = fc::sha256(v.data(), v.size());
+         return hash;
+      } catch (const fc::exception& ex) {
+         return {};
+      }
+   }
+
+   action_result denyhashadd(name acct, const sha256& hash) {
+      return push_action(acct, "denyhashadd"_n, mvo()("hash", hash));
+   }
+
+   action_result denyhashrm(name acct, const sha256& hash) {
+      return push_action(acct, "denyhashrm"_n, mvo()("hash", hash));
+   }
+
    action_result denynames(name acct, const std::vector<name>& patterns) {
       return push_action(acct, "denynames"_n, mvo()("patterns", patterns));
    }
