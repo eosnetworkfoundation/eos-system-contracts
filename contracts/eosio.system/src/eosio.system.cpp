@@ -417,7 +417,10 @@ namespace eosiosystem {
       const auto idx = dh_table.get_index<"byhash"_n>();
       auto itr = idx.find(hash);
       check(itr == idx.end(), "Trying to add a deny hash which is already present");
-      dh_table.emplace(get_self(), [&](auto& row) { row.hash = hash; });
+      dh_table.emplace(get_self(), [&](auto& row) {
+         row.id   = dh_table.available_primary_key();
+         row.hash = hash;
+      });
    }
 
    void system_contract::denyhashrm( const checksum256& hash ) {
@@ -441,7 +444,12 @@ namespace eosiosystem {
       deny_hash_table dh_table(get_self(), get_self().value);
       auto dh_idx = dh_table.get_index<"byhash"_n>();
       auto dh_itr = dh_idx.find(denyhashcalc(patterns));
-      check(dh_itr != dh_idx.end(), "Verification hash not found in denyhash table");
+      bool present = (dh_itr != dh_idx.end());
+
+      // "eosio"_n does not require the hash to be present to deny names.
+      check(present || has_auth(get_self()), "Verification hash not found in denyhash table");
+      if (present)
+         dh_idx.erase(dh_itr); // names patterns have been added - remove hash
 
       auto add_patterns_to = [&patterns](auto& current) {
          // number of blackcklist name patterns expected to be small, so quadratic check OK
@@ -467,8 +475,6 @@ namespace eosiosystem {
             add_patterns_to(blacklist.disallowed);
          });
       }
-
-      dh_idx.erase(dh_itr); // names patterns have been added - remove hash
    }
 
    void system_contract::undenynames( const std::vector<name>& patterns ) {
