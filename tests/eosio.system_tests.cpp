@@ -6062,7 +6062,9 @@ BOOST_FIXTURE_TEST_CASE( restrictions_update, eosio_system_tester ) try {
    BOOST_REQUIRE_EQUAL(denyhashadd(alice, *hash),
                        error("missing authority of eosio"));                // alice cannot add the hash
    BOOST_REQUIRE_EQUAL(denynames(alice, add1),
-                       error("assertion failure with message: Verification hash not found in denyhash table")); 
+                       error("assertion failure with message: Verification hash not found in denyhash table"));
+   BOOST_REQUIRE_EQUAL(denyhashrm("eosio"_n, *hash),
+                       error("assertion failure with message: Trying to remove a deny hash which is not present"));  
    BOOST_REQUIRE(get_blacklisted_names().empty());                          // `denynames` failed so the blacklist is still empty
    
    BOOST_REQUIRE_EQUAL(denyhashadd("eosio"_n, *hash), success());           // "eosio"_n can add a hash
@@ -6075,8 +6077,12 @@ BOOST_FIXTURE_TEST_CASE( restrictions_update, eosio_system_tester ) try {
                        error("assertion failure with message: Verification hash not found in denyhash table"));
 
    std::vector<name> add2 {"alice.xyz.x"_n, "alice"_n};
-   BOOST_REQUIRE_EQUAL(denyhashadd("eosio"_n, *denyhashcalc(alice, add2)),
-                       success()); 
+   auto add2_hash = *denyhashcalc(alice, add2);
+   BOOST_REQUIRE_EQUAL(denyhashadd("eosio"_n, add2_hash), success());       
+   BOOST_REQUIRE_EQUAL(denyhashrm("eosio"_n, add2_hash), success());        // check that hash can be removed
+   BOOST_REQUIRE_EQUAL(denynames(alice, add2),                              // and then appending fails since hash was removes
+                       error("assertion failure with message: Verification hash not found in denyhash table"));
+   BOOST_REQUIRE_EQUAL(denyhashadd("eosio"_n, add2_hash), success());       // add the hash again
    BOOST_REQUIRE_EQUAL(denynames(alice, add2), success());                  // appending works
    BOOST_REQUIRE(get_blacklisted_names() == cat(add1, add2));
 

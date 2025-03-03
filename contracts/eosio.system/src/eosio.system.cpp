@@ -420,6 +420,16 @@ namespace eosiosystem {
       dh_table.emplace(get_self(), [&](auto& row) { row.hash = hash; });
    }
 
+   void system_contract::denyhashrm( const checksum256& hash ) {
+      require_auth( get_self() );
+
+      deny_hash_table dh_table(get_self(), get_self().value);
+      auto idx = dh_table.get_index<"byhash"_n>();
+      auto itr = idx.find(hash);
+      check(itr != idx.end(), "Trying to remove a deny hash which is not present");
+      idx.erase(itr);
+   }
+
    void system_contract::denynames( const std::vector<name>& patterns ) {
       // no auth necessary since the hash verification is enough
       

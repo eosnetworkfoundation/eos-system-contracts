@@ -1004,6 +1004,18 @@ namespace eosiosystem {
          void denyhashadd( const checksum256& hash );
 
          /**
+          * Remove a hash value computed from a vector of names. Will trigger an exception if the hash is absent,
+          * i.e. if it was never added via `denyhashadd`, or if it was removed when the corresponding name vector
+          * was added via `denynames`.
+          *
+          * requires "eosio"_n permission
+          *
+          * @param hash - a hash value computed from a vector of names.
+          */
+         [[eosio::action]]
+         void denyhashrm( const checksum256& hash );
+
+         /**
           * Add names to the `account_name_blacklist` singleton.
           *
           * The `account_name_blacklist` singleton contains a vector of names, each of which is a pattern that

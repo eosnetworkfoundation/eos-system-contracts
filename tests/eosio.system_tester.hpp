@@ -625,6 +625,10 @@ public:
       return push_action(acct, "denyhashadd"_n, mvo()("hash", hash));
    }
 
+   action_result denyhashrm(name acct, const sha256& hash) {
+      return push_action(acct, "denyhashrm"_n, mvo()("hash", hash));
+   }
+
    action_result denynames(name acct, const std::vector<name>& patterns) {
       return push_action(acct, "denynames"_n, mvo()("patterns", patterns));
    }
