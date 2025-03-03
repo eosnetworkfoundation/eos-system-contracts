@@ -6245,6 +6245,9 @@ BOOST_AUTO_TEST_CASE( eosio_restrictions_checking ) try {
    std::vector<name> add1 { "esafe"_n };
    auto add1_hash = *r.denyhashcalc("eosio"_n, add1);
    BOOST_REQUIRE_EQUAL(r.denyhashadd("eosio"_n, add1_hash), r.success());
+   BOOST_REQUIRE_EQUAL(r.denyhashadd("eosio"_n, add1_hash),
+                       r.error("assertion failure with message: Trying to add a deny hash which is already present"));
+
    BOOST_REQUIRE_EQUAL(r.denynames("eosio"_n, add1), r.success());        // `denynames` will remove add1_hash
    BOOST_REQUIRE_EQUAL(r.denyhashrm("eosio"_n, add1_hash),
                        r.error("assertion failure with message: Trying to remove a deny hash which is not present"));  
