@@ -985,6 +985,8 @@ namespace eosiosystem {
           * Computes a hash for a vector of names
           *
           * @param patterns - vector of names.
+          *
+          * This is a read-only action. 
           */
          [[eosio::action]]
          checksum256 denyhashcalc( const std::vector<name>& patterns );
