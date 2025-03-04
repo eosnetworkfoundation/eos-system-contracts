@@ -6056,8 +6056,9 @@ BOOST_FIXTURE_TEST_CASE( restrictions_update, eosio_system_tester ) try {
    auto hash = denyhashcalc(alice, add1);
    BOOST_REQUIRE(hash);                                                     // no auth required to calculate a hash
 
-   BOOST_REQUIRE(!denyhashcalc(alice, {""_n}));                             // but it fails if the vector contains invalid names
-   BOOST_REQUIRE(!denyhashcalc(alice, {"alice1alice2a"_n}));                // either empty or 13 characters long
+   BOOST_REQUIRE(!denyhashcalc(alice, {}));                                 // it fails on empty vector
+   BOOST_REQUIRE(!!denyhashcalc(alice, {""_n}));                            // but passes on empty or
+   BOOST_REQUIRE(!!denyhashcalc(alice, {"alice1alice2a"_n}));               // 13 characters long names
 
    BOOST_REQUIRE_EQUAL(denyhashadd(alice, *hash),
                        error("missing authority of eosio"));                // alice cannot add the hash

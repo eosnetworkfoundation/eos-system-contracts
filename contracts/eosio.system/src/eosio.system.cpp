@@ -400,12 +400,6 @@ namespace eosiosystem {
 
    checksum256 system_contract::denyhashcalc( const std::vector<name>& patterns ) {
       check(!patterns.empty(), "Cannot compute hash on empty vector");
-      for (auto n : patterns) {
-         // check that pattern is valid (pattern should not be empty or more than 12 character long)
-         canon_name_t pattern(n);
-         check(pattern.valid(),
-               n.value ? ("Pattern " + n.to_string() + " is not valid") : "Empty patterns are not allowed");
-      }
       static_assert(sizeof(name) == sizeof(uint64_t));
       return eosio::sha256(reinterpret_cast<const char*>(patterns.data()), patterns.size() * sizeof(name));
    }
@@ -453,11 +447,13 @@ namespace eosiosystem {
          // number of blackcklist name patterns expected to be small, so quadratic check OK
          for (auto n : patterns) {
             // check that pattern is valid (pattern should not be empty or more than 12 character long)
+            // but silently ignore invalid patterns.
+            // This allows to have a 13 character name in the vector, serving as a salt for the hash to
+            // make the pattern harder to guess, while not unnecessarily preventing another name registration,
+            // because this 13 char pattern will be skipped over and not added to the blacklist.
+            // -----------------------------------------------------------------------------------------------
             canon_name_t pattern(n);
-            check(pattern.valid(),
-                  n.value ? ("Pattern " + n.to_string() + " is not valid") : "Empty patterns are not allowed");
-
-            if (std::find(std::cbegin(current), std::cend(current), n) == std::cend(current))
+            if (pattern.valid() && std::find(std::cbegin(current), std::cend(current), n) == std::cend(current))
                current.push_back(n);
          }
       };
