@@ -1,4 +1,5 @@
 #include <eosio.system/eosio.system.hpp>
+#include <eosio.system/canon_name.hpp>
 #include <eosio.token/eosio.token.hpp>
 
 #include <eosio/crypto.hpp>
@@ -397,6 +398,103 @@ namespace eosiosystem {
       set_resource_limits( account, current_ram, current_net, cpu );
    }
 
+   checksum256 system_contract::denyhashcalc( const std::vector<name>& patterns ) {
+      check(!patterns.empty(), "Cannot compute hash on empty vector");
+      static_assert(sizeof(name) == sizeof(uint64_t));
+      return eosio::sha256(reinterpret_cast<const char*>(patterns.data()), patterns.size() * sizeof(name));
+   }
+
+   void system_contract::denyhashadd( const checksum256& hash ) {
+      require_auth( get_self() );
+
+      deny_hash_table dh_table(get_self(), get_self().value);
+      const auto idx = dh_table.get_index<"byhash"_n>();
+      auto itr = idx.find(hash);
+      check(itr == idx.end(), "Trying to add a deny hash which is already present");
+      dh_table.emplace(get_self(), [&](auto& row) {
+         row.id   = dh_table.available_primary_key();
+         row.hash = hash;
+      });
+   }
+
+   void system_contract::denyhashrm( const checksum256& hash ) {
+      require_auth( get_self() );
+
+      deny_hash_table dh_table(get_self(), get_self().value);
+      auto idx = dh_table.get_index<"byhash"_n>();
+      auto itr = idx.find(hash);
+      check(itr != idx.end(), "Trying to remove a deny hash which is not present");
+      idx.erase(itr);
+   }
+
+   void system_contract::denynames( const std::vector<name>& patterns ) {
+      // no auth necessary since the hash verification is enough
+      
+      check(!patterns.empty(), "No patterns provided");
+      check(patterns.size() <= 512, "Cannot provide more than 512 patterns in one action call");
+
+      deny_hash_table dh_table(get_self(), get_self().value);
+      auto dh_idx = dh_table.get_index<"byhash"_n>();
+      auto dh_itr = dh_idx.find(denyhashcalc(patterns));
+      bool present = (dh_itr != dh_idx.end());
+
+      // "eosio"_n does not require the hash to be present to deny names.
+      check(present || has_auth(get_self()), "Verification hash not found in denyhash table");
+      if (present)
+         dh_idx.erase(dh_itr); // names patterns have been added - remove hash
+
+      auto add_patterns_to = [&patterns](auto& current) {
+         // number of blackcklist name patterns expected to be small, so quadratic check OK
+         for (auto n : patterns) {
+            // check that pattern is valid (pattern should not be empty or more than 12 character long)
+            // but silently ignore invalid patterns.
+            // This allows to have a 13 character name in the vector, serving as a salt for the hash to
+            // make the pattern harder to guess, while not unnecessarily preventing another name registration,
+            // because this 13 char pattern will be skipped over and not added to the blacklist.
+            // -----------------------------------------------------------------------------------------------
+            canon_name_t pattern(n);
+            if (pattern.valid() && std::find(std::cbegin(current), std::cend(current), n) == std::cend(current))
+               current.push_back(n);
+         }
+      };
+
+      account_name_blacklist_table bl_table(get_self(), get_self().value);
+      
+      if (auto bl_itr = bl_table.begin(); bl_itr != bl_table.end()) {
+         bl_table.modify(bl_itr, same_payer, [&](auto& blacklist) {
+            add_patterns_to(blacklist.disallowed);
+         });
+      } else {
+         bl_table.emplace(get_self(), [&](auto& blacklist) {
+            add_patterns_to(blacklist.disallowed);
+         });
+      }
+   }
+
+   void system_contract::undenynames( const std::vector<name>& patterns ) {
+      require_auth( get_self() );
+
+      if (patterns.empty())
+         return; // no-op for empty list, consistent with ignoring duplicate names.
+      
+      check(patterns.size() <= 512, "Cannot provide more than 512 patterns in one action call");
+
+      account_name_blacklist_table bl_table(get_self(), get_self().value);
+
+      if (auto itr = bl_table.begin(); itr != bl_table.end()) {
+         bl_table.modify(itr, same_payer, [&](auto& blacklist) {
+            auto& current = blacklist.disallowed;
+
+            // number of blackcklist name patterns expected to be small, so quadratic check OK
+            for (auto n : patterns) {
+               if (auto itr = std::find(std::begin(current), std::end(current), n); itr != std::end(current))
+                  current.erase(itr);
+            }
+         });
+      }
+      // no-op for empty blacklist table, consistent with ignoring names not in the list
+   }
+
    void system_contract::activate( const eosio::checksum256& feature_digest ) {
       require_auth( get_self() );
       preactivate_feature( feature_digest );
@@ -527,12 +625,26 @@ namespace eosiosystem {
             if( suffix == new_account_name ) {
                name_bid_table bids(get_self(), get_self().value);
                auto current = bids.find( new_account_name.value );
-               check( current != bids.end(), "no active bid for name" );
+               check( current != bids.end(), "no active bid for name: " + new_account_name.to_string());
                check( current->high_bidder == creator, "only highest bidder can claim" );
                check( current->high_bid < 0, "auction for name is not closed yet" );
                bids.erase( current );
             } else {
-               check( creator == suffix, "only suffix may create this account" );
+               check( creator == suffix, "only " + suffix.to_string() + " may create " + new_account_name.to_string());
+            }
+         }
+    
+         // check that the account does not match a blacklist pattern stored in `account_name_blacklist_table`
+         // -------------------------------------------------------------------------------------------------------
+         account_name_blacklist_table bl_table(get_self(), get_self().value);
+         auto itr = bl_table.begin();
+         bool present = (itr != bl_table.end());
+
+         if (present) {
+            const std::vector<name>& blacklist{itr->disallowed};
+            for (auto pattern : blacklist) {
+               check(name_allowed(new_account_name, pattern),
+                     "Account name " + new_account_name.to_string() + " creation disallowed by rule: " + pattern.to_string());
             }
          }
       }

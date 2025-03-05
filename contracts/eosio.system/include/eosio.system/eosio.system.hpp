@@ -16,7 +16,6 @@
 #include <optional>
 #include <string>
 #include <type_traits>
-#include <unordered_set>
 
 #ifdef CHANNEL_RAM_AND_NAMEBID_FEES_TO_REX
 #undef CHANNEL_RAM_AND_NAMEBID_FEES_TO_REX
@@ -95,19 +94,23 @@ namespace eosiosystem {
    using blockchain_parameters_t = eosio::blockchain_parameters;
 #endif
 
-  /**
-   * The `eosio.system` smart contract is provided by `block.one` as a sample system contract, and it defines the structures and actions needed for blockchain's core functionality.
-   *
-   * Just like in the `eosio.bios` sample contract implementation, there are a few actions which are not implemented at the contract level (`newaccount`, `updateauth`, `deleteauth`, `linkauth`, `unlinkauth`, `canceldelay`, `onerror`, `setabi`, `setcode`), they are just declared in the contract so they will show in the contract's ABI and users will be able to push those actions to the chain via the account holding the `eosio.system` contract, but the implementation is at the EOSIO core level. They are referred to as EOSIO native actions.
-   *
-   * - Users can stake tokens for CPU and Network bandwidth, and then vote for producers or
-   *    delegate their vote to a proxy.
-   * - Producers register in order to be voted for, and can claim per-block and per-vote rewards.
-   * - Users can buy and sell RAM at a market-determined price.
-   * - Users can bid on premium names.
-   * - A resource exchange system (REX) allows token holders to lend their tokens,
-   *    and users to rent CPU and Network resources in return for a market-determined fee.
-   */
+   /**
+    * The `eosio.system` smart contract defines the structures and actions needed for blockchain's core functionality.
+    *
+    * Just like in the `eosio.bios` sample contract implementation, there are a few actions which are not implemented at
+    * the contract level (`newaccount`, `updateauth`, `deleteauth`, `linkauth`, `unlinkauth`, `canceldelay`, `onerror`,
+    * `setabi`, `setcode`), they are just declared in the contract so they will show in the contract's ABI and users
+    * will be able to push those actions to the chain via the account holding the `eosio.system` contract, but the
+    * implementation is at the core level. They are referred to as host native actions.
+    *
+    * - Users can stake tokens for CPU and Network bandwidth, and then vote for producers or
+    *    delegate their vote to a proxy.
+    * - Producers register in order to be voted for, and can claim per-block and per-vote rewards.
+    * - Users can buy and sell RAM at a market-determined price.
+    * - Users can bid on premium names.
+    * - A resource exchange system (REX) allows token holders to lend their tokens,
+    *    and users to rent CPU and Network resources in return for a market-determined fee.
+    */
 
    // A name bid, which consists of:
    // - a `newname` name that the bid is for
@@ -372,6 +375,32 @@ namespace eosiosystem {
    };
 
    typedef eosio::multi_index< "finkeyidgen"_n, fin_key_id_generator_info >  fin_key_id_gen_table;
+
+   // A single entry storing a vector of names, each of which is a pattern that new account names
+   // are checked against (when the `newaccount` is called), in order to reject the creation
+   // of accounts whose name matches patterns in the blacklist.
+   struct [[eosio::table("acctdenylist"), eosio::contract("eosio.system")]] account_name_blacklist {
+      std::vector<name> disallowed;
+
+      uint64_t primary_key() const { return 0; }
+
+      EOSLIB_SERIALIZE( account_name_blacklist, (disallowed) )
+   };
+
+   typedef eosio::multi_index< "acctdenylist"_n, account_name_blacklist >  account_name_blacklist_table;
+
+   // Store hash values allowing account blacklist names to be added to `account_name_blacklist_table`
+   struct [[eosio::table("acctdenyhash"), eosio::contract("eosio.system")]] deny_hash {
+      uint64_t     id;                       // automatically generated ID for the key in the table
+      checksum256  hash;                     // sha256 hash computed over a `vector<name>` and allowing
+                                             // said vector to be added to `account_name_blacklist_table`
+      uint64_t     primary_key() const { return id; }
+      checksum256  by_hash()     const { return hash; }
+   };
+
+   typedef eosio::multi_index<
+      "denyhashlist"_n, deny_hash,
+      indexed_by<"byhash"_n, const_mem_fun<deny_hash, checksum256, &deny_hash::by_hash>>> deny_hash_table;
 
    // Voter info. Voter info stores information about the voter:
    // - `owner` the voter
@@ -806,9 +835,13 @@ namespace eosiosystem {
                                > powerup_order_table;
 
    /**
-    * The `eosio.system` smart contract is provided by `block.one` as a sample system contract, and it defines the structures and actions needed for blockchain's core functionality.
+    * The `eosio.system` smart contract defines the structures and actions needed for blockchain's core functionality.
     *
-    * Just like in the `eosio.bios` sample contract implementation, there are a few actions which are not implemented at the contract level (`newaccount`, `updateauth`, `deleteauth`, `linkauth`, `unlinkauth`, `canceldelay`, `onerror`, `setabi`, `setcode`), they are just declared in the contract so they will show in the contract's ABI and users will be able to push those actions to the chain via the account holding the `eosio.system` contract, but the implementation is at the EOSIO core level. They are referred to as EOSIO native actions.
+    * Just like in the `eosio.bios` sample contract implementation, there are a few actions which are not implemented at
+    * the contract level (`newaccount`, `updateauth`, `deleteauth`, `linkauth`, `unlinkauth`, `canceldelay`, `onerror`,
+    * `setabi`, `setcode`), they are just declared in the contract so they will show in the contract's ABI and users
+    * will be able to push those actions to the chain via the account holding the `eosio.system` contract, but the
+    * implementation is at the core level. They are referred to as host native actions.
     *
     * - Users can stake tokens for CPU and Network bandwidth, and then vote for producers or
     *    delegate their vote to a proxy.
@@ -956,6 +989,72 @@ namespace eosiosystem {
          [[eosio::action]]
          void setacctcpu( const name& account, const std::optional<int64_t>& cpu_weight );
 
+         /**
+          * Computes a hash for a vector of names
+          *
+          * @param patterns - vector of names.
+          *
+          * This is a read-only action. 
+          */
+         [[eosio::action]]
+         checksum256 denyhashcalc( const std::vector<name>& patterns );
+
+         /**
+          * Store a hash value computed from a vector of names.
+          *
+          * Once this hash has been stored in the blockchain (a privileged operation), any account can call the
+          * `denynames` action to add the vector of name patterns that this hash was computed from to the
+          * `account_name_blacklist`.
+          *
+          * requires "eosio"_n permission
+          *
+          * @param hash - a hash value computed from a vector of names.
+          */
+         [[eosio::action]]
+         void denyhashadd( const checksum256& hash );
+
+         /**
+          * Remove a hash value computed from a vector of names. Will trigger an exception if the hash is absent,
+          * i.e. if it was never added via `denyhashadd`, or if it was removed when the corresponding name vector
+          * was added via `denynames`.
+          *
+          * requires "eosio"_n permission
+          *
+          * @param hash - a hash value computed from a vector of names.
+          */
+         [[eosio::action]]
+         void denyhashrm( const checksum256& hash );
+
+         /**
+          * Add names to the `account_name_blacklist` singleton.
+          *
+          * The `account_name_blacklist` singleton contains a vector of names, each of which is a pattern that
+          * new account names are checked against (when the `newaccount` is called), in order to reject the creation
+          * of accounts whose name includes patterns in the blacklist.
+          * The "eosio"_n account is not subject to the blacklist restrictions.
+          *
+          * No permission is required to call the `denynames` action, however it will fail if the hash corresponding to
+          * `patterns` has not been stored first using `denyhashadd`
+          *
+          * @param patterns - vector of name patterns to add to the blacklist
+          */
+         [[eosio::action]]
+         void denynames( const std::vector<name>& patterns );
+
+         /**
+          * Remove names from the `account_name_blacklist` singleton.
+          *
+          * The `account_name_blacklist` singleton contains a vector of names, each of which is a pattern that
+          * new account names are checked against (when the `newaccount` is called), in order to reject the creation
+          * of accounts whose name includes patterns in the blacklist.
+          * The "eosio"_n account is not subject to the blacklist restrictions.
+          *
+          * requires "eosio"_n permission
+          *
+          * @param patterns - vector of name patterns to remove from the blacklist
+          */
+         [[eosio::action]]
+         void undenynames( const std::vector<name>& patterns );
 
          /**
           * The activate action, activates a protocol feature
@@ -1842,71 +1941,75 @@ namespace eosiosystem {
          [[eosio::action]]
          void limitauthchg( const name& account, const std::vector<name>& allow_perms, const std::vector<name>& disallow_perms );
 
-         using init_action = eosio::action_wrapper<"init"_n, &system_contract::init>;
-         using setacctram_action = eosio::action_wrapper<"setacctram"_n, &system_contract::setacctram>;
-         using setacctnet_action = eosio::action_wrapper<"setacctnet"_n, &system_contract::setacctnet>;
-         using setacctcpu_action = eosio::action_wrapper<"setacctcpu"_n, &system_contract::setacctcpu>;
-         using activate_action = eosio::action_wrapper<"activate"_n, &system_contract::activate>;
+         using init_action         = eosio::action_wrapper<"init"_n, &system_contract::init>;
+         using setacctram_action   = eosio::action_wrapper<"setacctram"_n, &system_contract::setacctram>;
+         using setacctnet_action   = eosio::action_wrapper<"setacctnet"_n, &system_contract::setacctnet>;
+         using setacctcpu_action   = eosio::action_wrapper<"setacctcpu"_n, &system_contract::setacctcpu>;
+         using activate_action     = eosio::action_wrapper<"activate"_n, &system_contract::activate>;
+         using denyhashcalc_action = eosio::action_wrapper<"denyhashcalc"_n, &system_contract::denyhashcalc>;
+         using denyhashadd_action  = eosio::action_wrapper<"denyhashadd"_n, &system_contract::denyhashadd>;
+         using denynames_action    = eosio::action_wrapper<"denynames"_n, &system_contract::denynames>;
+         using undenynames_action  = eosio::action_wrapper<"undenynames"_n, &system_contract::undenynames>;
          using logsystemfee_action = eosio::action_wrapper<"logsystemfee"_n, &system_contract::logsystemfee>;
-         using delegatebw_action = eosio::action_wrapper<"delegatebw"_n, &system_contract::delegatebw>;
-         using deposit_action = eosio::action_wrapper<"deposit"_n, &system_contract::deposit>;
-         using withdraw_action = eosio::action_wrapper<"withdraw"_n, &system_contract::withdraw>;
-         using buyrex_action = eosio::action_wrapper<"buyrex"_n, &system_contract::buyrex>;
+         using delegatebw_action   = eosio::action_wrapper<"delegatebw"_n, &system_contract::delegatebw>;
+         using deposit_action      = eosio::action_wrapper<"deposit"_n, &system_contract::deposit>;
+         using withdraw_action     = eosio::action_wrapper<"withdraw"_n, &system_contract::withdraw>;
+         using buyrex_action       = eosio::action_wrapper<"buyrex"_n, &system_contract::buyrex>;
          using unstaketorex_action = eosio::action_wrapper<"unstaketorex"_n, &system_contract::unstaketorex>;
-         using sellrex_action = eosio::action_wrapper<"sellrex"_n, &system_contract::sellrex>;
+         using sellrex_action      = eosio::action_wrapper<"sellrex"_n, &system_contract::sellrex>;
          using cnclrexorder_action = eosio::action_wrapper<"cnclrexorder"_n, &system_contract::cnclrexorder>;
-         using rentcpu_action = eosio::action_wrapper<"rentcpu"_n, &system_contract::rentcpu>;
-         using rentnet_action = eosio::action_wrapper<"rentnet"_n, &system_contract::rentnet>;
-         using fundcpuloan_action = eosio::action_wrapper<"fundcpuloan"_n, &system_contract::fundcpuloan>;
-         using fundnetloan_action = eosio::action_wrapper<"fundnetloan"_n, &system_contract::fundnetloan>;
-         using defcpuloan_action = eosio::action_wrapper<"defcpuloan"_n, &system_contract::defcpuloan>;
-         using defnetloan_action = eosio::action_wrapper<"defnetloan"_n, &system_contract::defnetloan>;
-         using updaterex_action = eosio::action_wrapper<"updaterex"_n, &system_contract::updaterex>;
-         using rexexec_action = eosio::action_wrapper<"rexexec"_n, &system_contract::rexexec>;
-         using setrex_action = eosio::action_wrapper<"setrex"_n, &system_contract::setrex>;
-         using mvtosavings_action = eosio::action_wrapper<"mvtosavings"_n, &system_contract::mvtosavings>;
-         using mvfrsavings_action = eosio::action_wrapper<"mvfrsavings"_n, &system_contract::mvfrsavings>;
-         using consolidate_action = eosio::action_wrapper<"consolidate"_n, &system_contract::consolidate>;
-         using closerex_action = eosio::action_wrapper<"closerex"_n, &system_contract::closerex>;
-         using donatetorex_action = eosio::action_wrapper<"donatetorex"_n, &system_contract::donatetorex>;
+         using rentcpu_action      = eosio::action_wrapper<"rentcpu"_n, &system_contract::rentcpu>;
+         using rentnet_action      = eosio::action_wrapper<"rentnet"_n, &system_contract::rentnet>;
+         using fundcpuloan_action  = eosio::action_wrapper<"fundcpuloan"_n, &system_contract::fundcpuloan>;
+         using fundnetloan_action  = eosio::action_wrapper<"fundnetloan"_n, &system_contract::fundnetloan>;
+         using defcpuloan_action   = eosio::action_wrapper<"defcpuloan"_n, &system_contract::defcpuloan>;
+         using defnetloan_action   = eosio::action_wrapper<"defnetloan"_n, &system_contract::defnetloan>;
+         using updaterex_action    = eosio::action_wrapper<"updaterex"_n, &system_contract::updaterex>;
+         using rexexec_action      = eosio::action_wrapper<"rexexec"_n, &system_contract::rexexec>;
+         using setrex_action       = eosio::action_wrapper<"setrex"_n, &system_contract::setrex>;
+         using mvtosavings_action  = eosio::action_wrapper<"mvtosavings"_n, &system_contract::mvtosavings>;
+         using mvfrsavings_action  = eosio::action_wrapper<"mvfrsavings"_n, &system_contract::mvfrsavings>;
+         using consolidate_action  = eosio::action_wrapper<"consolidate"_n, &system_contract::consolidate>;
+         using closerex_action     = eosio::action_wrapper<"closerex"_n, &system_contract::closerex>;
+         using donatetorex_action  = eosio::action_wrapper<"donatetorex"_n, &system_contract::donatetorex>;
          using undelegatebw_action = eosio::action_wrapper<"undelegatebw"_n, &system_contract::undelegatebw>;
-         using buyram_action = eosio::action_wrapper<"buyram"_n, &system_contract::buyram>;
-         using buyrambytes_action = eosio::action_wrapper<"buyrambytes"_n, &system_contract::buyrambytes>;
-         using logbuyram_action = eosio::action_wrapper<"logbuyram"_n, &system_contract::logbuyram>;
-         using sellram_action = eosio::action_wrapper<"sellram"_n, &system_contract::sellram>;
-         using giftram_action = eosio::action_wrapper<"giftram"_n, &system_contract::giftram>;
-         using ungiftram_action = eosio::action_wrapper<"ungiftram"_n, &system_contract::ungiftram>;
-         using logsellram_action = eosio::action_wrapper<"logsellram"_n, &system_contract::logsellram>;
-         using ramtransfer_action = eosio::action_wrapper<"ramtransfer"_n, &system_contract::ramtransfer>;
-         using ramburn_action = eosio::action_wrapper<"ramburn"_n, &system_contract::ramburn>;
-         using buyramburn_action = eosio::action_wrapper<"buyramburn"_n, &system_contract::buyramburn>;
+         using buyram_action       = eosio::action_wrapper<"buyram"_n, &system_contract::buyram>;
+         using buyrambytes_action  = eosio::action_wrapper<"buyrambytes"_n, &system_contract::buyrambytes>;
+         using logbuyram_action    = eosio::action_wrapper<"logbuyram"_n, &system_contract::logbuyram>;
+         using sellram_action      = eosio::action_wrapper<"sellram"_n, &system_contract::sellram>;
+         using giftram_action      = eosio::action_wrapper<"giftram"_n, &system_contract::giftram>;
+         using ungiftram_action    = eosio::action_wrapper<"ungiftram"_n, &system_contract::ungiftram>;
+         using logsellram_action   = eosio::action_wrapper<"logsellram"_n, &system_contract::logsellram>;
+         using ramtransfer_action  = eosio::action_wrapper<"ramtransfer"_n, &system_contract::ramtransfer>;
+         using ramburn_action      = eosio::action_wrapper<"ramburn"_n, &system_contract::ramburn>;
+         using buyramburn_action   = eosio::action_wrapper<"buyramburn"_n, &system_contract::buyramburn>;
          using logramchange_action = eosio::action_wrapper<"logramchange"_n, &system_contract::logramchange>;
-         using refund_action = eosio::action_wrapper<"refund"_n, &system_contract::refund>;
-         using regproducer_action = eosio::action_wrapper<"regproducer"_n, &system_contract::regproducer>;
+         using refund_action       = eosio::action_wrapper<"refund"_n, &system_contract::refund>;
+         using regproducer_action  = eosio::action_wrapper<"regproducer"_n, &system_contract::regproducer>;
          using regproducer2_action = eosio::action_wrapper<"regproducer2"_n, &system_contract::regproducer2>;
-         using unregprod_action = eosio::action_wrapper<"unregprod"_n, &system_contract::unregprod>;
-         using setram_action = eosio::action_wrapper<"setram"_n, &system_contract::setram>;
-         using setramrate_action = eosio::action_wrapper<"setramrate"_n, &system_contract::setramrate>;
+         using unregprod_action    = eosio::action_wrapper<"unregprod"_n, &system_contract::unregprod>;
+         using setram_action       = eosio::action_wrapper<"setram"_n, &system_contract::setram>;
+         using setramrate_action   = eosio::action_wrapper<"setramrate"_n, &system_contract::setramrate>;
          using voteproducer_action = eosio::action_wrapper<"voteproducer"_n, &system_contract::voteproducer>;
-         using voteupdate_action = eosio::action_wrapper<"voteupdate"_n, &system_contract::voteupdate>;
-         using regproxy_action = eosio::action_wrapper<"regproxy"_n, &system_contract::regproxy>;
+         using voteupdate_action   = eosio::action_wrapper<"voteupdate"_n, &system_contract::voteupdate>;
+         using regproxy_action     = eosio::action_wrapper<"regproxy"_n, &system_contract::regproxy>;
          using claimrewards_action = eosio::action_wrapper<"claimrewards"_n, &system_contract::claimrewards>;
-         using rmvproducer_action = eosio::action_wrapper<"rmvproducer"_n, &system_contract::rmvproducer>;
+         using rmvproducer_action  = eosio::action_wrapper<"rmvproducer"_n, &system_contract::rmvproducer>;
          using updtrevision_action = eosio::action_wrapper<"updtrevision"_n, &system_contract::updtrevision>;
-         using bidname_action = eosio::action_wrapper<"bidname"_n, &system_contract::bidname>;
-         using bidrefund_action = eosio::action_wrapper<"bidrefund"_n, &system_contract::bidrefund>;
-         using setpriv_action = eosio::action_wrapper<"setpriv"_n, &system_contract::setpriv>;
-         using setalimits_action = eosio::action_wrapper<"setalimits"_n, &system_contract::setalimits>;
-         using setparams_action = eosio::action_wrapper<"setparams"_n, &system_contract::setparams>;
+         using bidname_action      = eosio::action_wrapper<"bidname"_n, &system_contract::bidname>;
+         using bidrefund_action    = eosio::action_wrapper<"bidrefund"_n, &system_contract::bidrefund>;
+         using setpriv_action      = eosio::action_wrapper<"setpriv"_n, &system_contract::setpriv>;
+         using setalimits_action   = eosio::action_wrapper<"setalimits"_n, &system_contract::setalimits>;
+         using setparams_action    = eosio::action_wrapper<"setparams"_n, &system_contract::setparams>;
          using setinflation_action = eosio::action_wrapper<"setinflation"_n, &system_contract::setinflation>;
          using setpayfactor_action = eosio::action_wrapper<"setpayfactor"_n, &system_contract::setpayfactor>;
-         using cfgpowerup_action = eosio::action_wrapper<"cfgpowerup"_n, &system_contract::cfgpowerup>;
-         using powerupexec_action = eosio::action_wrapper<"powerupexec"_n, &system_contract::powerupexec>;
-         using powerup_action = eosio::action_wrapper<"powerup"_n, &system_contract::powerup>;
+         using cfgpowerup_action   = eosio::action_wrapper<"cfgpowerup"_n, &system_contract::cfgpowerup>;
+         using powerupexec_action  = eosio::action_wrapper<"powerupexec"_n, &system_contract::powerupexec>;
+         using powerup_action      = eosio::action_wrapper<"powerup"_n, &system_contract::powerup>;
          using execschedule_action = eosio::action_wrapper<"execschedule"_n, &system_contract::execschedule>;
-         using setschedule_action = eosio::action_wrapper<"setschedule"_n, &system_contract::setschedule>;
-         using delschedule_action = eosio::action_wrapper<"delschedule"_n, &system_contract::delschedule>;
-         using unvest_action = eosio::action_wrapper<"unvest"_n, &system_contract::unvest>;
+         using setschedule_action  = eosio::action_wrapper<"setschedule"_n, &system_contract::setschedule>;
+         using delschedule_action  = eosio::action_wrapper<"delschedule"_n, &system_contract::delschedule>;
+         using unvest_action       = eosio::action_wrapper<"unvest"_n, &system_contract::unvest>;
 
       private:
          //defined in eosio.system.cpp

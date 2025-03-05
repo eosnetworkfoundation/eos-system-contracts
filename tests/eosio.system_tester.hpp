@@ -602,6 +602,48 @@ public:
       return push_transaction( trx );
    }
 
+   action_result _newaccount(name creator, name account) {
+      return push_action(creator, "newaccount"_n, mvo()
+                         ("creator", creator)
+                         ("name",    account)
+                         ("owner",   authority(get_public_key(account, "owner")))
+                         ("active",  authority(get_public_key(account, "active"))));
+   }
+
+   std::optional<fc::sha256> denyhashcalc(name acct, const std::vector<name>& patterns) {
+      try {
+         auto trace = base_tester::push_action(config::system_account_name, "denyhashcalc"_n, acct, mvo()("patterns", patterns));
+         auto v = trace->action_traces[0].return_value;
+         fc::sha256 hash = fc::sha256(v.data(), v.size());
+         return hash;
+      } catch (const fc::exception& ex) {
+         return {};
+      }
+   }
+
+   action_result denyhashadd(name acct, const sha256& hash) {
+      return push_action(acct, "denyhashadd"_n, mvo()("hash", hash));
+   }
+
+   action_result denyhashrm(name acct, const sha256& hash) {
+      return push_action(acct, "denyhashrm"_n, mvo()("hash", hash));
+   }
+
+   action_result denynames(name acct, const std::vector<name>& patterns) {
+      return push_action(acct, "denynames"_n, mvo()("patterns", patterns));
+   }
+
+   action_result undenynames(name acct, const std::vector<name>& patterns) {
+      return push_action(acct, "undenynames"_n, mvo()("patterns", patterns));
+   }
+
+   std::vector<name> get_blacklisted_names() const {
+      vector<char> data = get_row_by_id( config::system_account_name, config::system_account_name, "acctdenylist"_n, 0);
+      if (data.empty())
+         return {};
+      return abi_ser.binary_to_variant("account_name_blacklist", data, abi_serializer_max_time)["disallowed"].as<std::vector<name>>();
+   }
+
    action_result push_action( const account_name& signer, const action_name &name, const variant_object &data, bool auth = true ) {
          string action_type_name = abi_ser.get_action_type(name);
 
