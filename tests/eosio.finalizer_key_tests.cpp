@@ -882,6 +882,15 @@ public:
    point       _start;
 };
 
+// --------------------------------------------
+// example output (release build, AMD 7950x)
+// requires changing
+// `cfg.state_size = 1024*1024*160;` in tester.hpp
+// --------------------------------------------
+// running 1 test case...
+// update 10000 keys: 1.71573ms
+// update 32 keys out of 10032: 0.059452ms
+// --------------------------------------------
 BOOST_FIXTURE_TEST_CASE(peer_keys_perf, peer_keys_tester) try {
    constexpr size_t num_extra = 32;
    constexpr size_t num_accounts = 10'000;
@@ -913,7 +922,7 @@ BOOST_FIXTURE_TEST_CASE(peer_keys_perf, peer_keys_tester) try {
    }
 
    {
-      basic_stopwatch sw("update " + std::to_string(num_accounts) + " keys\n");
+      basic_stopwatch sw("update " + std::to_string(num_accounts) + " keys: ");
       auto num_updated = update_peer_keys();
       BOOST_REQUIRE_EQUAL(num_updated, num_accounts);
    }
@@ -924,10 +933,15 @@ BOOST_FIXTURE_TEST_CASE(peer_keys_perf, peer_keys_tester) try {
    }
 
    {
-      basic_stopwatch sw("update " + std::to_string(num_extra) + " keys\n");
+      basic_stopwatch sw("update " + std::to_string(num_extra) + " keys out of " + std::to_string(num_accounts + num_extra) + ": ");
       auto num_updated = update_peer_keys();
       BOOST_REQUIRE_EQUAL(num_updated, num_extra);
    }
+   auto prev = accounts[num_accounts-1];
+   auto next = accounts[num_accounts];
+   BOOST_REQUIRE((*get_peer_key_map())[prev] == get_public_key(prev));
+   BOOST_REQUIRE((*get_peer_key_map())[next] == get_public_key(next));
+   BOOST_REQUIRE(get_peer_key_map()->size() == num_accounts + num_extra);
 
 } FC_LOG_AND_RETHROW()
 
