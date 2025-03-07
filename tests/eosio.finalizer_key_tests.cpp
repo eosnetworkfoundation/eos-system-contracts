@@ -1,4 +1,7 @@
+#include <chrono>
+#include <iostream>
 #include "eosio.system_tester.hpp"
+#include <eosio/chain/peer_keys_db.hpp>
 
 #include <boost/test/unit_test.hpp>
 
@@ -737,39 +740,106 @@ struct peer_keys_tester : eosio_system_tester {
       return fc::crypto::public_key(s);
    }
 
-    action_result regpeerkey( const name& proposer, const fc::crypto::public_key& key  ) {
-       return push_action(proposer, "regpeerkey"_n, mvo()("proposer_finalizer_name", proposer)("key", key));
+   std::optional<uint64_t> get_peer_key_version() {
+      vector<char> data = get_row_by_id( config::system_account_name, config::system_account_name, "peerkeysver"_n, 0 );
+      if (data.empty())
+         return {};
+      return abi_ser.binary_to_variant( "peer_keys_version", data, abi_serializer_max_time )["version"].as_uint64();
    }
 
+   size_t update_peer_keys() {
+      return peer_keys_db.update_peer_keys(*control);
+   }
+
+   boost::shared_ptr<peer_keys_db_t::peer_key_map_t> get_peer_key_map() {
+      return peer_keys_db.get_peer_key_map();
+   }
+
+   typename base_tester::action_result _push_action(action&& act, uint64_t authorizer, bool produce) {
+      signed_transaction trx;
+      if (authorizer) {
+         act.authorization = vector<permission_level>{{account_name(authorizer), config::active_name}};
+      }
+      trx.actions.emplace_back(std::move(act));
+      set_transaction_headers(trx);
+      if (authorizer) {
+         trx.sign(get_private_key(account_name(authorizer), "active"), control->get_chain_id());
+      }
+      try {
+         push_transaction(trx);
+      } catch (const fc::exception& ex) {
+         edump((ex.to_detail_string()));
+         return error(ex.top_message()); // top_message() is assumed by many tests; otherwise they fail
+         //return error(ex.to_detail_string());
+      }
+      if (produce) {
+         produce_block();
+         BOOST_REQUIRE_EQUAL(true, chain_has_transaction(trx.id()));
+      }
+      return success();
+   }
+   
+   action_result regpeerkey( const name& proposer, const fc::crypto::public_key& key  ) {
+      return push_action(proposer, "regpeerkey"_n, mvo()("proposer_finalizer_name", proposer)("key", key));
+   }
+   
    action_result delpeerkey( const name& proposer, const fc::crypto::public_key& key ) {
       return push_action(proposer, "delpeerkey"_n, mvo()("proposer_finalizer_name", proposer)("key", key));
    }
+
+   peer_keys_db_t peer_keys_db;
 };
 
 BOOST_FIXTURE_TEST_CASE(peer_keys_test, peer_keys_tester) try {
    const std::vector<account_name> accounts = { "alice"_n, "bob"_n };
-   const account_name alice = accounts[0];
-   const account_name bob = accounts[1];
+
+   const account_name alice     = accounts[0];
+   const account_name bob       = accounts[1];
+   const auto         alice_key = get_public_key(alice);
+   const auto         bob_key   = get_public_key(bob);
 
    create_accounts_with_resources(accounts);
 
+   // check `update_peer_keys()` before any key created
+   // -------------------------------------------------
+   BOOST_REQUIRE_EQUAL(update_peer_keys(), 0);
+   BOOST_REQUIRE_EQUAL(get_peer_key_map()->size(), 0);
+
    // store Alice's peer key
    // ----------------------
-   BOOST_REQUIRE_EQUAL(success(), regpeerkey(alice, get_public_key(alice)));
-   BOOST_REQUIRE(get_peer_key_info(alice) == get_public_key(alice));
+   BOOST_REQUIRE_EQUAL(success(), regpeerkey(alice, alice_key));
+   BOOST_REQUIRE(get_peer_key_info(alice) == alice_key);
+   BOOST_REQUIRE_EQUAL(*get_peer_key_version(), 1u);
+   BOOST_REQUIRE_EQUAL(update_peer_keys(), 1);                    // we should find one new row
+   BOOST_REQUIRE((*get_peer_key_map())[alice] == alice_key);      // yes, got it
+   BOOST_REQUIRE_EQUAL(update_peer_keys(), 0);                    // `regpeerkey()` was not called again, so no new row.
 
+#if 0
+   auto& m = *get_peer_key_map();
+   using m_type = std::decay_t<decltype(m)>;
+   using vt = m_type::value_type;
+   std::cout << "sz=" << sizeof(public_key_type) << '\n';
+   std::cout << "triv_cop=" << std::is_trivially_copyable_v<name> << '\n';
+   std::cout << "triv_cop=" << std::is_trivially_copyable_v<fc::crypto::r1::public_key_shim> << '\n';
+#endif
+   
    // replace Alices's key with a new one
    // -----------------------------------
    auto new_key = get_public_key("alice.new"_n);
    BOOST_REQUIRE_EQUAL(success(), regpeerkey(alice, new_key));
    BOOST_REQUIRE(get_peer_key_info(alice) == new_key);
+   BOOST_REQUIRE_EQUAL(*get_peer_key_version(), 2u);
+   BOOST_REQUIRE_EQUAL(update_peer_keys(), 1);                    // we should find one updated
+   BOOST_REQUIRE((*get_peer_key_map())[alice] == new_key);        // yes, got it
 
    // Delete Alices's key
    // -------------------
    BOOST_REQUIRE_EQUAL(error("assertion failure with message: Current key does not match the provided one"),
-                       delpeerkey(alice, get_public_key(alice))); // not the right key, should be `new_key`
+                       delpeerkey(alice, alice_key)); // not the right key, should be `new_key`
    BOOST_REQUIRE_EQUAL(success(), delpeerkey(alice, new_key));
    BOOST_REQUIRE(get_peer_key_info(alice) == std::optional<fc::crypto::public_key>{});
+   BOOST_REQUIRE_EQUAL(*get_peer_key_version(), 2u);
+   BOOST_REQUIRE_EQUAL(update_peer_keys(), 0);                    // we don't delete in the memory hash map
 
    // But we can't delete it twice!
    // -----------------------------
@@ -778,10 +848,86 @@ BOOST_FIXTURE_TEST_CASE(peer_keys_test, peer_keys_tester) try {
 
    // store Alice's and Bob's peer keys
    // ---------------------------------
-   BOOST_REQUIRE_EQUAL(success(), regpeerkey(alice, get_public_key(alice)));
-   BOOST_REQUIRE(get_peer_key_info(alice) == get_public_key(alice));
-   BOOST_REQUIRE_EQUAL(success(), regpeerkey(bob, get_public_key(bob)));
-   BOOST_REQUIRE(get_peer_key_info(bob) == get_public_key(bob));
+   BOOST_REQUIRE_EQUAL(success(), regpeerkey(alice, alice_key));
+   BOOST_REQUIRE(get_peer_key_info(alice) == alice_key);
+   BOOST_REQUIRE_EQUAL(success(), regpeerkey(bob, bob_key));
+   BOOST_REQUIRE(get_peer_key_info(bob) == bob_key);
+   BOOST_REQUIRE_EQUAL(*get_peer_key_version(), 4u);
+   BOOST_REQUIRE_EQUAL(update_peer_keys(), 2);                    // both are updated
+   BOOST_REQUIRE((*get_peer_key_map())[alice] == alice_key); 
+   BOOST_REQUIRE((*get_peer_key_map())[bob] == bob_key);
+
+} FC_LOG_AND_RETHROW()
+
+class basic_stopwatch {
+public:
+   basic_stopwatch(std::string msg) : _msg(std::move(msg)) {  start(); }
+
+   ~basic_stopwatch() {
+      if (!_msg.empty())
+         std::cout << _msg << get_time_us()/1000 << "ms\n";
+   }
+
+   void start() { _start = clock::now(); } // overwrite start time if needed
+
+   double get_time_us() const {
+      using duration_t = std::chrono::duration<double, std::micro>;
+      return std::chrono::duration_cast<duration_t>(clock::now() - _start).count();
+   }
+
+   using clock = std::chrono::high_resolution_clock;
+   using point = std::chrono::time_point<clock>;
+
+   std::string _msg;
+   point       _start;
+};
+
+BOOST_FIXTURE_TEST_CASE(peer_keys_perf, peer_keys_tester) try {
+   constexpr size_t num_extra = 32;
+   constexpr size_t num_accounts = 10'000;
+   std::vector<account_name> accounts;
+   accounts.reserve(num_accounts);
+
+   auto num_to_alpha = [](size_t i) {
+      std::string res;
+      while (i) {
+         res += 'a' + (i % 26);
+         i /= 26;
+      }
+      std::reverse(res.begin(), res.end());
+      return res;
+   };
+
+   for (size_t i=0; i< num_accounts + num_extra; ++i) {
+      account_name acct("alice" + num_to_alpha(i));
+      accounts.push_back(acct);
+      create_account_with_resources(acct, config::system_account_name);
+      if (i % 20 == 0)
+         produce_block();
+   }
+   produce_block();
+   
+   for (size_t i=0; i< num_accounts; ++i) {
+      auto acct = accounts[i];
+      BOOST_REQUIRE_EQUAL(success(), regpeerkey(acct, get_public_key(acct)));
+   }
+
+   {
+      basic_stopwatch sw("update " + std::to_string(num_accounts) + " keys\n");
+      auto num_updated = update_peer_keys();
+      BOOST_REQUIRE_EQUAL(num_updated, num_accounts);
+   }
+
+   for (size_t i=num_accounts; i< num_accounts + num_extra; ++i) {
+      auto acct = accounts[i];
+      BOOST_REQUIRE_EQUAL(success(), regpeerkey(acct, get_public_key(acct)));
+   }
+
+   {
+      basic_stopwatch sw("update " + std::to_string(num_extra) + " keys\n");
+      auto num_updated = update_peer_keys();
+      BOOST_REQUIRE_EQUAL(num_updated, num_extra);
+   }
 
 } FC_LOG_AND_RETHROW()
 
