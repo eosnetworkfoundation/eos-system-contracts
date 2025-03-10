@@ -328,6 +328,7 @@ namespace eosiosystem {
 
    void system_contract::regpeerkey( const name& proposer_finalizer_name, const public_key& key ) {
       require_auth(proposer_finalizer_name);
+      check(!std::holds_alternative<eosio::webauthn_public_key>(key), "webauthn keys not allowed in regpeerkey action");
 
       auto version_itr = _peer_keys_version.begin();
       if (version_itr == _peer_keys_version.end())
