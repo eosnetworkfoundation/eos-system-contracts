@@ -1,7 +1,11 @@
 #include <chrono>
 #include <iostream>
 #include "eosio.system_tester.hpp"
-#include <eosio/chain/peer_keys_db.hpp>
+
+#if __has_include(<eosio/chain/peer_keys_db.hpp>)
+   #include <eosio/chain/peer_keys_db.hpp>
+   #define _has_peer_keys_db
+#endif
 
 #include <boost/test/unit_test.hpp>
 
@@ -747,6 +751,7 @@ struct peer_keys_tester : eosio_system_tester {
       return abi_ser.binary_to_variant( "peer_keys_version", data, abi_serializer_max_time )["version"].as_uint64();
    }
 
+#ifdef _has_peer_keys_db
    size_t update_peer_keys() {
       return peer_keys_db.update_peer_keys(*control);
    }
@@ -754,6 +759,7 @@ struct peer_keys_tester : eosio_system_tester {
    boost::shared_ptr<peer_keys_db_t::peer_key_map_t> get_peer_key_map() {
       return peer_keys_db.get_peer_key_map();
    }
+#endif
 
    typename base_tester::action_result _push_action(action&& act, uint64_t authorizer, bool produce) {
       signed_transaction trx;
@@ -787,7 +793,9 @@ struct peer_keys_tester : eosio_system_tester {
       return push_action(proposer, "delpeerkey"_n, mvo()("proposer_finalizer_name", proposer)("key", key));
    }
 
+#ifdef _has_peer_keys_db
    peer_keys_db_t peer_keys_db;
+#endif
 };
 
 BOOST_FIXTURE_TEST_CASE(peer_keys_test, peer_keys_tester) try {
@@ -800,37 +808,34 @@ BOOST_FIXTURE_TEST_CASE(peer_keys_test, peer_keys_tester) try {
 
    create_accounts_with_resources(accounts);
 
+#ifdef _has_peer_keys_db
    // check `update_peer_keys()` before any key created
    // -------------------------------------------------
    BOOST_REQUIRE_EQUAL(update_peer_keys(), 0);
    BOOST_REQUIRE_EQUAL(get_peer_key_map()->size(), 0);
+#endif
 
    // store Alice's peer key
    // ----------------------
    BOOST_REQUIRE_EQUAL(success(), regpeerkey(alice, alice_key));
    BOOST_REQUIRE(get_peer_key_info(alice) == alice_key);
    BOOST_REQUIRE_EQUAL(*get_peer_key_version(), 1u);
+#ifdef _has_peer_keys_db
    BOOST_REQUIRE_EQUAL(update_peer_keys(), 1);                    // we should find one new row
    BOOST_REQUIRE((*get_peer_key_map())[alice] == alice_key);      // yes, got it
    BOOST_REQUIRE_EQUAL(update_peer_keys(), 0);                    // `regpeerkey()` was not called again, so no new row.
-
-#if 0
-   auto& m = *get_peer_key_map();
-   using m_type = std::decay_t<decltype(m)>;
-   using vt = m_type::value_type;
-   std::cout << "sz=" << sizeof(public_key_type) << '\n';
-   std::cout << "triv_cop=" << std::is_trivially_copyable_v<name> << '\n';
-   std::cout << "triv_cop=" << std::is_trivially_copyable_v<fc::crypto::r1::public_key_shim> << '\n';
 #endif
-   
+
    // replace Alices's key with a new one
    // -----------------------------------
    auto new_key = get_public_key("alice.new"_n);
    BOOST_REQUIRE_EQUAL(success(), regpeerkey(alice, new_key));
    BOOST_REQUIRE(get_peer_key_info(alice) == new_key);
    BOOST_REQUIRE_EQUAL(*get_peer_key_version(), 2u);
+#ifdef _has_peer_keys_db
    BOOST_REQUIRE_EQUAL(update_peer_keys(), 1);                    // we should find one updated
    BOOST_REQUIRE((*get_peer_key_map())[alice] == new_key);        // yes, got it
+#endif
 
    // Delete Alices's key
    // -------------------
@@ -839,7 +844,9 @@ BOOST_FIXTURE_TEST_CASE(peer_keys_test, peer_keys_tester) try {
    BOOST_REQUIRE_EQUAL(success(), delpeerkey(alice, new_key));
    BOOST_REQUIRE(get_peer_key_info(alice) == std::optional<fc::crypto::public_key>{});
    BOOST_REQUIRE_EQUAL(*get_peer_key_version(), 2u);
+#ifdef _has_peer_keys_db
    BOOST_REQUIRE_EQUAL(update_peer_keys(), 0);                    // we don't delete in the memory hash map
+#endif
 
    // But we can't delete it twice!
    // -----------------------------
@@ -853,12 +860,16 @@ BOOST_FIXTURE_TEST_CASE(peer_keys_test, peer_keys_tester) try {
    BOOST_REQUIRE_EQUAL(success(), regpeerkey(bob, bob_key));
    BOOST_REQUIRE(get_peer_key_info(bob) == bob_key);
    BOOST_REQUIRE_EQUAL(*get_peer_key_version(), 4u);
+#ifdef _has_peer_keys_db
    BOOST_REQUIRE_EQUAL(update_peer_keys(), 2);                    // both are updated
    BOOST_REQUIRE((*get_peer_key_map())[alice] == alice_key); 
    BOOST_REQUIRE((*get_peer_key_map())[bob] == bob_key);
+#endif
 
 } FC_LOG_AND_RETHROW()
 
+
+#ifdef _has_peer_keys_db
 class basic_stopwatch {
 public:
    basic_stopwatch(std::string msg) : _msg(std::move(msg)) {  start(); }
@@ -882,15 +893,18 @@ public:
    point       _start;
 };
 
-// --------------------------------------------
+// ------------------------------------------------
 // example output (release build, AMD 7950x)
 // requires changing
 // `cfg.state_size = 1024*1024*160;` in tester.hpp
-// --------------------------------------------
+// ------------------------------------------------
 // running 1 test case...
 // update 10000 keys: 1.71573ms
 // update 32 keys out of 10032: 0.059452ms
-// --------------------------------------------
+// ------------------------------------------------
+// sizeof(peer_key_map_t::value_type) == 88
+// so 10k keys use ~1MB
+// ------------------------------------------------
 BOOST_FIXTURE_TEST_CASE(peer_keys_perf, peer_keys_tester) try {
    constexpr size_t num_extra = 32;
    constexpr size_t num_accounts = 10'000;
@@ -944,6 +958,8 @@ BOOST_FIXTURE_TEST_CASE(peer_keys_perf, peer_keys_tester) try {
    BOOST_REQUIRE(get_peer_key_map()->size() == num_accounts + num_extra);
 
 } FC_LOG_AND_RETHROW()
+
+#endif
 
 
 BOOST_AUTO_TEST_SUITE_END()
