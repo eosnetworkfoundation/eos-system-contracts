@@ -325,4 +325,35 @@ namespace eosiosystem {
       // Remove the key from finalizer_keys table
       idx.erase( fin_key_itr );
    }
+
+   void system_contract::regpeerkey( const name& proposer_finalizer_name, const public_key& key ) {
+      require_auth(proposer_finalizer_name);
+      check(!std::holds_alternative<eosio::webauthn_public_key>(key), "webauthn keys not allowed in regpeerkey action");
+
+      auto version_itr = _peer_keys_version.begin();
+      if (version_itr == _peer_keys_version.end())
+         version_itr = _peer_keys_version.emplace(get_self(), [](auto& v) { v.version = 0; });
+      _peer_keys_version.modify(version_itr, same_payer, [&](auto& v) { ++v.version; });
+
+      auto peers_itr = _peer_keys.find(proposer_finalizer_name.value);
+      if (peers_itr == _peer_keys.end()) {
+         _peer_keys.emplace(proposer_finalizer_name, [&](auto& res) { 
+            res = peer_key{ proposer_finalizer_name, version_itr->version, key };
+         });
+      } else {
+         check(peers_itr->key != key, "Privided key is the same as currently stored one");
+         _peer_keys.modify(peers_itr, same_payer, [&](auto& res) { res.key = key; res.version = version_itr->version; });
+      }
+   }
+
+   void system_contract::delpeerkey( const name& proposer_finalizer_name, const public_key& key ) {
+      require_auth(proposer_finalizer_name);
+
+      // not updating the version here. deleted keys will persist in the memory hashmap
+      auto peers_itr = _peer_keys.find(proposer_finalizer_name.value);
+      check(peers_itr != _peer_keys.end(), "Key not present for name: " + proposer_finalizer_name.to_string());
+      check(peers_itr->key == key, "Current key does not match the provided one");
+      _peer_keys.erase(peers_itr);
+   }
+
 } /// namespace eosiosystem
