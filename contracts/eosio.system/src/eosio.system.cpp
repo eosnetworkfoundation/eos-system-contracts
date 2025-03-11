@@ -38,7 +38,6 @@ namespace eosiosystem {
     _rexbalance(get_self(), get_self().value),
     _rexorders(get_self(), get_self().value),
     _rexmaturity(get_self(), get_self().value),
-    _peer_keys_version(get_self(), get_self().value),
     _peer_keys(get_self(), get_self().value)
    {
       _gstate  = _global.exists() ? _global.get() : get_default_parameters();

@@ -744,13 +744,6 @@ struct peer_keys_tester : eosio_system_tester {
       return fc::crypto::public_key(s);
    }
 
-   std::optional<uint64_t> get_peer_key_version() {
-      vector<char> data = get_row_by_id( config::system_account_name, config::system_account_name, "peerkeysver"_n, 0 );
-      if (data.empty())
-         return {};
-      return abi_ser.binary_to_variant( "peer_keys_version", data, abi_serializer_max_time )["version"].as_uint64();
-   }
-
 #ifdef _has_peer_keys_db
    size_t update_peer_keys() {
       return peer_keys_db.update_peer_keys(*control, control->head().block_num());

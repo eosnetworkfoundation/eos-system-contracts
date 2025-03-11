@@ -509,12 +509,6 @@ namespace eosiosystem {
       uint64_t  primary_key() const { return giftee.value; } // unique as one giftee can only hold gifted ram from one gifter
    };
 
-   struct [[eosio::table("peerkeysver"), eosio::contract("eosio.system")]] peer_keys_version {
-      uint64_t   version;                                  // version incremented every time peer_keys_table is modified
-
-      uint64_t primary_key() const { return 0; }           // table has just one row
-   };
-
    struct [[eosio::table("peerkeys"), eosio::contract("eosio.system")]] peer_key {
       name                 proposer_finalizer_name;
       uint64_t             block_num;                      // block number where this row was emplaced or modified
@@ -528,7 +522,6 @@ namespace eosiosystem {
    typedef eosio::multi_index< "delband"_n, delegated_bandwidth > del_bandwidth_table;
    typedef eosio::multi_index< "refunds"_n, refund_request >      refunds_table;
    typedef eosio::multi_index< "giftedram"_n, gifted_ram >        gifted_ram_table;
-   typedef eosio::multi_index< "peerkeysver"_n, peer_keys_version > peer_keys_version_table;
 
    typedef eosio::multi_index<"peerkeys"_n, peer_key,
                               indexed_by<"byblocknum"_n, const_mem_fun<peer_key, uint64_t, &peer_key::by_block_num>>
@@ -891,7 +884,6 @@ namespace eosiosystem {
          rex_balance_table        _rexbalance;
          rex_order_table          _rexorders;
          rex_maturity_singleton   _rexmaturity;
-         peer_keys_version_table  _peer_keys_version;
          peer_keys_table          _peer_keys;
 
       public:
