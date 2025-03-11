@@ -330,19 +330,15 @@ namespace eosiosystem {
       require_auth(proposer_finalizer_name);
       check(!std::holds_alternative<eosio::webauthn_public_key>(key), "webauthn keys not allowed in regpeerkey action");
 
-      auto version_itr = _peer_keys_version.begin();
-      if (version_itr == _peer_keys_version.end())
-         version_itr = _peer_keys_version.emplace(get_self(), [](auto& v) { v.version = 0; });
-      _peer_keys_version.modify(version_itr, same_payer, [&](auto& v) { ++v.version; });
-
       auto peers_itr = _peer_keys.find(proposer_finalizer_name.value);
       if (peers_itr == _peer_keys.end()) {
          _peer_keys.emplace(proposer_finalizer_name, [&](auto& res) { 
-            res = peer_key{ proposer_finalizer_name, version_itr->version, key };
+            res = peer_key{ proposer_finalizer_name, eosio::current_block_number(), key };
          });
       } else {
-         check(peers_itr->key != key, "Privided key is the same as currently stored one");
-         _peer_keys.modify(peers_itr, same_payer, [&](auto& res) { res.key = key; res.version = version_itr->version; });
+         check(peers_itr->key != key, "Provided key is the same as currently stored one");
+         _peer_keys.modify(peers_itr, same_payer,
+                           [&](auto& res) { res = peer_key{proposer_finalizer_name, eosio::current_block_number(), key}; });
       }
    }
 

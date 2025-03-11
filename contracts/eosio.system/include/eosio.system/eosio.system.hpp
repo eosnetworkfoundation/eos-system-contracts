@@ -517,11 +517,11 @@ namespace eosiosystem {
 
    struct [[eosio::table("peerkeys"), eosio::contract("eosio.system")]] peer_key {
       name                 proposer_finalizer_name;
-      uint64_t             version;                        // version of the table where this row was emplaced or modified
+      uint64_t             block_num;                      // block number where this row was emplaced or modified
       eosio::public_key    key;                            // used to verify peer gossip
 
       uint64_t  primary_key() const { return proposer_finalizer_name.value; }
-      uint64_t  by_version() const  { return version; }
+      uint64_t  by_block_num() const { return block_num; }
    };
 
    typedef eosio::multi_index< "userres"_n, user_resources >      user_resources_table;
@@ -531,7 +531,7 @@ namespace eosiosystem {
    typedef eosio::multi_index< "peerkeysver"_n, peer_keys_version > peer_keys_version_table;
 
    typedef eosio::multi_index<"peerkeys"_n, peer_key,
-                              indexed_by<"byversion"_n, const_mem_fun<peer_key, uint64_t, &peer_key::by_version>>
+                              indexed_by<"byblocknum"_n, const_mem_fun<peer_key, uint64_t, &peer_key::by_block_num>>
                               > peer_keys_table;
 
    // `rex_pool` structure underlying the rex pool table. A rex pool table entry is defined by:
