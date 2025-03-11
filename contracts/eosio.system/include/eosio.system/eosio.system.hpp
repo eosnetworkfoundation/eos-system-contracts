@@ -1671,6 +1671,11 @@ namespace eosiosystem {
 
          /**
           * Action to delete a public key for a proposer or finalizer name.
+          *
+          * The intent of this action is only for the account to reclaim the RAM, as
+          * the node software may remember the key after it was deleted using `delpeerkey`.
+          *
+          * An existing public key for a given account can be changed by calling `regpeerkey` again.
           */
          [[eosio::action]]
          void delpeerkey( const name& proposer_finalizer_name, const public_key& key );
