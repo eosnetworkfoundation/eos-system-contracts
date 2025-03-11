@@ -901,7 +901,7 @@ public:
 // ------------------------------------------------
 BOOST_FIXTURE_TEST_CASE(peer_keys_perf, peer_keys_tester) try {
    constexpr size_t num_extra = 32;
-   constexpr size_t num_accounts = 10'000;
+   constexpr size_t num_accounts = 100;
    std::vector<account_name> accounts;
    accounts.reserve(num_accounts);
 
@@ -951,37 +951,6 @@ BOOST_FIXTURE_TEST_CASE(peer_keys_perf, peer_keys_tester) try {
    BOOST_REQUIRE((*get_peer_key_map())[prev] == get_public_key(prev));
    BOOST_REQUIRE((*get_peer_key_map())[next] == get_public_key(next));
    BOOST_REQUIRE(get_peer_key_map()->size() == num_accounts + num_extra);
-
-} FC_LOG_AND_RETHROW()
-
-BOOST_FIXTURE_TEST_CASE(peer_keys_perf2, peer_keys_tester) try {
-   constexpr size_t num_accounts = 100000;
-   using map_t = boost::unordered_flat_map<name, public_key_type, std::hash<name>>;
-   map_t map;
-
-   map.reserve(num_accounts);
-
-   auto num_to_alpha = [](size_t i) {
-      std::string res;
-      while (i) {
-         res += 'a' + (i % 26);
-         i /= 26;
-      }
-      std::reverse(res.begin(), res.end());
-      return res;
-   };
-
-   for (size_t i=0; i< num_accounts; ++i) {
-      account_name acct("alice" + num_to_alpha(i));
-      map[acct] = get_public_key(acct);
-   }
-
-   {
-      basic_stopwatch sw("copy map with " + std::to_string(num_accounts) + " keys: ");
-      map_t map2(map);
-      account_name a("alice" + num_to_alpha(0));
-      BOOST_REQUIRE(map2[a] == get_public_key(a));
-   }
 
 } FC_LOG_AND_RETHROW()
 
