@@ -749,8 +749,12 @@ struct peer_keys_tester : eosio_system_tester {
       return peer_keys_db.update_peer_keys(*control, control->head().block_num());
    }
 
-   boost::shared_ptr<peer_keys_db_t::peer_key_map_t> get_peer_key_map() {
-      return peer_keys_db.get_peer_key_map();
+   std::optional<public_key_type> get_peer_key(name n) const {
+      return peer_keys_db[n];
+   }
+
+   size_t peer_key_map_size() const {
+      return peer_keys_db.size();
    }
 #endif
 
@@ -805,7 +809,7 @@ BOOST_FIXTURE_TEST_CASE(peer_keys_test, peer_keys_tester) try {
    // check `update_peer_keys()` before any key created
    // -------------------------------------------------
    BOOST_REQUIRE_EQUAL(update_peer_keys(), 0);
-   BOOST_REQUIRE_EQUAL(get_peer_key_map()->size(), 0);
+   BOOST_REQUIRE_EQUAL(peer_key_map_size(), 0);
 #endif
 
    // store Alice's peer key
@@ -814,7 +818,7 @@ BOOST_FIXTURE_TEST_CASE(peer_keys_test, peer_keys_tester) try {
    BOOST_REQUIRE(get_peer_key_info(alice) == alice_key);
 #ifdef _has_peer_keys_db
    BOOST_REQUIRE_EQUAL(update_peer_keys(), 1);                    // we should find one new row
-   BOOST_REQUIRE((*get_peer_key_map())[alice] == alice_key);      // yes, got it
+   BOOST_REQUIRE(get_peer_key(alice) == alice_key);               // yes, got it
    BOOST_REQUIRE_EQUAL(update_peer_keys(), 0);                    // `regpeerkey()` was not called again, so no new row.
 #endif
 
@@ -825,7 +829,7 @@ BOOST_FIXTURE_TEST_CASE(peer_keys_test, peer_keys_tester) try {
    BOOST_REQUIRE(get_peer_key_info(alice) == new_key);
 #ifdef _has_peer_keys_db
    BOOST_REQUIRE_EQUAL(update_peer_keys(), 1);                    // we should find one updated
-   BOOST_REQUIRE((*get_peer_key_map())[alice] == new_key);        // yes, got it
+   BOOST_REQUIRE(get_peer_key(alice) == new_key);                 // yes, got it
 #endif
 
    // Delete Alices's key
@@ -851,8 +855,8 @@ BOOST_FIXTURE_TEST_CASE(peer_keys_test, peer_keys_tester) try {
    BOOST_REQUIRE(get_peer_key_info(bob) == bob_key);
 #ifdef _has_peer_keys_db
    BOOST_REQUIRE_EQUAL(update_peer_keys(), 2);                    // both are updated
-   BOOST_REQUIRE((*get_peer_key_map())[alice] == alice_key); 
-   BOOST_REQUIRE((*get_peer_key_map())[bob] == bob_key);
+   BOOST_REQUIRE(get_peer_key(alice) == alice_key); 
+   BOOST_REQUIRE(get_peer_key(bob) == bob_key);
 #endif
 
 } FC_LOG_AND_RETHROW()
@@ -948,9 +952,9 @@ BOOST_FIXTURE_TEST_CASE(peer_keys_perf, peer_keys_tester) try {
    
    auto prev = accounts[num_accounts-1];
    auto next = accounts[num_accounts];
-   BOOST_REQUIRE((*get_peer_key_map())[prev] == get_public_key(prev));
-   BOOST_REQUIRE((*get_peer_key_map())[next] == get_public_key(next));
-   BOOST_REQUIRE(get_peer_key_map()->size() == num_accounts + num_extra);
+   BOOST_REQUIRE(get_peer_key(prev) == get_public_key(prev));
+   BOOST_REQUIRE(get_peer_key(next) == get_public_key(next));
+   BOOST_REQUIRE(peer_key_map_size() == num_accounts + num_extra);
 
 } FC_LOG_AND_RETHROW()
 
