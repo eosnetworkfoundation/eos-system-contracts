@@ -750,7 +750,7 @@ struct peer_keys_tester : eosio_system_tester {
    }
 
    std::optional<public_key_type> get_peer_key(name n) const {
-      return peer_keys_db[n];
+      return peer_keys_db.get_peer_key(n);
    }
 
    size_t peer_key_map_size() const {
