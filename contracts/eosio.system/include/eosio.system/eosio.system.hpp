@@ -511,7 +511,7 @@ namespace eosiosystem {
 
    struct [[eosio::table("peerkeys"), eosio::contract("eosio.system")]] peer_key {
       name                 proposer_finalizer_name;
-      uint64_t             block_num;                      // block number where this row was emplaced or modified
+      uint32_t             block_num;                      // block number where this row was emplaced or modified
       eosio::public_key    key;                            // used to verify peer gossip
 
       uint64_t  primary_key() const { return proposer_finalizer_name.value; }
