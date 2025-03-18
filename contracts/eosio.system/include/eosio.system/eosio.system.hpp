@@ -510,12 +510,16 @@ namespace eosiosystem {
    };
 
    struct [[eosio::table("peerkeys"), eosio::contract("eosio.system")]] peer_key {
-      name                 proposer_finalizer_name;
-      uint32_t             block_num;                      // block number where this row was emplaced or modified
-      eosio::public_key    key;                            // used to verify peer gossip
+      name                             proposer_finalizer_name;
+      uint32_t                         block_num; // block number where this row was emplaced or modified
+      uint8_t                          version;   // version 0 and above must have the `key` optional
+      std::optional<eosio::public_key> key;       // used to verify peer gossip
 
       uint64_t  primary_key() const { return proposer_finalizer_name.value; }
       uint64_t  by_block_num() const { return block_num; }
+
+      static constexpr uint8_t current_version = 0;   // increment when optional members are added and update `make_default_row`
+      static peer_key make_default_row(name n) { return peer_key{n, eosio::current_block_number(), current_version, {}}; }
    };
 
    typedef eosio::multi_index< "userres"_n, user_resources >      user_resources_table;

@@ -746,6 +746,7 @@ struct peer_keys_tester : eosio_system_tester {
 
 #ifdef _has_peer_keys_db
    size_t update_peer_keys() {
+      peer_keys_db.set_active(true);
       return peer_keys_db.update_peer_keys(*control, control->head().block_num());
    }
 
