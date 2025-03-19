@@ -740,8 +740,23 @@ struct peer_keys_tester : eosio_system_tester {
       vector<char> data = get_row_by_id( config::system_account_name, config::system_account_name, "peerkeys"_n, n.to_uint64_t() );
       if (data.empty())
          return {};
-      auto s = abi_ser.binary_to_variant( "peer_key", data, abi_serializer_max_time )["key"].as_string();
-      return fc::crypto::public_key(s);
+      fc::datastream<const char*> ds(data.data(), data.size());
+      name            row_name;
+      uint32_t        row_block_num;
+      uint8_t         row_version;
+      using variant_t = std::optional<public_key_type>;
+      std::variant<variant_t> v;
+
+      fc::raw::unpack(ds, row_name);
+      fc::raw::unpack(ds, row_block_num);
+      fc::raw::unpack(ds, row_version);
+      if (row_version != 0)
+         return {};
+      fc::raw::unpack(ds, v);
+      auto& row_key = std::get<variant_t>(v);
+      if (row_key)
+         return *row_key;
+      return {};
    }
 
 #ifdef _has_peer_keys_db

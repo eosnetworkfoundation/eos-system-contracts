@@ -509,17 +509,22 @@ namespace eosiosystem {
       uint64_t  primary_key() const { return giftee.value; } // unique as one giftee can only hold gifted ram from one gifter
    };
 
-   struct [[eosio::table("peerkeys"), eosio::contract("eosio.system")]] peer_key {
-      name                             proposer_finalizer_name;
-      uint32_t                         block_num; // block number where this row was emplaced or modified
-      uint8_t                          version;   // version 0 and above must have the `key` optional
-      std::optional<eosio::public_key> key;       // used to verify peer gossip
+   struct [[eosio::table("peerkeys"), eosio::contract("eosio.system")]] peer_key
+   {
+      name                                           proposer_finalizer_name;
+      uint32_t                                       block_num; // block number where this row was emplaced or modified
+      uint8_t                                        version;   // version == 0 means variant holds `public_key` optional
+      std::variant<std::optional<eosio::public_key>> data;
 
-      uint64_t  primary_key() const { return proposer_finalizer_name.value; }
+      uint64_t  primary_key()  const { return proposer_finalizer_name.value; }
       uint64_t  by_block_num() const { return block_num; }
 
-      static constexpr uint8_t current_version = 0;   // increment when optional members are added and update `make_default_row`
-      static peer_key make_default_row(name n) { return peer_key{n, eosio::current_block_number(), current_version, {}}; }
+      void set_public_key(const public_key& key) { data = std::optional<eosio::public_key>{key}; }
+      const std::optional<eosio::public_key>& get_public_key() const {
+         return std::visit([](auto& v) -> const std::optional<eosio::public_key>& { return v; }, data);
+      }
+      void update_row() { block_num = eosio::current_block_number(); }
+      void init_row(name n) { *this = peer_key{n, eosio::current_block_number(), 0, std::optional<eosio::public_key>{}}; }
    };
 
    typedef eosio::multi_index< "userres"_n, user_resources >      user_resources_table;
