@@ -325,5 +325,4 @@ namespace eosiosystem {
       // Remove the key from finalizer_keys table
       idx.erase( fin_key_itr );
    }
-
 } /// namespace eosiosystem

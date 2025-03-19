@@ -728,5 +728,4 @@ BOOST_FIXTURE_TEST_CASE(update_elected_producers_finalizers_replaced_test, final
 }
 FC_LOG_AND_RETHROW()
 
-
 BOOST_AUTO_TEST_SUITE_END()
