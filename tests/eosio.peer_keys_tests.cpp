@@ -11,19 +11,30 @@
 
 using namespace eosio_system;
 
+#ifdef _has_peer_keys_db
+using v0_data = eosio::chain::peer_keys_db_t::v0_data;
+#else
+struct v0_data {
+   std::optional<public_key_type> pubkey;
+};
+
+FC_REFLECT(v0_data, (pubkey))
+#endif
+
 BOOST_AUTO_TEST_SUITE(peer_keys_tests)
+
 
 struct peer_keys_tester : eosio_system_tester {
    std::optional<fc::crypto::public_key> get_peer_key_info(const name& n) {
-      vector<char> data = get_row_by_id( config::system_account_name, config::system_account_name, "peerkeys"_n, n.to_uint64_t() );
-      if (data.empty())
+      vector<char> row_data = get_row_by_id( config::system_account_name, config::system_account_name, "peerkeys"_n, n.to_uint64_t() );
+      if (row_data.empty())
          return {};
-      fc::datastream<const char*> ds(data.data(), data.size());
+      fc::datastream<const char*> ds(row_data.data(), row_data.size());
+
       name            row_name;
       uint32_t        row_block_num;
       uint8_t         row_version;
-      using variant_t = std::optional<public_key_type>;
-      std::variant<variant_t> v;
+      std::variant<v0_data> v;
 
       fc::raw::unpack(ds, row_name);
       fc::raw::unpack(ds, row_block_num);
@@ -31,9 +42,9 @@ struct peer_keys_tester : eosio_system_tester {
       if (row_version != 0)
          return {};
       fc::raw::unpack(ds, v);
-      auto& row_key = std::get<variant_t>(v);
-      if (row_key)
-         return *row_key;
+      auto& data = std::get<v0_data>(v);
+      if (data.pubkey)
+         return *data.pubkey;
       return {};
    }
 
