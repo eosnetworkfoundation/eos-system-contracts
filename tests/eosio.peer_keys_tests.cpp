@@ -31,16 +31,12 @@ struct peer_keys_tester : eosio_system_tester {
          return {};
       fc::datastream<const char*> ds(row_data.data(), row_data.size());
 
-      name            row_name;
-      uint32_t        row_block_num;
-      uint8_t         row_version;
+      name                  row_name;
+      uint32_t              row_block_num;
       std::variant<v0_data> v;
 
       fc::raw::unpack(ds, row_name);
       fc::raw::unpack(ds, row_block_num);
-      fc::raw::unpack(ds, row_version);
-      if (row_version != 0)
-         return {};
       fc::raw::unpack(ds, v);
       auto& data = std::get<v0_data>(v);
       if (data.pubkey)

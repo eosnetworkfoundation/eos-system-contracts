@@ -518,7 +518,6 @@ namespace eosiosystem {
 
       name                                           proposer_finalizer_name;
       uint32_t                                       block_num; // block number where this row was emplaced or modified
-      uint8_t                                        version;   // version == 0 means variant holds `v0_data`
       std::variant<v0_data>                          data;
 
       uint64_t  primary_key()  const { return proposer_finalizer_name.value; }
@@ -529,7 +528,7 @@ namespace eosiosystem {
          return std::visit([](auto& v) -> const std::optional<eosio::public_key>& { return v.pubkey; }, data);
       }
       void update_row() { block_num = eosio::current_block_number(); }
-      void init_row(name n) { *this = peer_key{n, eosio::current_block_number(), 0, v0_data{}}; }
+      void init_row(name n) { *this = peer_key{n, eosio::current_block_number(), v0_data{}}; }
    };
 
    typedef eosio::multi_index< "userres"_n, user_resources >      user_resources_table;
