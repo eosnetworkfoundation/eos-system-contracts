@@ -32,11 +32,11 @@ struct peer_keys_tester : eosio_system_tester {
       fc::datastream<const char*> ds(row_data.data(), row_data.size());
 
       name                  row_name;
-      uint32_t              row_block_num;
+      block_timestamp_type  row_block_timestamp;
       std::variant<v0_data> v;
 
       fc::raw::unpack(ds, row_name);
-      fc::raw::unpack(ds, row_block_num);
+      fc::raw::unpack(ds, row_block_timestamp);
       fc::raw::unpack(ds, v);
       auto& data = std::get<v0_data>(v);
       if (data.pubkey)
@@ -47,7 +47,7 @@ struct peer_keys_tester : eosio_system_tester {
 #ifdef _has_peer_keys_db
    size_t update_peer_keys() {
       peer_keys_db.set_active(true);
-      return peer_keys_db.update_peer_keys(*control, control->head().block_num());
+      return peer_keys_db.update_peer_keys(*control, control->head().timestamp());
    }
 
    std::optional<public_key_type> get_peer_key(name n) const {
