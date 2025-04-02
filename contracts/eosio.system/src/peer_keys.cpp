@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <eosio.system/eosio.system.hpp>
 #include <eosio.system/peer_keys.hpp>
 

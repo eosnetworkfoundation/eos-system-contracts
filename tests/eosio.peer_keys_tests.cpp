@@ -2,24 +2,15 @@
 #include <iostream>
 #include "eosio.system_tester.hpp"
 
-#if __has_include(<eosio/chain/peer_keys_db.hpp>)
-   #include <eosio/chain/peer_keys_db.hpp>
-   #define _has_peer_keys_db
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 using namespace eosio_system;
 
-#ifdef _has_peer_keys_db
-using v0_data = eosio::chain::peer_keys_db_t::v0_data;
-#else
 struct v0_data {
    std::optional<public_key_type> pubkey;
 };
 
 FC_REFLECT(v0_data, (pubkey))
-#endif
 
 BOOST_AUTO_TEST_SUITE(peer_keys_tests)
 
@@ -36,28 +27,12 @@ struct peer_keys_tester : eosio_system_tester {
       std::variant<v0_data> v;
 
       fc::raw::unpack(ds, row_name);
-      fc::raw::unpack(ds, row_block_timestamp);
       fc::raw::unpack(ds, v);
       auto& data = std::get<v0_data>(v);
       if (data.pubkey)
          return *data.pubkey;
       return {};
    }
-
-#ifdef _has_peer_keys_db
-   size_t update_peer_keys() {
-      peer_keys_db.set_active(true);
-      return peer_keys_db.update_peer_keys(*control, control->head().timestamp());
-   }
-
-   std::optional<public_key_type> get_peer_key(name n) const {
-      return peer_keys_db.get_peer_key(n);
-   }
-
-   size_t peer_key_map_size() const {
-      return peer_keys_db.size();
-   }
-#endif
 
    typename base_tester::action_result _push_action(action&& act, uint64_t authorizer, bool produce) {
       signed_transaction trx;
@@ -90,10 +65,6 @@ struct peer_keys_tester : eosio_system_tester {
    action_result delpeerkey( const name& proposer, const fc::crypto::public_key& key ) {
       return push_action(proposer, "delpeerkey"_n, mvo()("proposer_finalizer_name", proposer)("key", key));
    }
-
-#ifdef _has_peer_keys_db
-   peer_keys_db_t peer_keys_db;
-#endif
 };
 
 BOOST_FIXTURE_TEST_CASE(peer_keys_test, peer_keys_tester) try {

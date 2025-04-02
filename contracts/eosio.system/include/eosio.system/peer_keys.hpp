@@ -24,30 +24,27 @@ struct [[eosio::table("peerkeys"), eosio::contract("eosio.system")]] peer_key {
       EOSLIB_SERIALIZE(v0_data, (pubkey))
    };
 
-   name                  proposer_finalizer_name;
-   block_timestamp       block_time; // timestamp of block where this row was emplaced or modified
+   name                  account;
    std::variant<v0_data> data;
 
-   uint64_t primary_key() const { return proposer_finalizer_name.value; }
-   uint64_t by_block_time() const { return block_time.slot; }
+   uint64_t primary_key() const { return account.value; }
 
    void                                    set_public_key(const public_key& key) { data = v0_data{key}; }
    const std::optional<eosio::public_key>& get_public_key() const {
       return std::visit([](auto& v) -> const std::optional<eosio::public_key>& { return v.pubkey; }, data);
    }
-   void update_row() { block_time = eosio::current_block_time(); }
-   void init_row(name n) { *this = peer_key{n, eosio::current_block_time(), v0_data{}}; }
+   void update_row() {}
+   void init_row(name n) { *this = peer_key{n, v0_data{}}; }
 };
 
 // -------------------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------------
-typedef eosio::multi_index<"peerkeys"_n, peer_key,
-                           indexed_by<"byblocktime"_n, const_mem_fun<peer_key, uint64_t, &peer_key::by_block_time>>>
-   peer_keys_table;
+typedef eosio::multi_index<"peerkeys"_n, peer_key> peer_keys_table;
 
 // -------------------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------------
 struct [[eosio::contract("eosio.system")]] peer_keys : public eosio::contract {
+   
    peer_keys(name s, name code, eosio::datastream<const char*> ds)
       : eosio::contract(s, code, ds) {}
 
