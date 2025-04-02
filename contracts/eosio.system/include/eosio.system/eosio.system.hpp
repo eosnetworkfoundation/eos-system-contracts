@@ -509,36 +509,10 @@ namespace eosiosystem {
       uint64_t  primary_key() const { return giftee.value; } // unique as one giftee can only hold gifted ram from one gifter
    };
 
-   struct [[eosio::table("peerkeys"), eosio::contract("eosio.system")]] peer_key
-   {
-      struct v0_data {
-         std::optional<eosio::public_key> pubkey;  // peer key for network message authentication
-         EOSLIB_SERIALIZE( v0_data, (pubkey) )
-      };
-
-      name                                           proposer_finalizer_name;
-      block_timestamp                                block_time; // timestamp of block where this row was emplaced or modified
-      std::variant<v0_data>                          data;
-
-      uint64_t  primary_key()   const { return proposer_finalizer_name.value; }
-      uint64_t  by_block_time() const { return block_time.slot; }
-
-      void set_public_key(const public_key& key) { data = v0_data{key}; }
-      const std::optional<eosio::public_key>& get_public_key() const {
-         return std::visit([](auto& v) -> const std::optional<eosio::public_key>& { return v.pubkey; }, data);
-      }
-      void update_row()     { block_time = eosio::current_block_time(); }
-      void init_row(name n) { *this = peer_key{n, eosio::current_block_time(), v0_data{}}; }
-   };
-
    typedef eosio::multi_index< "userres"_n, user_resources >      user_resources_table;
    typedef eosio::multi_index< "delband"_n, delegated_bandwidth > del_bandwidth_table;
    typedef eosio::multi_index< "refunds"_n, refund_request >      refunds_table;
    typedef eosio::multi_index< "giftedram"_n, gifted_ram >        gifted_ram_table;
-
-   typedef eosio::multi_index<"peerkeys"_n, peer_key,
-                              indexed_by<"byblocktime"_n, const_mem_fun<peer_key, uint64_t, &peer_key::by_block_time>>
-                              > peer_keys_table;
 
    // `rex_pool` structure underlying the rex pool table. A rex pool table entry is defined by:
    // - `version` defaulted to zero,
@@ -897,7 +871,6 @@ namespace eosiosystem {
          rex_balance_table        _rexbalance;
          rex_order_table          _rexorders;
          rex_maturity_singleton   _rexmaturity;
-         peer_keys_table          _peer_keys;
 
       public:
          static constexpr eosio::name active_permission{"active"_n};
@@ -1671,27 +1644,6 @@ namespace eosiosystem {
           */
          [[eosio::action]]
          void delfinkey( const name& finalizer_name, const std::string& finalizer_key );
-
-         /**
-          * Action to register a public key for a proposer or finalizer name.
-          * This key will be used to validate a network peer's identity.
-          * A proposer or finalizer can only have have one public key registered at a time.
-          * If a key is already registered for `proposer_finalizer_name`, and `regpeerkey` is
-          * called with a different key, the new key replaces the previous one in `peer_keys_table`
-          */
-         [[eosio::action]]
-         void regpeerkey( const name& proposer_finalizer_name, const public_key& key );
-
-         /**
-          * Action to delete a public key for a proposer or finalizer name.
-          *
-          * The intent of this action is only for the account to reclaim the RAM, as
-          * the node software may remember the key after it was deleted using `delpeerkey`.
-          *
-          * An existing public key for a given account can be changed by calling `regpeerkey` again.
-          */
-         [[eosio::action]]
-         void delpeerkey( const name& proposer_finalizer_name, const public_key& key );
 
          /**
           * Set ram action sets the ram supply.
