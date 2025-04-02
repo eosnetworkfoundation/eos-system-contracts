@@ -509,6 +509,7 @@ namespace eosiosystem {
       uint64_t  primary_key() const { return giftee.value; } // unique as one giftee can only hold gifted ram from one gifter
    };
 
+
    typedef eosio::multi_index< "userres"_n, user_resources >      user_resources_table;
    typedef eosio::multi_index< "delband"_n, delegated_bandwidth > del_bandwidth_table;
    typedef eosio::multi_index< "refunds"_n, refund_request >      refunds_table;
