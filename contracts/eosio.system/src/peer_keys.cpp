@@ -46,6 +46,7 @@ peer_keys::getpeerkeys_response peer_keys::getpeerkeys() {
    resp.reserve(100);
 
    auto idx = producers.get_index<"prototalvote"_n>();
+   // should limit to paid producers, not top-60
    for( auto it = idx.cbegin(); it != idx.cend() && resp.size() < 60 && 0 < it->total_votes && it->active(); ++it ) {
       auto peers_itr = peer_keys_table.find(it->owner.value);
       if (peers_itr == peer_keys_table.end())
