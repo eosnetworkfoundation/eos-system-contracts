@@ -55,7 +55,7 @@ struct [[eosio::contract("eosio.system")]] peer_keys : public eosio::contract {
       EOSLIB_SERIALIZE(peerkeys_t, (producer_name)(peer_key))
    };
 
-   using getpeerkeys_response = std::vector<peerkeys_t>;
+   using getpeerkeys_res_t = std::vector<peerkeys_t>;
 
    /**
     * Action to register a public key for a proposer or finalizer name.
@@ -83,7 +83,7 @@ struct [[eosio::contract("eosio.system")]] peer_keys : public eosio::contract {
     * added via the regpeerkey action.
     */
    [[eosio::action]]
-   getpeerkeys_response getpeerkeys();
+   getpeerkeys_res_t getpeerkeys();
 
 };
 

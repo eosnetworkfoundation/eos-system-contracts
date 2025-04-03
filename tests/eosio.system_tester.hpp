@@ -1450,7 +1450,7 @@ public:
       produce_blocks( 2 * 21 ); // This is minimum number of blocks required by ram_gift in system_tests
 
       auto producer_schedule = control->active_producers();
-      BOOST_REQUIRE_EQUAL( 21, producer_schedule.producers.size() );
+      BOOST_REQUIRE_EQUAL( std::min(21u, num_producers), producer_schedule.producers.size() );
       BOOST_REQUIRE_EQUAL( name("defproducera"), producer_schedule.producers[0].producer_name );
 
       return producer_names;

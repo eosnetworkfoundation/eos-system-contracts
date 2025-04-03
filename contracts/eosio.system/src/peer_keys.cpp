@@ -39,15 +39,15 @@ void peer_keys::delpeerkey(const name& proposer_finalizer_name, const public_key
    peer_keys_table.erase(peers_itr);
 }
 
-peer_keys::getpeerkeys_response peer_keys::getpeerkeys() {
+peer_keys::getpeerkeys_res_t peer_keys::getpeerkeys() {
    peer_keys_table peer_keys_table(get_self(), get_self().value);
    producers_table producers(get_self(), get_self().value);
-   getpeerkeys_response resp;
+   getpeerkeys_res_t resp;
    resp.reserve(100);
 
    auto idx = producers.get_index<"prototalvote"_n>();
    // should limit to paid producers, not top-60
-   for( auto it = idx.cbegin(); it != idx.cend() && resp.size() < 60 && 0 < it->total_votes && it->active(); ++it ) {
+   for( auto it = idx.cbegin(); it != idx.cend() && resp.size() < 60 && it->total_votes > 0 && it->active(); ++it ) {
       auto peers_itr = peer_keys_table.find(it->owner.value);
       if (peers_itr == peer_keys_table.end())
          resp.push_back(peerkeys_t{it->owner, {}});
