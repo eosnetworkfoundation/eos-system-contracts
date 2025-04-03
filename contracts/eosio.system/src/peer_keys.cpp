@@ -41,7 +41,18 @@ void peer_keys::delpeerkey(const name& proposer_finalizer_name, const public_key
 
 peer_keys::getpeerkeys_response peer_keys::getpeerkeys() {
    peer_keys_table peer_keys_table(get_self(), get_self().value);
-   getpeerkeys_response resp{{{"n1"_n, {}}}};
+   producers_table producers(get_self(), get_self().value);
+   getpeerkeys_response resp;
+   resp.reserve(100);
+
+   auto idx = producers.get_index<"prototalvote"_n>();
+   for( auto it = idx.cbegin(); it != idx.cend() && resp.size() < 60 && 0 < it->total_votes && it->active(); ++it ) {
+      auto peers_itr = peer_keys_table.find(it->owner.value);
+      if (peers_itr == peer_keys_table.end())
+         resp.push_back(peerkeys_t{it->owner, {}});
+      else
+         resp.push_back(peerkeys_t{it->owner, peers_itr->get_public_key()});
+   }
    return resp;
 }
 
