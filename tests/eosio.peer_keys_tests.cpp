@@ -12,14 +12,26 @@ struct v0_data {
 
 FC_REFLECT(v0_data, (pubkey))
 
-BOOST_AUTO_TEST_SUITE(peer_keys_tests)
-
+#if 0  // enable when spring PR #1276 is merged
 // ------------------------------------------------------------
 // below definitions from eosio::chain should match those in
 // ../contracts/eosio.system/include/eosio.system/peer_keys.hpp
 // ------------------------------------------------------------
 using peerkeys_t        = eosio::chain::peerkeys_t;
 using getpeerkeys_res_t = eosio::chain::getpeerkeys_res_t;
+#else
+
+   struct peerkeys_t {
+      name                           producer_name;
+      std::optional<public_key_type> peer_key;
+   };
+using _getpeerkeys_res_t = std::vector<::peerkeys_t>;
+
+FC_REFLECT(::peerkeys_t, (producer_name)(peer_key))
+#endif
+
+BOOST_AUTO_TEST_SUITE(peer_keys_tests)
+
 
 
 // ----------------------------------------------------------------------------------------------------
@@ -75,7 +87,7 @@ struct peer_keys_tester : eosio_system_tester {
       return push_action(proposer, "delpeerkey"_n, mvo()("proposer_finalizer_name", proposer)("key", key));
    }
 
-   getpeerkeys_res_t getpeerkeys() {
+   _getpeerkeys_res_t getpeerkeys() {
       auto               perms = vector<permission_level>{};
       action             act(perms, config::system_account_name, "getpeerkeys"_n, {});
       signed_transaction trx;
@@ -86,7 +98,7 @@ struct peer_keys_tester : eosio_system_tester {
       transaction_trace_ptr trace = push_transaction(trx, fc::time_point::maximum(), DEFAULT_BILLED_CPU_TIME_US,
                                                      false, transaction_metadata::trx_type::read_only);
 
-      getpeerkeys_res_t res;
+      _getpeerkeys_res_t res;
       assert(!trace->action_traces.empty());
       const auto& act_trace = trace->action_traces[0];
       const auto& retval    = act_trace.return_value;
