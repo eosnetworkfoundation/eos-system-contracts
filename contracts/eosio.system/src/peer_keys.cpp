@@ -49,20 +49,12 @@ peer_keys::getpeerkeys_res_t peer_keys::getpeerkeys() {
 
    auto idx = producers.get_index<"prototalvote"_n>();
 
-   for( auto prod = idx.cbegin(); prod != idx.cend() && prod->total_votes > 0 && prod->active(); ++prod ) {
-      // limit to paid producers
-      if (auto prod2 = producers2.find(prod->owner.value); prod2 != producers2.end()) {
-         eosio::print("prod2 = ", prod->owner, ", share=", prod2->votepay_share);
-         if (prod2->votepay_share > 0) {
-            auto peers_itr = peer_keys_table.find(prod->owner.value);
-            if (peers_itr == peer_keys_table.end())
-               resp.push_back(peerkeys_t{prod->owner, {}});
-            else
-               resp.push_back(peerkeys_t{prod->owner, peers_itr->get_public_key()});
-         } else {
-            break; // skip remaining non-paid producers
-         }
-      }
+   for( auto it = idx.cbegin(); it != idx.cend() && resp.size() < 50 && it->total_votes > 0 && it->active(); ++it ) {
+      auto peers_itr = peer_keys_table.find(it->owner.value);
+      if (peers_itr == peer_keys_table.end())
+         resp.push_back(peerkeys_t{it->owner, {}});
+      else
+         resp.push_back(peerkeys_t{it->owner, peers_itr->get_public_key()});
    }
    return resp;
 }

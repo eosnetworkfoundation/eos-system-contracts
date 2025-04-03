@@ -79,7 +79,7 @@ struct [[eosio::contract("eosio.system")]] peer_keys : public eosio::contract {
    void delpeerkey(const name& proposer_finalizer_name, const public_key& key);
 
    /**
-    * Returns a list of paid producers (in rank order) along with their peer public key if it was
+    * Returns a list of top-50 producers (in rank order) along with their peer public key if it was
     * added via the regpeerkey action.
     */
    [[eosio::action]]
