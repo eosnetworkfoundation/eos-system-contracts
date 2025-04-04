@@ -66,9 +66,6 @@ struct [[eosio::contract("eosio.system")]] peer_keys : public eosio::contract {
    /**
     * Action to delete a public key for a proposer or finalizer name.
     *
-    * The intent of this action is only for the account to reclaim the RAM, as
-    * the node software may remember the key after it was deleted using `delpeerkey`.
-    *
     * An existing public key for a given account can be changed by calling `regpeerkey` again.
     */
    [[eosio::action]]
