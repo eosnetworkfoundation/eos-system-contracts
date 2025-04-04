@@ -3,16 +3,12 @@
 #include <eosio/contract.hpp>
 #include <eosio/crypto.hpp>
 #include <eosio/name.hpp>
-#include <eosio/print.hpp>
-#include <eosio/privileged.hpp>
-#include <eosio/time.hpp>
 
 #include <string>
 #include <optional>
 
 namespace eosiosystem {
 
-using eosio::block_timestamp;
 using eosio::name;
 using eosio::public_key;
 
