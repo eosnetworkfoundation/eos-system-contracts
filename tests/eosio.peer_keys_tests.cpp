@@ -55,30 +55,6 @@ struct peer_keys_tester : eosio_system_tester {
       return {};
    }
 
-   typename base_tester::action_result _push_action(action&& act, uint64_t authorizer, bool produce) {
-      signed_transaction trx;
-      if (authorizer) {
-         act.authorization = vector<permission_level>{{account_name(authorizer), config::active_name}};
-      }
-      trx.actions.emplace_back(std::move(act));
-      set_transaction_headers(trx);
-      if (authorizer) {
-         trx.sign(get_private_key(account_name(authorizer), "active"), control->get_chain_id());
-      }
-      try {
-         push_transaction(trx);
-      } catch (const fc::exception& ex) {
-         edump((ex.to_detail_string()));
-         return error(ex.top_message()); // top_message() is assumed by many tests; otherwise they fail
-         //return error(ex.to_detail_string());
-      }
-      if (produce) {
-         produce_block();
-         BOOST_REQUIRE_EQUAL(true, chain_has_transaction(trx.id()));
-      }
-      return success();
-   }
-
    action_result regpeerkey( const name& proposer, const fc::crypto::public_key& key  ) {
       return push_action(proposer, "regpeerkey"_n, mvo()("proposer_finalizer_name", proposer)("key", key));
    }
