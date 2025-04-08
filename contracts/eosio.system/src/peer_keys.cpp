@@ -31,7 +31,6 @@ void peer_keys::delpeerkey(const name& proposer_finalizer_name, const public_key
    require_auth(proposer_finalizer_name);
    peer_keys_table peer_keys_table(get_self(), get_self().value);
 
-   // not updating the version here. deleted keys will persist in the memory hashmap
    auto peers_itr = peer_keys_table.find(proposer_finalizer_name.value);
    check(peers_itr != peer_keys_table.end(), "Key not present for name: " + proposer_finalizer_name.to_string());
    const auto& prev_key = peers_itr->get_public_key();
