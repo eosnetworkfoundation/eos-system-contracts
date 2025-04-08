@@ -82,10 +82,11 @@ peer_keys::getpeerkeys_res_t peer_keys::getpeerkeys() {
    do  {
       // invariants:
       //   - `it` and `rit` both point to a valid `producer_info` (possibly the same)
-      //   - `it` <= `rit`
+      //   - `it <= rit`
+      //   - `vote_threshold >= 0`
       // ----------------------------------------------------------------------------
       last_one = (it == rit);
-      if (rit->total_votes < vote_threshold && (-rit->total_votes > std::abs(it->total_votes))) {
+      if (rit->total_votes < -vote_threshold && (-rit->total_votes > std::abs(it->total_votes))) {
          add_peer(rit);
          if (!last_one)
             --rit;
