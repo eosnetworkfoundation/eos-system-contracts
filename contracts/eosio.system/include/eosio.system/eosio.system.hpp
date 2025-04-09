@@ -220,7 +220,7 @@ namespace eosiosystem {
    // Defines `producer_info` structure to be stored in `producer_info` table, added after version 1.0
    struct [[eosio::table, eosio::contract("eosio.system")]] producer_info {
       name                                                     owner;
-      double                                                   total_votes = 0; /// negative number for non-active producers
+      double                                                   total_votes = 0;
       eosio::public_key                                        producer_key;    /// a packed public key object
       bool                                                     is_active = true;
       std::string                                              url;

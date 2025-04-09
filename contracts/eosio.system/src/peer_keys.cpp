@@ -80,7 +80,7 @@ peer_keys::getpeerkeys_res_t peer_keys::getpeerkeys() {
    // --------------------------------------------------------------------------------------
    bool last_one = false;
    do  {
-      // invariants:
+      // invariants at this point (loop entry):
       //   - `it` and `rit` both point to a valid `producer_info` (possibly the same)
       //   - `it <= rit`
       //   - `vote_threshold >= 0`
