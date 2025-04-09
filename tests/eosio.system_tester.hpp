@@ -1401,6 +1401,20 @@ public:
       return msig_abi_ser;
    }
 
+   void update_producers_auth() {
+      auto trace_auth = validating_tester::push_action(config::system_account_name, updateauth::get_name(), config::system_account_name, mvo()
+                                            ("account", name(config::system_account_name).to_string())
+                                            ("permission", name(config::active_name).to_string())
+                                            ("parent", name(config::owner_name).to_string())
+                                            ("auth",  authority(1, {key_weight{get_public_key( config::system_account_name, "active" ), 1}}, {
+                                                  permission_level_weight{{config::system_account_name, config::eosio_code_name}, 1},
+                                                     permission_level_weight{{config::producers_account_name,  config::active_name}, 1}
+                                               }
+                                            ))
+      );
+      BOOST_REQUIRE_EQUAL(transaction_receipt::executed, trace_auth->receipt->status);
+   }
+
    vector<name> active_and_vote_producers(uint32_t num_producers = 21) {
       //stake more than 15% of total EOS supply to activate chain
       transfer( "eosio"_n, "alice1111111"_n, core_sym::from_string("650000000.0000"), config::system_account_name );
@@ -1423,17 +1437,7 @@ public:
       produce_block();
       produce_block(fc::seconds(1000));
 
-      auto trace_auth = validating_tester::push_action(config::system_account_name, updateauth::get_name(), config::system_account_name, mvo()
-                                            ("account", name(config::system_account_name).to_string())
-                                            ("permission", name(config::active_name).to_string())
-                                            ("parent", name(config::owner_name).to_string())
-                                            ("auth",  authority(1, {key_weight{get_public_key( config::system_account_name, "active" ), 1}}, {
-                                                  permission_level_weight{{config::system_account_name, config::eosio_code_name}, 1},
-                                                     permission_level_weight{{config::producers_account_name,  config::active_name}, 1}
-                                               }
-                                            ))
-      );
-      BOOST_REQUIRE_EQUAL(transaction_receipt::executed, trace_auth->receipt->status);
+      update_producers_auth();
 
       //vote for producers
       {

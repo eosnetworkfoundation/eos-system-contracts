@@ -32,8 +32,6 @@ FC_REFLECT(::peerkeys_t, (producer_name)(peer_key))
 
 BOOST_AUTO_TEST_SUITE(peer_keys_tests)
 
-
-
 // ----------------------------------------------------------------------------------------------------
 struct peer_keys_tester : eosio_system_tester {
 
@@ -83,6 +81,115 @@ struct peer_keys_tester : eosio_system_tester {
       fc::raw::unpack(ds, res);
       return res;
    }
+
+   struct ProducerSpec
+   {
+      std::string name;
+      uint8_t     percent_of_stake; // 0 to 100
+      bool        key = false;
+   };
+
+   struct PeerKey
+   {
+      std::string                name;
+      std::optional<std::string> key_src;
+
+      bool operator==(const PeerKey&) const = default;
+      friend std::ostream& operator << (std::ostream& os, const PeerKey& k) {
+         os << "{\"" << k.name << "\"" << (k.key_src ? ", \"" + *k.key_src + "\"" : "") << "}";
+         return os;
+      }
+   };
+
+   using check_in = std::vector<ProducerSpec>;
+
+   struct check_out : public std::vector<PeerKey> {
+      check_out() = default;
+      check_out(std::vector<PeerKey>&& v) : std::vector<PeerKey>(std::move(v)) {}
+      
+      friend std::ostream& operator<<(std::ostream& os, const check_out& v)
+      {
+         os << "{";
+         for (size_t i=0; i<v.size(); ++i) {
+            os << v[i];
+            if (i+1 != v.size())
+               os << ", ";
+         }
+         os << "}";
+         return os;
+      }
+   };
+
+   template <uint32_t num_top_producers, uint32_t num_selected_producers, uint8_t percent>
+   std::optional<std::string> check(const check_in& prods, const check_out& expected) {
+      // stake more than 15% of total EOS supply to activate chain
+      // ---------------------------------------------------------
+      auto alice =  "alice1111111"_n;
+      transfer("eosio"_n, alice, core_sym::from_string("750000000.0000"), config::system_account_name);
+      BOOST_REQUIRE_EQUAL(success(), stake(alice, alice, core_sym::from_string("300000000.0000"),
+                                           core_sym::from_string("300000000.0000")));
+
+      // create, setup and register producer accounts
+      // --------------------------------------------
+      std::vector<name> producers;
+      std::transform(prods.begin(), prods.end(), std::back_inserter(producers), [](auto p){ return name(p.name); });
+      auto res_amount = core_sym::from_string("1000.0000");
+      setup_producer_accounts(producers, res_amount, res_amount, res_amount);
+      for (const auto& p: producers) {
+         transfer("eosio"_n, p, res_amount, config::system_account_name);
+         BOOST_REQUIRE_EQUAL(success(), regproducer(p));
+      }
+
+      produce_block();
+      produce_block(fc::seconds(1000));
+
+      update_producers_auth();
+
+      // for each producer, fund him, stake his share of the total voting power, and vote for himself.
+      // --------------------------------------------------------------------------------------------
+      int64_t total_voting_power = 1000000;
+      for (const auto& p : prods) {
+         if (p.percent_of_stake == 0)
+            continue;                       // doesn't get any vote
+         assert(p.percent_of_stake <= 100); // this is a percentage
+         auto prod_name      = name(p.name);
+         auto stake_quantity = int64_t(total_voting_power * ((double)p.percent_of_stake / 100.0));
+         auto amt            = asset(stake_quantity, symbol(CORE_SYM));
+         auto fund_amt       = asset(stake_quantity * 4, symbol(CORE_SYM));
+
+         transfer("eosio"_n, prod_name, fund_amt, "eosio"_n);
+         BOOST_REQUIRE_EQUAL(success(), stake(prod_name, amt, amt));
+         
+         push_action(prod_name, "voteproducer"_n,
+                     mvo()("voter", p.name)("proxy", name(0).to_string())("producers", vector<name>{prod_name}));
+      }
+
+      // run the `getpeerkeys` action, and verify we get the expected result
+      // -------------------------------------------------------------------
+      auto peerkeys = getpeerkeys();
+      check_out actual;
+      std::transform(peerkeys.begin(), peerkeys.end(), std::back_inserter(actual),
+                     [](auto& k) {
+                        auto p {k.producer_name};
+                        if (!k.peer_key)
+                           return PeerKey{p.to_string()};
+                        std::string key_src { get_public_key(p) == *k.peer_key ? p.to_string() : "error" };
+                        return PeerKey{p.to_string(), key_src};
+                     });
+
+      std::cout << "actual:   " << actual << '\n';
+      std::cout << "expected: " << expected << '\n';
+
+      if (actual == expected)
+         return {};
+
+      // create error string to return
+      std::ostringstream oss;
+      oss << "expected: " << expected << "; actual: " << actual;
+
+      return oss.str();
+   }
+
 };
 
 BOOST_FIXTURE_TEST_CASE(peer_keys_test, peer_keys_tester) try {
@@ -156,6 +263,40 @@ BOOST_FIXTURE_TEST_CASE(getpeerkeys_test, peer_keys_tester) try {
       }
       BOOST_REQUIRE(found);
    }
+} FC_LOG_AND_RETHROW()
+
+BOOST_AUTO_TEST_CASE(getpeerkeys_test2) try {
+   using pkt = peer_keys_tester;
+
+   // ------------------------------------------------------------------------------------------------------
+   // `pkt().check()` verifies that, given a set of producers (active or not), "getpeerkeys"_n returns the
+   // expected result.
+   // It returns an optional, empty on success, and containing an error string on failure
+   //
+   // parameters:
+   //
+   // check_in:
+   //     - producers whose name starts with 'a' are active
+   //     - producers whose name starts with 'p' are paused
+   //     - second number is percentage of stake (total should be less than 100)
+   //     - third entry (if present} is a bool specifying if we should register a peer key for this producer
+   //
+   // check_out:  vector mirroring the output of `getpeerkeys`_n
+   // ------------------------------------------------------------------------------------------------------
+
+   // first, let's purposefully specify a wrong expected result, just to make sure that the `pkt().check()`
+   // function detects errors and works as expected
+   // -----------------------------------------------------------------------------------------------------
+   auto res = pkt().check<3, 5, 50>(
+      pkt::check_in {{"a1", 9}, {"a2", 7}, {"a3", 6}, {"a4", 1}, {"p1", 0}, {"p2", 3}, {"p3", 8}},
+      pkt::check_out{{{"a1"}, {"p1"}, {"a2"}, {"a3"}, {"p1"}}});
+
+   std::cout << *res <<  '\n';
+      
+   BOOST_REQUIRE(!!res && *res == std::string(R"(expected: {{"a1"}, {"p1"}, {"a2"}, {"a3"}, {"p1"}}; actual: {{"a1"}, {"p3"}, {"a2"}, {"a3"}, {"p2"}, {"a4"}})"));
+
+   //BOOST_REQUIRE_MESSAGE(!res, *res);
+
 } FC_LOG_AND_RETHROW()
 
 BOOST_AUTO_TEST_SUITE_END()

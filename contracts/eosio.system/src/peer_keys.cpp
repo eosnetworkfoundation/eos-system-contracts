@@ -59,7 +59,7 @@ peer_keys::getpeerkeys_res_t peer_keys::getpeerkeys() {
       // than 50% of the votes of the 21st selected producer.
       // ------------------------------------------------------------------------------------
       if (resp.size() == 21)
-         vote_threshold = std::abs(it->total_votes) * 0.5;
+         vote_threshold = it->total_votes * 0.5;
    };
 
    auto idx = producers.get_index<"prototalvote"_n>();
@@ -75,21 +75,21 @@ peer_keys::getpeerkeys_res_t peer_keys::getpeerkeys() {
    //    reactivated at any time.
    // 2. Once we have selected 21 producers, the threshold of votes required to be selected
    //    increases from `> 0` to `> 50% of the votes that the 21st selected producer has`.
-   // 3. We iterate from both ends as non-active producers have their vote total negated, so
-   //    the highest voted non-active producer will be the last entry of our index.
+   // 3. We iterate from both ends, as non-active producers are indexed at the end (their
+   //    vote total is negated for the index computation). As a consequence, the highest 
+   //    voted non-active producer will be the last entry of our index.
    // --------------------------------------------------------------------------------------
    bool last_one = false;
    do  {
-      // invariants at this point (loop entry):
-      //   - `it` and `rit` both point to a valid `producer_info` (possibly the same)
-      //   - `it <= rit`
-      //   - `vote_threshold >= 0`
-      // ----------------------------------------------------------------------------
+      // at this point, `it` and `rit` both point to a valid `producer_info` (possibly the same)
+      assert(it <= rit);
+      assert(vote_threshold >= 0);
+      assert(it->total_votes >= 0 && rit->total_votes >= 0);
       last_one = (it == rit);
-      if (rit->total_votes < -vote_threshold && (-rit->total_votes > std::abs(it->total_votes))) {
+      if (rit->total_votes > std::max(vote_threshold, it->total_votes)) {
          add_peer(rit);
-         if (!last_one)
-            --rit;
+         assert(it != rit); // Should always be satisfied since `rit->total_votes > it->total_votes`
+         --rit;
       } else if (it->total_votes > vote_threshold) {
          add_peer(it);
          ++it;
