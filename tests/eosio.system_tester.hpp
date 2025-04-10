@@ -565,6 +565,9 @@ public:
                                                   asset net = core_sym::from_string("80.0000")
                                                 )
    {
+      if (accounts.empty())
+         return {};
+
       account_name creator(config::system_account_name);
       signed_transaction trx;
       set_transaction_headers(trx);

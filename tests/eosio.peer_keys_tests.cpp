@@ -61,16 +61,9 @@ struct peer_keys_tester : eosio_system_tester {
       return push_action(proposer, "delpeerkey"_n, mvo()("proposer_finalizer_name", proposer)("key", key));
    }
 
-   _getpeerkeys_res_t getpeerkeys(uint32_t num_top_producers, uint32_t max_return, uint8_t percent)
-   {
+   _getpeerkeys_res_t getpeerkeys() {
       auto   perms = vector<permission_level>{};
       action act(perms, config::system_account_name, "getpeerkeys"_n, {});
-      
-      string action_type_name = abi_ser.get_action_type("getpeerkeys"_n);
-      act.data = abi_ser.variant_to_binary(
-         action_type_name, mvo()("num_top_producers", num_top_producers)("max_return", max_return)("percent", percent),
-         abi_serializer_max_time);
-
       signed_transaction trx;
 
       trx.actions.emplace_back(std::move(act));
@@ -89,15 +82,13 @@ struct peer_keys_tester : eosio_system_tester {
       return res;
    }
 
-   struct ProducerSpec
-   {
+   struct ProducerSpec {
       std::string name;
       uint8_t     percent_of_stake; // 0 to 100
       bool        key = false;
    };
 
-   struct PeerKey
-   {
+   struct PeerKey {
       std::string name;
       bool        key_present;
 
@@ -127,7 +118,6 @@ struct peer_keys_tester : eosio_system_tester {
       }
    };
 
-   template <uint32_t num_top_producers, uint32_t num_selected_producers, uint8_t percent>
    std::optional<std::string> check(const check_in& prods, const check_out& expected) {
       // stake more than 15% of total EOS supply to activate chain
       // ---------------------------------------------------------
@@ -176,7 +166,7 @@ struct peer_keys_tester : eosio_system_tester {
 
          // remove producer if requested (so it is not active)
          if (p.name[0] == 'p')
-            push_action(prod_name, "rmvproducer"_n, mvo()("producer", prod_name));
+            push_action("eosio"_n, "rmvproducer"_n, mvo()("producer", prod_name));
       }
 
       produce_block();
@@ -184,7 +174,7 @@ struct peer_keys_tester : eosio_system_tester {
 
       // run the `getpeerkeys` action, and verify we get the expected result
       // -------------------------------------------------------------------
-      auto peerkeys = getpeerkeys(num_top_producers, num_selected_producers, percent);
+      auto peerkeys = getpeerkeys();
       check_out actual;
       std::transform(peerkeys.begin(), peerkeys.end(), std::back_inserter(actual),
                      [](auto& k) {
@@ -195,8 +185,8 @@ struct peer_keys_tester : eosio_system_tester {
                         return PeerKey{p.to_string(), key_present};
                      });
 
-      std::cout << "actual:   " << actual << '\n';
       std::cout << "expected: " << expected << '\n';
+      std::cout << "actual:   " << actual << '\n';
 
       if (actual == expected)
          return {};
@@ -262,7 +252,7 @@ BOOST_FIXTURE_TEST_CASE(getpeerkeys_test, peer_keys_tester) try {
          BOOST_REQUIRE_EQUAL(success(), regpeerkey(n, get_public_key(n)));
    }
 
-   auto peerkeys = getpeerkeys(21, 50, 50);
+   auto peerkeys = getpeerkeys();
    BOOST_REQUIRE_EQUAL(peerkeys.size(), num_producers);
 
    for (size_t i=0; i<prod_names.size(); ++i) {
@@ -307,19 +297,24 @@ BOOST_AUTO_TEST_CASE(getpeerkeys_test2) try {
    // first, let's purposefully specify a wrong expected result, just to make sure that the `pkt().check()`
    // function detects errors and works as expected
    // -----------------------------------------------------------------------------------------------------
-   auto res = pkt().check<3, 5, 50>(
+   auto res = pkt().check(
       pkt::check_in {{"a1", 9}, {"a2", 7, true}, {"a3", 6}, {"a4", 1}, {"p1", 0}, {"p2", 3}, {"p3", 8}},
       pkt::check_out{{{"a1"}, {"p1"}, {"a2"}, {"a3"}, {"p1"}}});
 
    BOOST_REQUIRE(!!res && *res == R"(expected: {{"a1"}, {"p1"}, {"a2"}, {"a3"}, {"p1"}}; )"
-                                  R"(actual: {{"a1"}, {"p3"}, {"a2", true}, {"a3"}})");
+                                  R"(actual: {{"a1"}, {"p3"}, {"a2", true}, {"a3"}, {"p2"}, {"a4"}})");
 
    // Now do the same test specifying the correct result
    // --------------------------------------------------
-   res = pkt().check<3, 5, 50>(
+   res = pkt().check(
       pkt::check_in {{"a1", 9}, {"a2", 7, true}, {"a3", 6}, {"a4", 1}, {"p1", 0}, {"p2", 3}, {"p3", 8}},
-      pkt::check_out{{{"a1"}, {"p3"}, {"a2", true}, {"a3"}}});
+      pkt::check_out{{{"a1"}, {"p3"}, {"a2", true}, {"a3"}, {"p2"}, {"a4"}}});
 
+   BOOST_REQUIRE_MESSAGE(!res, *res);
+
+   // edge case - no producers
+   // ------------------------
+   res = pkt().check(pkt::check_in {}, pkt::check_out{});
    BOOST_REQUIRE_MESSAGE(!res, *res);
 
 

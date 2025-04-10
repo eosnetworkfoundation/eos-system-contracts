@@ -38,12 +38,13 @@ void peer_keys::delpeerkey(const name& proposer_finalizer_name, const public_key
    peer_keys_table.erase(peers_itr);
 }
 
-peer_keys::getpeerkeys_res_t peer_keys::getpeerkeys(uint32_t num_top_producers, uint32_t max_return, uint8_t percent) {
+peer_keys::getpeerkeys_res_t peer_keys::getpeerkeys() {
    peer_keys_table  peer_keys_table(get_self(), get_self().value);
    producers_table  producers(get_self(), get_self().value);
+   constexpr size_t max_return = 50;
 
    getpeerkeys_res_t resp;
-   resp.reserve(max_return);
+   resp.reserve(50);
 
    double vote_threshold = 0; // vote_threshold will always be >= 0
 
@@ -54,11 +55,11 @@ peer_keys::getpeerkeys_res_t peer_keys::getpeerkeys(uint32_t num_top_producers, 
       else
          resp.push_back(peerkeys_t{it->owner, peers_itr->get_public_key()});
 
-      // once `num_top_producers` have been selected, we will only consider producers that
-      // have more than percent% of the votes of the `num_top_producers` selected producer.
-      // ------------------------------------------------------------------------------------
-      if (resp.size() == num_top_producers)
-         vote_threshold = it->total_votes * (double(percent) / 100.0);
+      // once 21 producers have been selected, we will only consider producers
+      // that have more than 50% of the votes of the 21st selected producer.
+      // ---------------------------------------------------------------------
+      if (resp.size() == 21)
+         vote_threshold = it->total_votes * 0.5;
    };
 
    auto idx = producers.get_index<"prototalvote"_n>();
@@ -72,8 +73,8 @@ peer_keys::getpeerkeys_res_t peer_keys::getpeerkeys(uint32_t num_top_producers, 
 
    // 1. Consider both active and non-active producers. as a non-active producer can be
    //    reactivated at any time.
-   // 2. Once we have selected num_top_producers producers, the threshold of votes required to be selected
-   //    increases from `> 0` to `> 50% of the votes that the num_top_producers selected producer has`.
+   // 2. Once we have selected 21 producers, the threshold of votes required to be selected
+   //    increases from `> 0` to `> 50% of the votes that the 21st selected producer has`.
    // 3. We iterate from both ends, as non-active producers are indexed at the end (their
    //    vote total is negated for the index computation). As a consequence, the highest 
    //    voted non-active producer will be the last entry of our index.
@@ -95,7 +96,7 @@ peer_keys::getpeerkeys_res_t peer_keys::getpeerkeys(uint32_t num_top_producers, 
       } else {
          break;
       }
-   } while (!last_one && resp.size() < max_return);
+   } while (!last_one && resp.size() < 50);
 
    return resp;
 }
