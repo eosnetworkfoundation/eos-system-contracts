@@ -84,7 +84,7 @@ struct peer_keys_tester : eosio_system_tester {
 
    struct ProducerSpec {
       std::string name;
-      uint8_t     percent_of_stake; // 0 to 100
+      uint32_t    percent_of_stake; // 0 to 1000
       bool        key = false;
    };
 
@@ -147,10 +147,10 @@ struct peer_keys_tester : eosio_system_tester {
       int64_t total_voting_power = 1000000;
       for (const auto& p : prods) {
          if (p.percent_of_stake == 0)
-            continue;                       // doesn't get any vote
-         assert(p.percent_of_stake <= 100); // this is a percentage
+            continue;                        // doesn't get any vote
+         assert(p.percent_of_stake <= 10000); // this is a per 10,000
          auto prod_name      = name(p.name);
-         auto stake_quantity = int64_t(total_voting_power * ((double)p.percent_of_stake / 100.0));
+         auto stake_quantity = int64_t(total_voting_power * ((double)p.percent_of_stake / 10000.0));
          auto amt            = asset(stake_quantity, symbol(CORE_SYM));
          auto fund_amt       = asset(stake_quantity * 4, symbol(CORE_SYM));
 
@@ -162,11 +162,11 @@ struct peer_keys_tester : eosio_system_tester {
 
          // register a key if requested
          if (p.key)
-            regpeerkey(prod_name, get_public_key(prod_name));
+            BOOST_REQUIRE_EQUAL(success(), regpeerkey(prod_name, get_public_key(prod_name)));
 
          // remove producer if requested (so it is not active)
          if (p.name[0] == 'p')
-            push_action("eosio"_n, "rmvproducer"_n, mvo()("producer", prod_name));
+            BOOST_REQUIRE_EQUAL(success(), push_action("eosio"_n, "rmvproducer"_n, mvo()("producer", prod_name)));
       }
 
       produce_block();
@@ -285,8 +285,8 @@ BOOST_AUTO_TEST_CASE(getpeerkeys_test2) try {
    //
    // check_in:
    //     - producers whose name starts with 'a' are active
-   //     - producers whose name starts with 'p' are paused
-   //     - second number is percentage of stake (total should be less than 100)
+   //     - producers whose name starts with 'p' are paused, 
+   //     - second number is per 10 thousand of stake (total should be less than 10000)
    //     - third entry (if present} is a bool specifying if we should register a peer key for this producer
    //
    // check_out:  vector mirroring the output of `getpeerkeys`_n
@@ -310,6 +310,50 @@ BOOST_AUTO_TEST_CASE(getpeerkeys_test2) try {
       pkt::check_in {{"a1", 9}, {"a2", 7, true}, {"a3", 6}, {"a4", 1}, {"p1", 0}, {"p2", 3}, {"p3", 8}},
       pkt::check_out{{{"a1"}, {"p3"}, {"a2", true}, {"a3"}, {"p2"}, {"a4"}}});
 
+   BOOST_REQUIRE_MESSAGE(!res, *res);
+
+   // -----------------------
+   // tests with 21 producers
+   // -----------------------
+
+   // all producers active
+   // --------------------
+   auto in = pkt::check_in{
+      {"a",  79}, {"b",  78}, {"c",  77}, {"d",  76}, {"e",  75}, {"f",  74}, {"g",  73}, {"h",  72}, {"j",  71}, {"k",  70},
+      {"aa", 69}, {"ab", 68}, {"ac", 67}, {"ad", 66}, {"ae", 65}, {"af", 64}, {"ag", 63}, {"ah", 62}, {"aj", 61}, {"ak", 60},
+      {"ba", 59}, {"bb", 58}, {"bc", 57}, {"bd", 56}, {"be", 55}, {"bf", 54}, {"bg", 53}, {"bh", 52}, {"bj", 51}, {"bk", 50},
+      {"ca", 49}, {"cb", 48}, {"cc", 47}, {"cd", 46}, {"ce", 45}, {"cf", 44}, {"cg", 43}, {"ch", 42}, {"cj", 41}, {"ck", 40},
+      {"da", 39}, {"db", 38}, {"dc", 37}, {"dd", 36}, {"de", 35}, {"df", 34}, {"dg", 33}, {"dh", 32}, {"dj", 31}, {"dk", 30},
+      {"ea", 29}, {"eb", 28}, {"ec", 27}, {"ed", 26}, {"ee", 25}, {"ef", 24}, {"eg", 23}, {"eh", 22}, {"ej", 21}, {"ek", 20}};
+
+   auto out = pkt::check_out{{
+      {"a"},  {"b"},  {"c"},  {"d"},  {"e"},  {"f"},  {"g"},  {"h"},  {"j"},  {"k"},
+      {"aa"}, {"ab"}, {"ac"}, {"ad"}, {"ae"}, {"af"}, {"ag"}, {"ah"}, {"aj"}, {"ak"},
+      {"ba"}, {"bb"}, {"bc"}, {"bd"}, {"be"}, {"bf"}, {"bg"}, {"bh"}, {"bj"}, {"bk"},
+      {"ca"}, {"cb"}, {"cc"}, {"cd"}, {"ce"}, {"cf"}, {"cg"}, {"ch"}, {"cj"}, {"ck"},
+      {"da"}, {"db"}, {"dc"}, {"dd"}, {"de"}, {"df"}, {"dg"}, {"dh"}, {"dj"}, {"dk"}}};
+
+   res = pkt().check(in, out);
+   BOOST_REQUIRE_MESSAGE(!res, *res);
+
+   // producers whose name end with 'c' non-active
+   // --------------------------------------------
+   in = pkt::check_in{
+      {"a",  79}, {"b",  78}, {"pc",  77}, {"d",  76}, {"e",  75}, {"f",  74}, {"g",  73}, {"h",  72}, {"j",  71}, {"k",  70},
+      {"aa", 69}, {"ab", 68}, {"pac", 67}, {"ad", 66}, {"ae", 65}, {"af", 64}, {"ag", 63}, {"ah", 62}, {"aj", 61}, {"ak", 60},
+      {"ba", 59}, {"bb", 58}, {"pbc", 57}, {"bd", 56}, {"be", 55}, {"bf", 54}, {"bg", 53}, {"bh", 52}, {"bj", 51}, {"bk", 50},
+      {"ca", 49}, {"cb", 48}, {"pcc", 47}, {"cd", 46}, {"ce", 45}, {"cf", 44}, {"cg", 43}, {"ch", 42}, {"cj", 41}, {"ck", 40},
+      {"da", 39}, {"db", 38}, {"pdc", 37}, {"dd", 36}, {"de", 35}, {"df", 34}, {"dg", 33}, {"dh", 32}, {"dj", 31}, {"dk", 30},
+      {"ea", 29}, {"eb", 28}, {"pec", 27}, {"ed", 26}, {"ee", 25}, {"ef", 24}, {"eg", 23}, {"eh", 22}, {"ej", 21}, {"ek", 20}};
+
+   out = pkt::check_out{{
+      {"a"},  {"b"},  {"pc"},  {"d"},  {"e"},  {"f"},  {"g"},  {"h"},  {"j"},  {"k"},
+      {"aa"}, {"ab"}, {"pac"}, {"ad"}, {"ae"}, {"af"}, {"ag"}, {"ah"}, {"aj"}, {"ak"},
+      {"ba"}, {"bb"}, {"pbc"}, {"bd"}, {"be"}, {"bf"}, {"bg"}, {"bh"}, {"bj"}, {"bk"},
+      {"ca"}, {"cb"}, {"pcc"}, {"cd"}, {"ce"}, {"cf"}, {"cg"}, {"ch"}, {"cj"}, {"ck"},
+      {"da"}, {"db"}, {"pdc"}, {"dd"}, {"de"}, {"df"}, {"dg"}, {"dh"}, {"dj"}, {"dk"}}};
+
+   res = pkt().check(in, out);
    BOOST_REQUIRE_MESSAGE(!res, *res);
 
    // edge case - no producers
