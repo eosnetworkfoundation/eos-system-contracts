@@ -98,12 +98,12 @@ struct peer_keys_tester : eosio_system_tester {
 
    struct PeerKey
    {
-      std::string                name;
-      std::optional<std::string> key_src;
+      std::string name;
+      bool        key_present;
 
       bool operator==(const PeerKey&) const = default;
       friend std::ostream& operator << (std::ostream& os, const PeerKey& k) {
-         os << "{\"" << k.name << "\"" << (k.key_src ? ", \"" + *k.key_src + "\"" : "") << "}";
+         os << "{\"" << k.name << "\"" << (k.key_present ? ", key" : "") << "}";
          return os;
       }
    };
@@ -169,7 +169,18 @@ struct peer_keys_tester : eosio_system_tester {
          
          push_action(prod_name, "voteproducer"_n,
                      mvo()("voter", p.name)("proxy", name(0).to_string())("producers", vector<name>{prod_name}));
+
+         // register a key if requested
+         if (p.key)
+            regpeerkey(prod_name, get_public_key(prod_name));
+
+         // remove producer if requested (so it is not active)
+         if (p.name[0] == 'p')
+            push_action(prod_name, "rmvproducer"_n, mvo()("producer", prod_name));
       }
+
+      produce_block();
+      produce_block(fc::seconds(1000));
 
       // run the `getpeerkeys` action, and verify we get the expected result
       // -------------------------------------------------------------------
@@ -179,9 +190,9 @@ struct peer_keys_tester : eosio_system_tester {
                      [](auto& k) {
                         auto p {k.producer_name};
                         if (!k.peer_key)
-                           return PeerKey{p.to_string()};
-                        std::string key_src { get_public_key(p) == *k.peer_key ? p.to_string() : "error" };
-                        return PeerKey{p.to_string(), key_src};
+                           return PeerKey{p.to_string(), false};
+                        bool key_present { get_public_key(p) == *k.peer_key };
+                        return PeerKey{p.to_string(), key_present};
                      });
 
       std::cout << "actual:   " << actual << '\n';
@@ -295,12 +306,12 @@ BOOST_AUTO_TEST_CASE(getpeerkeys_test2) try {
    // function detects errors and works as expected
    // -----------------------------------------------------------------------------------------------------
    auto res = pkt().check<3, 5, 50>(
-      pkt::check_in {{"a1", 9}, {"a2", 7}, {"a3", 6}, {"a4", 1}, {"p1", 0}, {"p2", 3}, {"p3", 8}},
+      pkt::check_in {{"a1", 9}, {"a2", 7, true}, {"a3", 6}, {"a4", 1}, {"p1", 0}, {"p2", 3}, {"p3", 8}},
       pkt::check_out{{{"a1"}, {"p1"}, {"a2"}, {"a3"}, {"p1"}}});
 
    std::cout << *res <<  '\n';
       
-   BOOST_REQUIRE(!!res && *res == std::string(R"(expected: {{"a1"}, {"p1"}, {"a2"}, {"a3"}, {"p1"}}; actual: {{"a1"}, {"p3"}, {"a2"}, {"a3"}})"));
+   BOOST_REQUIRE(!!res && *res == std::string(R"(expected: {{"a1"}, {"p1"}, {"a2"}, {"a3"}, {"p1"}}; actual: {{"a1"}, {"p3"}, {"a2", key}, {"a3"}})"));
 
    //BOOST_REQUIRE_MESSAGE(!res, *res);
 
