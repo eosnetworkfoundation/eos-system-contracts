@@ -103,7 +103,7 @@ struct peer_keys_tester : eosio_system_tester {
 
       bool operator==(const PeerKey&) const = default;
       friend std::ostream& operator << (std::ostream& os, const PeerKey& k) {
-         os << "{\"" << k.name << "\"" << (k.key_present ? ", key" : "") << "}";
+         os << "{\"" << k.name << "\"" << (k.key_present ? ", true" : "") << "}";
          return os;
       }
    };
@@ -300,6 +300,8 @@ BOOST_AUTO_TEST_CASE(getpeerkeys_test2) try {
    //     - third entry (if present} is a bool specifying if we should register a peer key for this producer
    //
    // check_out:  vector mirroring the output of `getpeerkeys`_n
+   //     - if producer name is followed by `true`, it means that `getpeerkeys` returned a correct
+   //       public key for this producer
    // ------------------------------------------------------------------------------------------------------
 
    // first, let's purposefully specify a wrong expected result, just to make sure that the `pkt().check()`
@@ -309,12 +311,19 @@ BOOST_AUTO_TEST_CASE(getpeerkeys_test2) try {
       pkt::check_in {{"a1", 9}, {"a2", 7, true}, {"a3", 6}, {"a4", 1}, {"p1", 0}, {"p2", 3}, {"p3", 8}},
       pkt::check_out{{{"a1"}, {"p1"}, {"a2"}, {"a3"}, {"p1"}}});
 
-   std::cout << *res <<  '\n';
-      
-   BOOST_REQUIRE(!!res && *res == std::string(R"(expected: {{"a1"}, {"p1"}, {"a2"}, {"a3"}, {"p1"}}; actual: {{"a1"}, {"p3"}, {"a2", key}, {"a3"}})"));
+   BOOST_REQUIRE(!!res && *res == R"(expected: {{"a1"}, {"p1"}, {"a2"}, {"a3"}, {"p1"}}; )"
+                                  R"(actual: {{"a1"}, {"p3"}, {"a2", true}, {"a3"}})");
 
-   //BOOST_REQUIRE_MESSAGE(!res, *res);
+   // Now do the same test specifying the correct result
+   // --------------------------------------------------
+   res = pkt().check<3, 5, 50>(
+      pkt::check_in {{"a1", 9}, {"a2", 7, true}, {"a3", 6}, {"a4", 1}, {"p1", 0}, {"p2", 3}, {"p3", 8}},
+      pkt::check_out{{{"a1"}, {"p3"}, {"a2", true}, {"a3"}}});
 
+   BOOST_REQUIRE_MESSAGE(!res, *res);
+
+
+   
 } FC_LOG_AND_RETHROW()
 
 BOOST_AUTO_TEST_SUITE_END()
