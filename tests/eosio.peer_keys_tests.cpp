@@ -61,9 +61,16 @@ struct peer_keys_tester : eosio_system_tester {
       return push_action(proposer, "delpeerkey"_n, mvo()("proposer_finalizer_name", proposer)("key", key));
    }
 
-   _getpeerkeys_res_t getpeerkeys() {
-      auto               perms = vector<permission_level>{};
-      action             act(perms, config::system_account_name, "getpeerkeys"_n, {});
+   _getpeerkeys_res_t getpeerkeys(uint32_t num_top_producers, uint32_t max_return, uint8_t percent)
+   {
+      auto   perms = vector<permission_level>{};
+      action act(perms, config::system_account_name, "getpeerkeys"_n, {});
+      
+      string action_type_name = abi_ser.get_action_type("getpeerkeys"_n);
+      act.data = abi_ser.variant_to_binary(
+         action_type_name, mvo()("num_top_producers", num_top_producers)("max_return", max_return)("percent", percent),
+         abi_serializer_max_time);
+
       signed_transaction trx;
 
       trx.actions.emplace_back(std::move(act));
@@ -166,7 +173,7 @@ struct peer_keys_tester : eosio_system_tester {
 
       // run the `getpeerkeys` action, and verify we get the expected result
       // -------------------------------------------------------------------
-      auto peerkeys = getpeerkeys();
+      auto peerkeys = getpeerkeys(num_top_producers, num_selected_producers, percent);
       check_out actual;
       std::transform(peerkeys.begin(), peerkeys.end(), std::back_inserter(actual),
                      [](auto& k) {
@@ -244,7 +251,7 @@ BOOST_FIXTURE_TEST_CASE(getpeerkeys_test, peer_keys_tester) try {
          BOOST_REQUIRE_EQUAL(success(), regpeerkey(n, get_public_key(n)));
    }
 
-   auto peerkeys = getpeerkeys();
+   auto peerkeys = getpeerkeys(21, 50, 50);
    BOOST_REQUIRE_EQUAL(peerkeys.size(), num_producers);
 
    for (size_t i=0; i<prod_names.size(); ++i) {
@@ -293,7 +300,7 @@ BOOST_AUTO_TEST_CASE(getpeerkeys_test2) try {
 
    std::cout << *res <<  '\n';
       
-   BOOST_REQUIRE(!!res && *res == std::string(R"(expected: {{"a1"}, {"p1"}, {"a2"}, {"a3"}, {"p1"}}; actual: {{"a1"}, {"p3"}, {"a2"}, {"a3"}, {"p2"}, {"a4"}})"));
+   BOOST_REQUIRE(!!res && *res == std::string(R"(expected: {{"a1"}, {"p1"}, {"a2"}, {"a3"}, {"p1"}}; actual: {{"a1"}, {"p3"}, {"a2"}, {"a3"}})"));
 
    //BOOST_REQUIRE_MESSAGE(!res, *res);
 
