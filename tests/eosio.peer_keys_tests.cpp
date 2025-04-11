@@ -89,12 +89,13 @@ struct peer_keys_tester : eosio_system_tester {
    };
 
    struct PeerKey {
-      std::string name;
-      bool        key_present;
+      std::string         name;
+      std::optional<bool> key_present_and_valid; // optional empty if key not returned
 
       bool operator==(const PeerKey&) const = default;
       friend std::ostream& operator << (std::ostream& os, const PeerKey& k) {
-         os << "{\"" << k.name << "\"" << (k.key_present ? ", true" : "") << "}";
+         os << "{\"" << k.name << "\""
+            << (k.key_present_and_valid ? (*k.key_present_and_valid ? ", true" : ", false") : "") << "}";
          return os;
       }
    };
@@ -180,7 +181,7 @@ struct peer_keys_tester : eosio_system_tester {
                      [](auto& k) {
                         auto p {k.producer_name};
                         if (!k.peer_key)
-                           return PeerKey{p.to_string(), false};
+                           return PeerKey{p.to_string()};
                         bool key_present { get_public_key(p) == *k.peer_key };
                         return PeerKey{p.to_string(), key_present};
                      });
