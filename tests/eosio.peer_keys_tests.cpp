@@ -185,9 +185,6 @@ struct peer_keys_tester : eosio_system_tester {
                         return PeerKey{p.to_string(), key_present};
                      });
 
-      std::cout << "expected: " << expected << '\n';
-      std::cout << "actual:   " << actual << '\n';
-
       if (actual == expected)
          return {};
 

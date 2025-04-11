@@ -89,11 +89,12 @@ peer_keys::getpeerkeys_res_t peer_keys::getpeerkeys() {
       if (rit->total_votes > std::max(vote_threshold, it->total_votes)) {
          add_peer(rit);
          assert(it != rit); // Should always be satisfied since `rit->total_votes > it->total_votes`
-         --rit;
+         --rit;             // safe because `rit` cannot point to the first entry of the index.
       } else if (it->total_votes > vote_threshold) {
          add_peer(it);
          ++it;
       } else {
+         // `total_votes <= threshold` on both ends of the index, exit the loop.
          break;
       }
    } while (!last_one && resp.size() < 50);
