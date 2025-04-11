@@ -356,12 +356,58 @@ BOOST_AUTO_TEST_CASE(getpeerkeys_test2) try {
    res = pkt().check(in, out);
    BOOST_REQUIRE_MESSAGE(!res, *res);
 
+   // producers whose name end with 'c' non-active, producers whose name end with 'd'  with a peer key
+   // ------------------------------------------------------------------------------------------------
+   in = pkt::check_in{
+      {"a",  79}, {"b",  78}, {"pc",  77}, {"d",  76, true}, {"e",  75}, {"f",  74}, {"g",  73}, {"h",  72}, {"j",  71}, {"k",  70},
+      {"aa", 69}, {"ab", 68}, {"pac", 67}, {"ad", 66, true}, {"ae", 65}, {"af", 64}, {"ag", 63}, {"ah", 62}, {"aj", 61}, {"ak", 60},
+      {"ba", 59}, {"bb", 58}, {"pbc", 57}, {"bd", 56, true}, {"be", 55}, {"bf", 54}, {"bg", 53}, {"bh", 52}, {"bj", 51}, {"bk", 50},
+      {"ca", 49}, {"cb", 48}, {"pcc", 47}, {"cd", 46, true}, {"ce", 45}, {"cf", 44}, {"cg", 43}, {"ch", 42}, {"cj", 41}, {"ck", 40},
+      {"da", 39}, {"db", 38}, {"pdc", 37}, {"dd", 36, true}, {"de", 35}, {"df", 34}, {"dg", 33}, {"dh", 32}, {"dj", 31}, {"dk", 30},
+      {"ea", 29}, {"eb", 28}, {"pec", 27}, {"ed", 26, true}, {"ee", 25}, {"ef", 24}, {"eg", 23}, {"eh", 22}, {"ej", 21}, {"ek", 20}};
+
+   out = pkt::check_out{{
+      {"a"},  {"b"},  {"pc"},  {"d",  true}, {"e"},  {"f"},  {"g"},  {"h"},  {"j"},  {"k"},
+      {"aa"}, {"ab"}, {"pac"}, {"ad", true}, {"ae"}, {"af"}, {"ag"}, {"ah"}, {"aj"}, {"ak"},
+      {"ba"}, {"bb"}, {"pbc"}, {"bd", true}, {"be"}, {"bf"}, {"bg"}, {"bh"}, {"bj"}, {"bk"},
+      {"ca"}, {"cb"}, {"pcc"}, {"cd", true}, {"ce"}, {"cf"}, {"cg"}, {"ch"}, {"cj"}, {"ck"},
+      {"da"}, {"db"}, {"pdc"}, {"dd", true}, {"de"}, {"df"}, {"dg"}, {"dh"}, {"dj"}, {"dk"}}};
+
+   res = pkt().check(in, out);
+   BOOST_REQUIRE_MESSAGE(!res, *res);
+
    // edge case - no producers
    // ------------------------
    res = pkt().check(pkt::check_in {}, pkt::check_out{});
    BOOST_REQUIRE_MESSAGE(!res, *res);
 
+   // no active producer
+   // ------------------
+   res = pkt().check(
+      pkt::check_in {{"p1", 9}, {"p2", 7, true}, {"p3", 6}},
+      pkt::check_out{{{"p1"}, {"p2", true}, {"p3"}}});
 
+   BOOST_REQUIRE_MESSAGE(!res, *res);
+
+   // one active
+   // ----------
+   res = pkt().check(pkt::check_in{{"a1", 9}}, pkt::check_out{{{"a1"}}});
+   BOOST_REQUIRE_MESSAGE(!res, *res);
+
+   // one paused
+   // ----------
+   res = pkt().check(pkt::check_in{{"p1", 9}}, pkt::check_out{{{"p1"}}});
+   BOOST_REQUIRE_MESSAGE(!res, *res);
+
+   // one active, one paused, paused with more votes
+   // ----------------------------------------------
+   res = pkt().check(pkt::check_in{{"a1", 9}, {"p1", 20}}, pkt::check_out{{{"p1"}, {"a1"}}});
+   BOOST_REQUIRE_MESSAGE(!res, *res);   
+
+   // one active, one paused, active with more votes
+   // ----------------------------------------------
+   res = pkt().check(pkt::check_in{{"a1", 20}, {"p1", 10}}, pkt::check_out{{{"a1"}, {"p1"}}});
+   BOOST_REQUIRE_MESSAGE(!res, *res);
    
 } FC_LOG_AND_RETHROW()
 
