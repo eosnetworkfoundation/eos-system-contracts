@@ -379,6 +379,16 @@ BOOST_AUTO_TEST_CASE(getpeerkeys_test2) try {
    res = pkt().check(pkt::check_in {}, pkt::check_out{});
    BOOST_REQUIRE_MESSAGE(!res, *res);
 
+   // edge case - only producers with no votes
+   // ----------------------------------------
+   res = pkt().check(pkt::check_in {{"a1", 0}, {"a2", 0}}, pkt::check_out{});
+   BOOST_REQUIRE_MESSAGE(!res, *res);
+
+   // edge case - only paused producers with no votes
+   // -----------------------------------------------
+   res = pkt().check(pkt::check_in {{"p1", 0}, {"p2", 0}}, pkt::check_out{});
+   BOOST_REQUIRE_MESSAGE(!res, *res);
+
    // no active producer
    // ------------------
    res = pkt().check(
@@ -406,7 +416,12 @@ BOOST_AUTO_TEST_CASE(getpeerkeys_test2) try {
    // ----------------------------------------------
    res = pkt().check(pkt::check_in{{"a1", 20}, {"p1", 10}}, pkt::check_out{{{"a1"}, {"p1"}}});
    BOOST_REQUIRE_MESSAGE(!res, *res);
-   
+
+   // check that producers with no votes are not returned
+   // ---------------------------------------------------
+   res = pkt().check(pkt::check_in {{"a1", 0}, {"a2", 10}, {"p1", 0}, {"p2", 10}}, pkt::check_out{{{"a2"}, {"p2"}}});
+   BOOST_REQUIRE_MESSAGE(!res, *res);
+
 } FC_LOG_AND_RETHROW()
 
 BOOST_AUTO_TEST_SUITE_END()
