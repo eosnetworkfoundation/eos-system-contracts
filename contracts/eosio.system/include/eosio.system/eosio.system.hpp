@@ -221,7 +221,7 @@ namespace eosiosystem {
    struct [[eosio::table, eosio::contract("eosio.system")]] producer_info {
       name                                                     owner;
       double                                                   total_votes = 0;
-      eosio::public_key                                        producer_key;    /// a packed public key object
+      eosio::public_key                                        producer_key; /// a packed public key object
       bool                                                     is_active = true;
       std::string                                              url;
       uint32_t                                                 unpaid_blocks = 0;
