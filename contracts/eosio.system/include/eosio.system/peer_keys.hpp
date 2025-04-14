@@ -72,8 +72,8 @@ struct [[eosio::contract("eosio.system")]] peer_keys : public eosio::contract {
    void delpeerkey(const name& proposer_finalizer_name, const public_key& key);
 
    /**
-    * Returns a list of top-50 producers (in rank order) along with their peer public key if it was
-    * ded via the regpeerkey action.
+    * Returns a list of up to 50 top producers (active *and* non-active, in votes rank order), 
+    * along with their peer public key if it was registered via the regpeerkey action.
     */
    [[eosio::action]]
    getpeerkeys_res_t getpeerkeys();
