@@ -44,7 +44,7 @@ peer_keys::getpeerkeys_res_t peer_keys::getpeerkeys() {
    constexpr size_t max_return = 50;
 
    getpeerkeys_res_t resp;
-   resp.reserve(50);
+   resp.reserve(max_return);
 
    double vote_threshold = 0; // vote_threshold will always be >= 0
 
@@ -97,7 +97,7 @@ peer_keys::getpeerkeys_res_t peer_keys::getpeerkeys() {
          // `total_votes <= threshold` on both ends of the index, exit the loop.
          break;
       }
-   } while (!last_one && resp.size() < 50);
+   } while (!last_one && resp.size() < max_return);
 
    return resp;
 }
