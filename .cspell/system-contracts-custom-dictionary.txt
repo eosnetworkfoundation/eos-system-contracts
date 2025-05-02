@@ -117,6 +117,7 @@ updateauth
 updaterex
 updtrevision
 userres
+core.vaulta
 vitr
 vmtype
 vmversion

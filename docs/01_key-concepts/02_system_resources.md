@@ -2,7 +2,7 @@
 title: System Resources
 ---
 
-The EOS blockchain works with three system resources: CPU, NET and RAM. The EOS accounts need sufficient system resources to interact with the smart contracts deployed on the blockchain.
+The Vaulta blockchain works with three system resources: CPU, NET and RAM. The Vaulta accounts need sufficient system resources to interact with the smart contracts deployed on the blockchain.
 
 * [RAM Resource](./05_ram.md)
 * [CPU Resource](./03_cpu.md)

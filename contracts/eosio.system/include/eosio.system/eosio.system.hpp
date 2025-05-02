@@ -1396,7 +1396,7 @@ namespace eosiosystem {
          /**
           * The buyramself action is designed to enhance the permission security by allowing an account to purchase RAM exclusively for itself.
           * This action prevents the potential risk associated with standard actions like buyram and buyrambytes,
-          * which can transfer EOS tokens out of the account, acting as a proxy for eosio.token::transfer.
+          * which can transfer tokens out of the account, acting as a proxy for eosio.token::transfer. Token must include symbole, example SYS.
           *
           * @param account - the ram buyer and receiver,
           * @param quant - the quantity of tokens to buy ram with.
@@ -1678,7 +1678,7 @@ namespace eosiosystem {
           * @pre If proxy is set then proxy account must exist and be registered as a proxy
           * @pre Every listed producer or proxy must have been previously registered
           * @pre Voter must authorize this action
-          * @pre Voter must have previously staked some EOS for voting
+          * @pre Voter must have previously staked tokens for voting (example SYS tokens)
           * @pre Voter->staked must be up to date
           *
           * @post Every producer previously voted for will have vote reduced by previous vote weight
