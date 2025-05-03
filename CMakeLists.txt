@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.5)
 project(eosio_contracts)
 
 set(VERSION_MAJOR 3)
-set(VERSION_MINOR 9)
+set(VERSION_MINOR 10)
 set(VERSION_PATCH 0)
 set(VERSION_SUFFIX dev)
 
