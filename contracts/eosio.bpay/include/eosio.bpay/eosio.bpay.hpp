@@ -26,7 +26,7 @@ namespace eosio {
          * [
          *   {
          *     "owner": "alice",
-         *     "quantity": "8.800 A"
+         *     "quantity": "8.800 EOS "
          *   }
          * ]
          * ```

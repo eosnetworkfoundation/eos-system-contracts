@@ -21,8 +21,8 @@ Setup an account that require multiple signatures for signing a transaction
 
 ## Steps
 
-Buys RAM in value of 10 A tokens for account `alice`:
+Buys RAM in value of 10 EOS  tokens for account `alice`:
 
 ```shell
-cleos system buyram alice alice "10 A" -p alice@active
+cleos system buyram alice alice "10 EOS " -p alice@active
 ```
