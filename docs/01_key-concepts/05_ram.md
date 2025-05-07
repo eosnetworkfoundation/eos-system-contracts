@@ -23,7 +23,7 @@ RAM is an important system resource because of the following reasons:
 
 ## How To Purchase RAM
 
-The RAM resource must be bought with the `Vaulta` system token. The price of RAM is calculated according to the unique Bancor liquidity algorithm that is implemented in the system contract.
+The RAM resource must be bought with the `EOS` system token. The price of RAM is calculated according to the unique Bancor liquidity algorithm that is implemented in the system contract.
 
 The quickest way to calculate the price of RAM:
 
@@ -43,7 +43,7 @@ The quickest way to calculate the price of RAM:
             "weight": "0.50000000000000000"
         },
         "quote": {
-            "balance": "3158350.8754 EOS ",
+            "balance": "3158350.8754 EOS",
             "weight": "0.50000000000000000"
         }
     }
@@ -51,18 +51,18 @@ The quickest way to calculate the price of RAM:
 
 3. Make note of the `base balance`, in this case it is 35044821247.
 4. Make note of the `quote balance`, in this case it is 3158350.8754.
-5. Calculate the price of 1Kib of RAM as `quote balance` * 1024 / `base balance` = 0.0922 EOS .
+5. Calculate the price of 1Kib of RAM as `quote balance` * 1024 / `base balance` = 0.0922 EOS.
 
 ### Buy RAM With Command Line Interface
 
 You can buy RAM through the command line interface tool. You can buy either an explicit amount of RAM expressed in bytes or an amount of RAM worth an explicit amount of Vaulta.
 
-### Buy RAM In EOS 
+### Buy RAM In EOS
 
-For example, the command below buys for account `bob` 0.1 EOS  worth of RAM at the current market RAM price. The cost for the RAM and the execution of this transaction is covered by the `alice` account and the transaction is authorized by the `active` key of the `alice` account.
+For example, the command below buys for account `bob` 0.1 EOS worth of RAM at the current market RAM price. The cost for the RAM and the execution of this transaction is covered by the `alice` account and the transaction is authorized by the `active` key of the `alice` account.
 
 ```shell
-cleos system buyram alice bob "0.1 EOS " -p alice@active
+cleos system buyram alice bob "0.1 EOS" -p alice@active
 ```
 
 ### Buy RAM In Bytes

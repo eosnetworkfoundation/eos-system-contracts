@@ -137,8 +137,8 @@ struct powerup_state {
         "current_weight_ratio": 1000000000000000,
         "decay_secs": 86400,
         "exponent": 2,
-        "max_price": "10000000.0000 EOS ",
-        "min_price": "0.0000 EOS ",
+        "max_price": "10000000.0000 EOS",
+        "min_price": "0.0000 EOS",
         "target_timestamp": "2022-01-01T00:00:00.000",
         "target_weight_ratio": 10000000000000
     },
@@ -147,12 +147,12 @@ struct powerup_state {
         "current_weight_ratio": 1000000000000000,
         "decay_secs": 86400,
         "exponent": 2,
-        "max_price": "10000000.0000 EOS ",
-        "min_price": "0.0000 EOS ",
+        "max_price": "10000000.0000 EOS",
+        "min_price": "0.0000 EOS",
         "target_timestamp": "2022-01-01T00:00:00.000",
         "target_weight_ratio": 10000000000000
     },
-    "min_powerup_fee": "0.0001 EOS ",
+    "min_powerup_fee": "0.0001 EOS",
     "powerup_days": 1
 }
 ```
@@ -185,8 +185,8 @@ cleos get table eosio 0 powup.state
         "target_timestamp": "2022-01-01T00:00:00",
         "exponent": "2.00000000000000000",
         "decay_secs": 3600,
-        "min_price": "0.0000 EOS ",
-        "max_price": "10000000.0000 EOS ",
+        "min_price": "0.0000 EOS",
+        "max_price": "10000000.0000 EOS",
         "utilization": 0,
         "adjusted_utilization": 0,
         "utilization_timestamp": "2020-11-16T19:52:50"
@@ -202,14 +202,14 @@ cleos get table eosio 0 powup.state
         "target_timestamp": "2022-01-01T00:00:00",
         "exponent": "2.00000000000000000",
         "decay_secs": 3600,
-        "min_price": "0.0000 EOS ",
-        "max_price": "10000000.0000 EOS ",
+        "min_price": "0.0000 EOS",
+        "max_price": "10000000.0000 EOS",
         "utilization": 0,
         "adjusted_utilization": 0,
         "utilization_timestamp": "2020-11-16T19:52:50"
       },
       "powerup_days": 1,
-      "min_powerup_fee": "0.0001 EOS "
+      "min_powerup_fee": "0.0001 EOS"
     }
   ],
   "more": false,

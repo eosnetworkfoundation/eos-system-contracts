@@ -18,7 +18,7 @@ namespace eosio {
          * ## TABLE `rewards`
          *
          * @param owner - block producer owner account
-         * @param quantity - reward quantity in A (or other token)
+         * @param quantity - reward quantity in EOS (or other token)
          *
          * ### example
          *
@@ -26,7 +26,7 @@ namespace eosio {
          * [
          *   {
          *     "owner": "alice",
-         *     "quantity": "8.800 EOS "
+         *     "quantity": "8.800 EOS"
          *   }
          * ]
          * ```

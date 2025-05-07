@@ -622,8 +622,8 @@ namespace eosiosystem {
    // - `version` defaulted to zero,
    // - `from` account creating and paying for loan,
    // - `receiver` account receiving rented resources,
-   // - `payment` A tokens paid for the loan,
-   // - `balance` is the amount of A tokens available to be used for loan auto-renewal,
+   // - `payment` EOS tokens paid for the loan,
+   // - `balance` is the amount of EOS tokens available to be used for loan auto-renewal,
    // - `total_staked` total amount staked,
    // - `loan_num` loan number/id,
    // - `expiration` the expiration time when loan will be either closed or renewed
@@ -770,7 +770,7 @@ namespace eosiosystem {
       uint8_t        version                 = 0;
       int64_t        weight                  = 0;                  // resource market weight. calculated; varies over time.
                                                                    //    1 represents the same amount of resources as 1
-                                                                   //    satoshi of A staked.
+                                                                   //    satoshi of EOS staked.
       int64_t        weight_ratio            = 0;                  // resource market weight ratio:
                                                                    //    assumed_stake_weight / (assumed_stake_weight + weight).
                                                                    //    calculated; varies over time. 1x = 10^15. 0.01x = 10^13.
@@ -1069,7 +1069,7 @@ namespace eosiosystem {
          // functions defined in delegate_bandwidth.cpp
 
          /**
-          * Delegate bandwidth and/or cpu action. Stakes A from the balance of `from` for the benefit of `receiver`.
+          * Delegate bandwidth and/or cpu action. Stakes EOS from the balance of `from` for the benefit of `receiver`.
           *
           * @param from - the account to delegate bandwidth from, that is, the account holding
           *    tokens to be staked,
@@ -1172,7 +1172,7 @@ namespace eosiosystem {
          void cnclrexorder( const name& owner );
 
          /**
-          * Rentcpu action, uses payment to rent as many A tokens as possible as determined by market price and
+          * Rentcpu action, uses payment to rent as many EOS tokens as possible as determined by market price and
           * stake them for CPU for the benefit of receiver, after 30 days the rented core delegation of CPU
           * will expire. At expiration, if balance is greater than or equal to `loan_payment`, `loan_payment`
           * is taken out of loan balance and used to renew the loan. Otherwise, the loan is closed and user
@@ -1192,7 +1192,7 @@ namespace eosiosystem {
          void rentcpu( const name& from, const name& receiver, const asset& loan_payment, const asset& loan_fund );
 
          /**
-          * Rentnet action, uses payment to rent as many A tokens as possible as determined by market price and
+          * Rentnet action, uses payment to rent as many EOS tokens as possible as determined by market price and
           * stake them for NET for the benefit of receiver, after 30 days the rented core delegation of NET
           * will expire. At expiration, if balance is greater than or equal to `loan_payment`, `loan_payment`
           * is taken out of loan balance and used to renew the loan. Otherwise, the loan is closed and user
@@ -1396,7 +1396,7 @@ namespace eosiosystem {
          /**
           * The buyramself action is designed to enhance the permission security by allowing an account to purchase RAM exclusively for itself.
           * This action prevents the potential risk associated with standard actions like buyram and buyrambytes,
-          * which can transfer tokens out of the account, acting as a proxy for eosio.token::transfer. Token must include the symbol, example A.
+          * which can transfer tokens out of the account, acting as a proxy for eosio.token::transfer. Token must include the symbol, example EOS.
           *
           * @param account - the ram buyer and receiver,
           * @param quant - the quantity of tokens to buy ram with.
@@ -1678,7 +1678,7 @@ namespace eosiosystem {
           * @pre If proxy is set then proxy account must exist and be registered as a proxy
           * @pre Every listed producer or proxy must have been previously registered
           * @pre Voter must authorize this action
-          * @pre Voter must have previously staked tokens for voting (example A tokens)
+          * @pre Voter must have previously staked tokens for voting (example EOS tokens)
           * @pre Voter->staked must be up to date
           *
           * @post Every producer previously voted for will have vote reduced by previous vote weight

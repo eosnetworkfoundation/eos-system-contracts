@@ -25,11 +25,11 @@ Three unsigned transactions will be generated using cleos and then the actions w
 
 First, generate a transaction to capture the necessary actions involved in creating a new account:
 ```sh
-cleos system newaccount -s -j -d --transfer --stake-net "1.000 EOS " --stake-cpu "1.000 EOS " --buy-ram-kbytes 50 eosio eosio.wrap EOS8MMUW11TAdTDxqdSwSqJodefSoZbFhcprndomgLi9MeR2o8MT4 > generated_account_creation_trx.json
+cleos system newaccount -s -j -d --transfer --stake-net "1.000 EOS" --stake-cpu "1.000 EOS" --buy-ram-kbytes 50 eosio eosio.wrap EOS8MMUW11TAdTDxqdSwSqJodefSoZbFhcprndomgLi9MeR2o8MT4 > generated_account_creation_trx.json
 ```
 ```console
 726964ms thread-0   main.cpp:429                  create_action        ] result: {"binargs":"0000000000ea305500004d1a03ea305500c80000"} arg: {"code":"eosio","action":"buyrambytes","args":{"payer":"eosio","receiver":"eosio.wrap","bytes":51200}}
-726967ms thread-0   main.cpp:429                  create_action        ] result: {"binargs":"0000000000ea305500004d1a03ea3055102700000000000004535953000000001027000000000000045359530000000001"} arg: {"code":"eosio","action":"delegatebw","args":{"from":"eosio","receiver":"eosio.wrap","stake_net_quantity":"1.0000 EOS ","stake_cpu_quantity":"1.0000 EOS ","transfer":true}}
+726967ms thread-0   main.cpp:429                  create_action        ] result: {"binargs":"0000000000ea305500004d1a03ea3055102700000000000004535953000000001027000000000000045359530000000001"} arg: {"code":"eosio","action":"delegatebw","args":{"from":"eosio","receiver":"eosio.wrap","stake_net_quantity":"1.0000 EOS","stake_cpu_quantity":"1.0000 EOS","transfer":true}}
 ```
 ```sh
 cat generated_account_creation_trx.json
@@ -412,14 +412,14 @@ memory:
      quota:     49.74 KiB    used:     3.33 KiB  
 
 net bandwidth:
-     staked:          1.0000 EOS          (total stake delegated from account to self)
+     staked:          1.0000 EOS             (total stake delegated from account to self)
      delegated:       0.0000 EOS           (total staked delegated to account from others)
      used:                 0 bytes
      available:        2.304 MiB  
      limit:            2.304 MiB  
 
 cpu bandwidth:
-     staked:          1.0000 EOS           (total stake delegated from account to self)
+     staked:          1.0000 EOS             (total stake delegated from account to self)
      delegated:       0.0000 EOS           (total staked delegated to account from others)
      used:                 0 us   
      available:        460.8 ms   
@@ -685,15 +685,15 @@ memory:
      quota:     49.74 KiB    used:     3.365 KiB  
 
 net bandwidth:
-     staked:          1.0000 EOS           (total stake delegated from account to self)
-     delegated:       0.0000 EOS           (total staked delegated to account from others)
+     staked:          1.0000 EOS          (total stake delegated from account to self)
+     delegated:       0.0000 EOS          (total staked delegated to account from others)
      used:                 0 bytes
      available:        2.304 MiB  
      limit:            2.304 MiB  
 
 cpu bandwidth:
-     staked:          1.0000 EOS           (total stake delegated from account to self)
-     delegated:       0.0000 EOS           (total staked delegated to account from others)
+     staked:          1.0000 EOS          (total stake delegated from account to self)
+     delegated:       0.0000 EOS          (total staked delegated to account from others)
      used:                 0 us   
      available:        460.8 ms   
      limit:            460.8 ms   
