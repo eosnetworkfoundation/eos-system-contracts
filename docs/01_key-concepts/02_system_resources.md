@@ -15,7 +15,7 @@ To allocate CPU and NET resources to an account you have to [power up the accoun
 
 As a developer if you want to estimate how much CPU and NET a transaction requires for execution, you can employ one of the following methods:
 
-* Use the `--dry-run` option for the `dune -- cleos push transaction` command.
+* Use the `--dry-run` option for the `cleos push transaction` command.
 * Use any tool that can pack a transaction and send it to the blockchain and specify the `--dry-run` option.
 * Use the chain API endpoint [`compute_transaction`](https://github.com/AntelopeIO/spring/blob/7254bab917a17bcc0d82d23d03f4173176150239/plugins/chain_plugin/include/eosio/chain_plugin/chain_plugin.hpp#L557).
 

@@ -7,13 +7,13 @@ link_text: How to sign a multisig transaction with eosio.msig
 
 ### Prerequisites:
    - eosio.token contract installed to eosio.token account, eosio.msig contract installed on eosio.msig account which is a priviliged account.
-   - account 'treasury' is the issuer of XYZ token.
+   - account 'treasury' is the issuer of A token.
    - account 'tester' exists.
    - keys to accounts 'treasury' and 'tester' imported into local wallet, the wallet is unlocked.
 
 ### One user creates a proposal:
 ```sh
-cleos multisig propose test '[{"actor": "treasury", "permission": "active"}]' '[{"actor": "treasury", "permission": "active"}]' eosio.token issue '{"to": "tester", "quantity": "1000.0000 XYZ", "memo": ""}' -p tester
+cleos multisig propose test '[{"actor": "treasury", "permission": "active"}]' '[{"actor": "treasury", "permission": "active"}]' eosio.token issue '{"to": "tester", "quantity": "1000.0000 A", "memo": ""}' -p tester
 ```
 ```console
 executed transaction: e26f3a3a7cba524a7b15a0b6c77c7daa73d3ba9bf84e83f9c2cdf27fcb183d61  336 bytes  107520 cycles
@@ -53,7 +53,7 @@ cleos multisig review tester test
         ],
         "data": {
           "to": "tester",
-          "quantity": "1000.0000 XYZ",
+          "quantity": "1000.0000 A",
           "memo": ""
         },
         "hex_data": "000000005c95b1ca809698000000000004454f530000000000"
@@ -86,13 +86,13 @@ executed transaction: 64e5eaceb77362694055f572ae35876111e87b637a55250de315b1b55e
 
 ### Prerequisites:
    - eosio.token contract installed to eosio.token account, eosio.msig contract installed on eosio.msig account which is a priviliged account.
-   - account 'treasury' has at least 1.1000 XYZ token balance.
+   - account 'treasury' has at least 1.1000 A token balance.
    - account 'tester' exists.
    - keys to accounts 'treasury' and 'tester' imported into local wallet, the wallet is unlocked.
 
 ### One user creates a proposal:
 ```sh
-cleos multisig propose test '[{"actor": "treasury", "permission": "active"}]' '[{"actor": "treasury", "permission": "active"}]' eosio.token transfer '{"from": "treasury", "to": "tester", "quantity": "1.0000 XYZ", "memo": ""}' -p tester
+cleos multisig propose test '[{"actor": "treasury", "permission": "active"}]' '[{"actor": "treasury", "permission": "active"}]' eosio.token transfer '{"from": "treasury", "to": "tester", "quantity": "1.0000 A", "memo": ""}' -p tester
 ```
 ```console
 executed transaction: e26f3a3a7cba524a7b15a0b6c77c7daa73d3ba9bf84e83f9c2cdf27fcb183d61  336 bytes  107520 cycles
@@ -133,7 +133,7 @@ cleos multisig review tester test
         "data": {
           "from": "treasury",
           "to": "tester",
-          "quantity": "1.0000 XYZ",
+          "quantity": "1.0000 A",
           "memo": ""
         },
         "hex_data": "000000005c95b1ca809698000000000004454f530000000000"
@@ -158,11 +158,11 @@ cleos get table core.vaulta tester accounts | jq '.rows[]'
 ```
 ```console
 ...
-XYZ balances:
-     liquid:            1.0487 XYZ
-     staked:            2.0000 XYZ
-     unstaking:         0.0000 XYZ
-     total:             4.0487 XYZ
+A balances:
+     liquid:            1.0487 A
+     staked:            2.0000 A
+     unstaking:         0.0000 A
+     total:             4.0487 A
 ```
 
 ### First user initiates execution of proposed transaction:
@@ -174,15 +174,15 @@ executed transaction: 64e5eaceb77362694055f572ae35876111e87b637a55250de315b1b55e
 #    eosio.msig <= eosio.msig::exec             {"proposer":"tester","proposal_name":"test","executer":"tester"}
 ```
 
-### First user can check account balance, it should be increased by 1.0000 XYZ
+### First user can check account balance, it should be increased by 1.0000 A
 ```sh
 cleos get table core.vaulta tester accounts | jq '.rows[]'
 ```
 ```console
 ...
-XYZ balances:
-     liquid:            2.0487 XYZ
-     staked:            2.0000 XYZ
-     unstaking:         0.0000 XYZ
-     total:             4.0487 XYZ
+A balances:
+     liquid:            2.0487 A
+     staked:            2.0000 A
+     unstaking:         0.0000 A
+     total:             4.0487 A
 ```

@@ -20,14 +20,14 @@ Stake resources for your account to participate in the on-chain voting and gover
 
 ## Steps
 
-Stake 10 XYZ network bandwidth for `alice`
+Stake 10 A network bandwidth for `alice`
 
 ```shell
-cleos system delegatebw alice alice "0 XYZ" "10 XYZ"
+cleos system delegatebw alice alice "0 A" "10 A"
 ```
 
-Stake 10 XYZ CPU bandwidth for `alice`:
+Stake 10 A CPU bandwidth for `alice`:
 
 ```shell
-cleos system delegatebw alice alice "10 XYZ" "0 XYZ"
+cleos system delegatebw alice alice "10 A" "0 A"
 ```

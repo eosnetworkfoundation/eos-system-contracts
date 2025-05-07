@@ -6,7 +6,7 @@ title: How To Configure The PowerUp Resource Model
 
 ### Overview
 
-The PowerUp Resource Model creates a new NET and CPU marketplace which renders obsolete the existing staking mechanism and REX market. Under the old model, XYZ token holders own NET and CPU and may choose to use it themselves, delegate it to others, or make it available for others to rent using the REX market. With the new model, the chain owns almost all NET and CPU resources and the only way to access these resources is through the new `powerup` action. Equally important, the PowerUp Resource Model channels fees to the REX pool to enable token holders to profit off the new market.
+The PowerUp Resource Model creates a new NET and CPU marketplace which renders obsolete the existing staking mechanism and REX market. Under the old model, A token holders own NET and CPU and may choose to use it themselves, delegate it to others, or make it available for others to rent using the REX market. With the new model, the chain owns almost all NET and CPU resources and the only way to access these resources is through the new `powerup` action. Equally important, the PowerUp Resource Model channels fees to the REX pool to enable token holders to profit off the new market.
 
 ### Configuration
 
@@ -79,7 +79,7 @@ struct powerup_state_resource {
     uint8_t        version                 = 0;
     int64_t        weight                  = 0;                  // resource market weight. calculated; varies over time.
                                                                  //    1 represents the same amount of resources as 1
-                                                                 //    satoshi of XYZ staked.
+                                                                 //    satoshi of A staked.
     int64_t        weight_ratio            = 0;                  // resource market weight ratio:
                                                                  //    assumed_stake_weight / (assumed_stake_weight + weight).
                                                                  //    calculated; varies over time. 1x = 10^15. 0.01x = 10^13.
@@ -137,8 +137,8 @@ struct powerup_state {
         "current_weight_ratio": 1000000000000000,
         "decay_secs": 86400,
         "exponent": 2,
-        "max_price": "10000000.0000 XYZ",
-        "min_price": "0.0000 XYZ",
+        "max_price": "10000000.0000 A",
+        "min_price": "0.0000 A",
         "target_timestamp": "2022-01-01T00:00:00.000",
         "target_weight_ratio": 10000000000000
     },
@@ -147,12 +147,12 @@ struct powerup_state {
         "current_weight_ratio": 1000000000000000,
         "decay_secs": 86400,
         "exponent": 2,
-        "max_price": "10000000.0000 XYZ",
-        "min_price": "0.0000 XYZ",
+        "max_price": "10000000.0000 A",
+        "min_price": "0.0000 A",
         "target_timestamp": "2022-01-01T00:00:00.000",
         "target_weight_ratio": 10000000000000
     },
-    "min_powerup_fee": "0.0001 XYZ",
+    "min_powerup_fee": "0.0001 A",
     "powerup_days": 1
 }
 ```
@@ -185,8 +185,8 @@ cleos get table eosio 0 powup.state
         "target_timestamp": "2022-01-01T00:00:00",
         "exponent": "2.00000000000000000",
         "decay_secs": 3600,
-        "min_price": "0.0000 XYZ",
-        "max_price": "10000000.0000 XYZ",
+        "min_price": "0.0000 A",
+        "max_price": "10000000.0000 A",
         "utilization": 0,
         "adjusted_utilization": 0,
         "utilization_timestamp": "2020-11-16T19:52:50"
@@ -202,14 +202,14 @@ cleos get table eosio 0 powup.state
         "target_timestamp": "2022-01-01T00:00:00",
         "exponent": "2.00000000000000000",
         "decay_secs": 3600,
-        "min_price": "0.0000 XYZ",
-        "max_price": "10000000.0000 XYZ",
+        "min_price": "0.0000 A",
+        "max_price": "10000000.0000 A",
         "utilization": 0,
         "adjusted_utilization": 0,
         "utilization_timestamp": "2020-11-16T19:52:50"
       },
       "powerup_days": 1,
-      "min_powerup_fee": "0.0001 XYZ"
+      "min_powerup_fee": "0.0001 A"
     }
   ],
   "more": false,
