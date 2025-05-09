@@ -6,14 +6,14 @@ title: How To Use The PowerUp Model
 
 To power up an account is a technique to rent CPU and NET resources from the PowerUp resource model. A smart contract implements this model on the blockchain and allocates these resources to the account of your choice. The action to power up an account is `powerup`. It takes as parameters:
 
-* The `payer` of the fee, must be a valid EOS account.
-* The `receiver` of the resources, must be a valid EOS account.
-* The `days` which must always match `state.powerup_days` specified in the [PowerUp configuration settings](https://github.com/eosnetworkfoundation/eos-system-contracts/blob/7cec470b17bd53b8c78465d4cbd889dbaf1baffb/contracts/eosio.system/include/eosio.system/eosio.system.hpp#L588).
+* The `payer` of the fee, must be a valid Vaulta account.
+* The `receiver` of the resources, must be a valid Vaulta account.
+* The `days` which must always match `state.powerup_days` specified in the [PowerUp configuration settings](https://github.com/VaultaFoundation/system-contracts/blob/7cec470b17bd53b8c78465d4cbd889dbaf1baffb/contracts/eosio.system/include/eosio.system/eosio.system.hpp#L588).
 * The `net_frac`, and the `cpu_frac` are the percentage of the resources that you need. The easiest way to calculate the percentage is to multiple 10^15 (100%) by the desired percentage. For example: 10^15 * 0.01 = 10^13.
 * The `max_payment`, must be expressed in EOS and is the maximum amount the `payer` is willing to pay.
 
 ```sh
-dune -- cleos push action eosio powerup '[user, user, 1, 10000000000000, 10000000000000, "1000.0000 EOS"]' -p user
+cleos push action eosio powerup '[user, user, 1, 10000000000000, 10000000000000, "1000.0000 EOS"]' -p user
 ```
 
 To view the received NET and CPU weight as well as the amount of the fee, check the `eosio.reserv::powupresult` returned by the action, which should look similar to the one below:
@@ -27,7 +27,7 @@ executed transaction: 82b7124601612b371b812e3bf65cf63bb44616802d3cd33a2c0422b583
 #     eosio.rex <= eosio.token::transfer        {"from":"user","to":"eosio.rex","quantity":"999.9901 EOS","memo":"transfer from user to eosio.rex"}
 ```
 
-The PowerUp resource model on the EOS blockchain is initialized with `"powerup_days": 1,`. This setting permits the maximum period to rent CPU and NET for 24 hours. If you do not use the resources within the 24 hour interval, the rented CPU and NET expires.
+The PowerUp resource model on the Vaulta blockchain is initialized with `"powerup_days": 1,`. This setting permits the maximum period to rent CPU and NET for 24 hours. If you do not use the resources within the 24 hour interval, the rented CPU and NET expires.
 
 ### Process Expired Orders
 
@@ -38,7 +38,7 @@ Any calls to the `powerup` action does process also this queue (limited to two e
 To view the orders table `powup.order` execute the following command:
 
 ```sh
-dune -- cleos get table eosio 0 powup.order
+cleos get table eosio 0 powup.order
 ```
 
 ```json
@@ -60,7 +60,7 @@ dune -- cleos get table eosio 0 powup.order
 Example `powerupexec` call:
 
 ```sh
-dune -- cleos push action eosio powerupexec '[user, 2]' -p user
+cleos push action eosio powerupexec '[user, 2]' -p user
 ```
 
 ```console

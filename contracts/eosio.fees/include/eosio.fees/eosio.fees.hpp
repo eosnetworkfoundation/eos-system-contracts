@@ -18,8 +18,8 @@ namespace eosio {
     *
     * This contract serves as an essential component for inclusion in system-level unit tests.
     *
-    * A comprehensive implementation of the eosio.fees contract can be accessed at EOS Network Foundation GitHub repository.
-    * https://github.com/eosnetworkfoundation/eosio.fees
+    * A comprehensive implementation of the eosio.fees contract can be accessed at Vaulta Foundation GitHub repository.
+    * https://github.com/VaultaFoundation/eosio.fees
     */
    class [[eosio::contract("eosio.fees")]] fees : public contract {
       public:

@@ -2,11 +2,11 @@
 title: About System Contracts
 ---
 
-The EOS blockchain is unique in that the features and characteristics of the blockchain built on it are flexible, that is, they can be changed, or modified completely to suit the EOS community needs. Core blockchain features such as consensus, fee schedules, account creation and modification, token economics, block producer registration, voting, multi-sig, are implemented inside smart contracts which are deployed on the EOS blockchain.
+The Vaulta blockchain is unique in that the features and characteristics of the blockchain built on it are flexible, that is, they can be changed, or modified completely to suit the Vaulta community needs. Core blockchain features such as consensus, fee schedules, account creation and modification, token economics, block producer registration, voting, multi-sig, are implemented inside smart contracts which are deployed on the Vaulta blockchain.
 
-## System contracts defined in eos-system-contracts
+## System contracts defined in system-contracts
 
-The `eos-system-contracts` repository contains the system contracts encapsulating the base functionality for the EOS blockchain.
+The `system-contracts` repository contains the system contracts encapsulating the base functionality for the Vaulta blockchain.
 
 1. [eosio.bios](action-reference/eosio.bios)
 2. [eosio.system](action-reference/eosio.system)

@@ -1,6 +1,6 @@
-# EOS system contracts
+# Vaulta system contracts
 
-EOS system contracts are a collection of contracts specifically designed for the EOS blockchain, which implements a lot of critical functionality that goes beyond what is provided by the base Antelope protocol, the protocol on which EOS blockchain is built on.
+Vaulta system contracts are a collection of contracts specifically designed for the Vaulta blockchain, which implements a lot of critical functionality that goes beyond what is provided by the base Antelope protocol, the protocol on which Vaulta blockchain is built on.
 
 The Antelope protocol includes capabilities such as:
 
@@ -32,7 +32,7 @@ The collection of system contracts consists of the following individual contract
 
 ## Repository organization
 
-The `main` branch contains the latest state of development; do not use this for production. Refer to the [releases page](https://github.com/eosnetworkfoundation/eos-system-contracts/releases) for current information on releases, pre-releases, and obsolete releases as well as the corresponding tags for those releases.
+The `main` branch contains the latest state of development; do not use this for production. Refer to the [releases page](https://github.com/VaultaFoundation/system-contracts/releases) for current information on releases, pre-releases, and obsolete releases as well as the corresponding tags for those releases.
 ## Supported Operating Systems
 
 [CDT](https://github.com/AntelopeIO/cdt) is required to build contracts. Any operating systems supported by CDT is sufficient to build the system contracts.

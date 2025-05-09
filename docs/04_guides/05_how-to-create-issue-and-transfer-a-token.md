@@ -14,11 +14,11 @@ cd CONTRACTS_DIR
 Pull the source
 
 ```sh
-git clone https://github.com/eosnetworkfoundation/eos-system-contracts --branch release/3.1 --single-branch
+git clone https://github.com/VaultaFoundation/system-contracts --branch release/3.1 --single-branch
 ```
 
 ```sh
-cd eos-system-contracts/contracts/eosio.token
+cd system-contracts/contracts/eosio.token
 ```
 
 ## Step 2: Create Account for Contract
@@ -40,7 +40,7 @@ eosio-cpp -I include -o eosio.token.wasm src/eosio.token.cpp --abigen
 
 ```shell
 
-cleos set contract eosio.token CONTRACTS_DIR/eos-system-contracts/contracts/eosio.token --abi eosio.token.abi -p eosio.token@active
+cleos set contract eosio.token CONTRACTS_DIR/system-contracts/contracts/eosio.token --abi eosio.token.abi -p eosio.token@active
 ```
 
 Result should look similar to the one below:

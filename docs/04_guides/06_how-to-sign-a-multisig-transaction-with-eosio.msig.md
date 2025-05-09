@@ -154,7 +154,7 @@ executed transaction: 475970a4b0016368d0503d1ce01577376f91f5a5ba63dd4353683bd951
 
 ### First user check account balance before executing the proposed transaction
 ```sh
-cleos get account tester
+cleos get table eosio.token tester accounts | jq '.rows[]'
 ```
 ```console
 ...
@@ -176,7 +176,7 @@ executed transaction: 64e5eaceb77362694055f572ae35876111e87b637a55250de315b1b55e
 
 ### First user can check account balance, it should be increased by 1.0000 EOS
 ```sh
-cleos get account tester
+cleos get table eosio.token tester accounts | jq '.rows[]'
 ```
 ```console
 ...
