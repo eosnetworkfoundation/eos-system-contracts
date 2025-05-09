@@ -14,9 +14,9 @@ BOOST_FIXTURE_TEST_CASE( buy_sell_matured_rex, eosio_system_tester ) try {
    // @param sell_matured_rex - if true, matured REX is sold immediately.
    // @param buy_rex_to_savings - if true, buying REX is moved immediately to REX savings.
    //
-   // https://github.com/eosnetworkfoundation/eos-system-contracts/issues/132
-   // https://github.com/eosnetworkfoundation/eos-system-contracts/issues/134
-   // https://github.com/eosnetworkfoundation/eos-system-contracts/issues/135
+   // https://github.com/VaultaFoundation/system-contracts/issues/132
+   // https://github.com/VaultaFoundation/system-contracts/issues/134
+   // https://github.com/VaultaFoundation/system-contracts/issues/135
 
    // setup accounts
    const int64_t ratio        = 10000;

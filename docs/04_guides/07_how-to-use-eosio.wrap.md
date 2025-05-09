@@ -412,14 +412,14 @@ memory:
      quota:     49.74 KiB    used:     3.33 KiB  
 
 net bandwidth:
-     staked:          1.0000 EOS           (total stake delegated from account to self)
+     staked:          1.0000 EOS             (total stake delegated from account to self)
      delegated:       0.0000 EOS           (total staked delegated to account from others)
      used:                 0 bytes
      available:        2.304 MiB  
      limit:            2.304 MiB  
 
 cpu bandwidth:
-     staked:          1.0000 EOS           (total stake delegated from account to self)
+     staked:          1.0000 EOS             (total stake delegated from account to self)
      delegated:       0.0000 EOS           (total staked delegated to account from others)
      used:                 0 us   
      available:        460.8 ms   
@@ -638,7 +638,7 @@ If the two hashes match then the local WebAssembly code is the one deployed on t
 
 ## 2.1 Example: Updating owner authority of an arbitrary account
 
-This example will demonstrate how to use the deployed eosio.wrap contract together with the eosio.msig contract to allow a greater than two-thirds supermajority of block producers of the EOS blockchain to change the owner authority of an arbitrary account. The example will use cleos: in particular, the `cleos multisig` command, the `cleos set account permission` sub-command, and the `cleos wrap exec` sub-command. However, the guide also demonstrates what to do if the `cleos wrap exec` sub-command is not available.
+This example will demonstrate how to use the deployed eosio.wrap contract together with the eosio.msig contract to allow a greater than two-thirds supermajority of block producers of the Vaulta blockchain to change the owner authority of an arbitrary account. The example will use cleos: in particular, the `cleos multisig` command, the `cleos set account permission` sub-command, and the `cleos wrap exec` sub-command. However, the guide also demonstrates what to do if the `cleos wrap exec` sub-command is not available.
 
 This guide assumes that there are 21 active block producers on the chain with account names: `blkproducera`, `blkproducerb`, ..., `blkproduceru`. Block producer `blkproducera` will act as the lead block producer handling the proposal of the transaction.
 
@@ -685,15 +685,15 @@ memory:
      quota:     49.74 KiB    used:     3.365 KiB  
 
 net bandwidth:
-     staked:          1.0000 EOS           (total stake delegated from account to self)
-     delegated:       0.0000 EOS           (total staked delegated to account from others)
+     staked:          1.0000 EOS          (total stake delegated from account to self)
+     delegated:       0.0000 EOS          (total staked delegated to account from others)
      used:                 0 bytes
      available:        2.304 MiB  
      limit:            2.304 MiB  
 
 cpu bandwidth:
-     staked:          1.0000 EOS           (total stake delegated from account to self)
-     delegated:       0.0000 EOS           (total staked delegated to account from others)
+     staked:          1.0000 EOS          (total stake delegated from account to self)
+     delegated:       0.0000 EOS          (total staked delegated to account from others)
      used:                 0 us   
      available:        460.8 ms   
      limit:            460.8 ms   
