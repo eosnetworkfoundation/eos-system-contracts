@@ -11,7 +11,7 @@ Stake resources for your account to participate in the on-chain voting and gover
 
 * Install the currently supported version of cleos
 
-* Ensure the reference system contracts from `eos-system-contracts` repository is deployed and used to manage system resources
+* Ensure the reference system contracts from `system-contracts` repository is deployed and used to manage system resources
 
 * Understand the following:
   * What is an account
